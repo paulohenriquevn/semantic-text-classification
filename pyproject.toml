@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel>=0.41.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-conversation-engine"
+version = "0.1.0"
+description = "NLP platform for large-scale conversation analysis in call centers and digital service channels"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24,<3.0",
+    "pydantic>=2.0,<3.0",
+    "structlog>=23.0,<25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.8,<2.0",
+    "pytest>=7.0,<9.0",
+    "pytest-asyncio>=0.21,<1.0",
+    "pytest-cov>=4.0,<6.0",
+    "ruff>=0.4,<1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["semantic_conversation_engine"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["semantic_conversation_engine"]
+warn_return_any = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+strict_equality = true
