@@ -11,7 +11,6 @@ from semantic_conversation_engine.classification.features import (
     merge_feature_sets,
 )
 
-
 # ---------------------------------------------------------------------------
 # FeatureSet
 # ---------------------------------------------------------------------------
@@ -195,8 +194,14 @@ class TestFeaturesReexport:
     def test_importable_from_classification_package(self) -> None:
         from semantic_conversation_engine.classification import (
             FeatureSet as FS,
+        )
+        from semantic_conversation_engine.classification import (
             extract_lexical_features as elf,
+        )
+        from semantic_conversation_engine.classification import (
             extract_structural_features as esf,
+        )
+        from semantic_conversation_engine.classification import (
             merge_feature_sets as mfs,
         )
 

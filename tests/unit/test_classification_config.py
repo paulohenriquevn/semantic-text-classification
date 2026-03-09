@@ -12,7 +12,6 @@ from semantic_conversation_engine.classification.config import (
     ClassifierConfig,
 )
 
-
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -82,23 +81,15 @@ class TestClassifierConfigValidation:
 
     def test_rejects_threshold_below_zero(self) -> None:
         with pytest.raises(ValueError, match="default_threshold"):
-            ClassifierConfig(
-                model_name="test", model_version="1.0", default_threshold=-0.1
-            )
+            ClassifierConfig(model_name="test", model_version="1.0", default_threshold=-0.1)
 
     def test_rejects_threshold_above_one(self) -> None:
         with pytest.raises(ValueError, match="default_threshold"):
-            ClassifierConfig(
-                model_name="test", model_version="1.0", default_threshold=1.1
-            )
+            ClassifierConfig(model_name="test", model_version="1.0", default_threshold=1.1)
 
     def test_accepts_threshold_at_boundaries(self) -> None:
-        c0 = ClassifierConfig(
-            model_name="test", model_version="1.0", default_threshold=0.0
-        )
-        c1 = ClassifierConfig(
-            model_name="test", model_version="1.0", default_threshold=1.0
-        )
+        c0 = ClassifierConfig(model_name="test", model_version="1.0", default_threshold=0.0)
+        c1 = ClassifierConfig(model_name="test", model_version="1.0", default_threshold=1.0)
         assert c0.default_threshold == 0.0
         assert c1.default_threshold == 1.0
 
@@ -111,8 +102,11 @@ class TestClassifierConfigValidation:
 class TestClassifierConfigImmutability:
     def test_is_frozen(self) -> None:
         config = ClassifierConfig(model_name="test", model_version="1.0")
-        with pytest.raises(Exception):
+        try:
             config.model_name = "other"  # type: ignore[misc]
+            raise AssertionError("Should be frozen")
+        except (AttributeError, ValueError):
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +118,11 @@ class TestClassificationConfigReexport:
     def test_importable_from_classification_package(self) -> None:
         from semantic_conversation_engine.classification import (
             ClassificationLevel as CL,
+        )
+        from semantic_conversation_engine.classification import (
             ClassificationMode as CM,
+        )
+        from semantic_conversation_engine.classification import (
             ClassifierConfig as CC,
         )
 

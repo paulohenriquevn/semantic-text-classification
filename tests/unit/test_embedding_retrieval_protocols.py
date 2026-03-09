@@ -1,15 +1,21 @@
-"""Unit tests for embedding and retrieval protocol compliance.
+"""Unit tests for embedding, retrieval, and classification protocol compliance.
 
 Tests verify that stub implementations satisfying the protocol signatures
 work correctly with the type system. This validates DIP — concrete
 implementations need no inheritance from Protocol classes.
 """
 
+from semantic_conversation_engine.classification.models import (
+    ClassificationInput,
+    ClassificationResult,
+    LabelScore,
+)
 from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
 from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
 from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
 from semantic_conversation_engine.models.types import EmbeddingId
 from semantic_conversation_engine.pipeline.protocols import (
+    Classifier,
     EmbeddingGenerator,
     HybridRetriever,
     LexicalIndex,
@@ -106,6 +112,26 @@ class StubHybridRetriever:
 class StubReranker:
     def rerank(self, query_text: str, hits: list[RetrievalHit]) -> list[RetrievalHit]:
         return hits
+
+
+class StubClassifier:
+    def classify(self, inputs: list[ClassificationInput]) -> list[ClassificationResult]:
+        return [
+            ClassificationResult(
+                source_id=inp.source_id,
+                source_type=inp.source_type,
+                label_scores=[
+                    LabelScore(
+                        label="billing",
+                        score=0.85,
+                        confidence=0.82,
+                    )
+                ],
+                model_name="stub-classifier",
+                model_version="1.0",
+            )
+            for inp in inputs
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +234,48 @@ class TestRerankerProtocol:
         assert len(result) == 2
 
 
+class TestClassifierProtocol:
+    def test_stub_classifies_single_input(self) -> None:
+        classifier = StubClassifier()
+        inputs = [
+            ClassificationInput(
+                source_id="win_0",
+                source_type="context_window",
+                text="billing issue with credit card",
+            )
+        ]
+        results = classifier.classify(inputs)
+        assert len(results) == 1
+        assert results[0].source_id == "win_0"
+        assert results[0].top_label == "billing"
+
+    def test_stub_preserves_input_order(self) -> None:
+        classifier = StubClassifier()
+        inputs = [
+            ClassificationInput(
+                source_id=f"win_{i}",
+                source_type="context_window",
+                text=f"text {i}",
+            )
+            for i in range(3)
+        ]
+        results = classifier.classify(inputs)
+        assert [r.source_id for r in results] == ["win_0", "win_1", "win_2"]
+
+    def test_stub_returns_label_scores(self) -> None:
+        classifier = StubClassifier()
+        inputs = [
+            ClassificationInput(
+                source_id="win_0",
+                source_type="context_window",
+                text="test",
+            )
+        ]
+        results = classifier.classify(inputs)
+        assert len(results[0].label_scores) == 1
+        assert results[0].label_scores[0].score == 0.85
+
+
 # ---------------------------------------------------------------------------
 # Reexport from pipeline package
 # ---------------------------------------------------------------------------
@@ -240,3 +308,8 @@ class TestProtocolReexport:
         from semantic_conversation_engine.pipeline import Reranker as Imported
 
         assert Imported is Reranker
+
+    def test_classifier_from_pipeline(self) -> None:
+        from semantic_conversation_engine.pipeline import Classifier as Imported
+
+        assert Imported is Classifier

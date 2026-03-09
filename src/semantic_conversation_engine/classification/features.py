@@ -12,7 +12,7 @@ Feature extraction is deterministic and stateless.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -63,9 +63,7 @@ def extract_lexical_features(text: str) -> FeatureSet:
     question_count = float(text.count("?"))
     exclamation_count = float(text.count("!"))
     alpha_chars = sum(1 for c in text if c.isalpha())
-    uppercase_ratio = (
-        sum(1 for c in text if c.isupper()) / alpha_chars if alpha_chars > 0 else 0.0
-    )
+    uppercase_ratio = sum(1 for c in text if c.isupper()) / alpha_chars if alpha_chars > 0 else 0.0
     digit_ratio = sum(1 for c in text if c.isdigit()) / chars if chars > 0 else 0.0
 
     features = {
@@ -112,9 +110,7 @@ def extract_structural_features(
         "turn_count": float(turn_count),
         "speaker_count": float(speaker_count),
     }
-    return FeatureSet(
-        features=features, feature_names=list(_STRUCTURAL_FEATURE_NAMES)
-    )
+    return FeatureSet(features=features, feature_names=list(_STRUCTURAL_FEATURE_NAMES))
 
 
 def merge_feature_sets(*feature_sets: FeatureSet) -> FeatureSet:

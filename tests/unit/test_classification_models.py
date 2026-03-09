@@ -10,7 +10,6 @@ from semantic_conversation_engine.classification.models import (
     LabelScore,
 )
 
-
 # ---------------------------------------------------------------------------
 # ClassificationInput
 # ---------------------------------------------------------------------------
@@ -49,9 +48,7 @@ class TestClassificationInput:
         assert inp.features["word_count"] == 5.0
 
     def test_is_frozen(self) -> None:
-        inp = ClassificationInput(
-            source_id="win_1", source_type="context_window", text="test"
-        )
+        inp = ClassificationInput(source_id="win_1", source_type="context_window", text="test")
         try:
             inp.source_id = "other"  # type: ignore[misc]
             raise AssertionError("Should be frozen")
@@ -204,7 +201,11 @@ class TestClassificationModelsReexport:
     def test_importable_from_classification_package(self) -> None:
         from semantic_conversation_engine.classification import (
             ClassificationInput as CI,
+        )
+        from semantic_conversation_engine.classification import (
             ClassificationResult as CR,
+        )
+        from semantic_conversation_engine.classification import (
             LabelScore as LS,
         )
 

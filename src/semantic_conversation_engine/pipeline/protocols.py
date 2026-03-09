@@ -21,6 +21,10 @@ Usage:
 
 from typing import Protocol
 
+from semantic_conversation_engine.classification.models import (
+    ClassificationInput,
+    ClassificationResult,
+)
 from semantic_conversation_engine.context.config import ContextWindowConfig
 from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch
 from semantic_conversation_engine.ingestion.inputs import TranscriptInput
@@ -28,10 +32,6 @@ from semantic_conversation_engine.models.context_window import ContextWindow
 from semantic_conversation_engine.models.conversation import Conversation
 from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
 from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.classification.models import (
-    ClassificationInput,
-    ClassificationResult,
-)
 from semantic_conversation_engine.retrieval.models import (
     RetrievalHit,
     RetrievalQuery,
@@ -245,9 +245,7 @@ class Classifier(Protocol):
     Supports both single-label and multi-label modes.
     """
 
-    def classify(
-        self, inputs: list[ClassificationInput]
-    ) -> list[ClassificationResult]:
+    def classify(self, inputs: list[ClassificationInput]) -> list[ClassificationResult]:
         """Classify a batch of inputs.
 
         Args:
