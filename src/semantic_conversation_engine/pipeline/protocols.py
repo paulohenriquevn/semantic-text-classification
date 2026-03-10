@@ -13,6 +13,8 @@ Protocols defined:
     HybridRetriever   — combined lexical + semantic retrieval
     Reranker          — optional cross-encoder reranking
     Classifier        — feature vectors → classification results
+    RuleCompiler      — DSL text → RuleDefinition (compiled AST)
+    RuleEvaluator     — rules + input → RuleResult outcomes
 
 Usage:
     Concrete implementations inherit from or structurally match these protocols.
@@ -36,6 +38,12 @@ from semantic_conversation_engine.retrieval.models import (
     RetrievalHit,
     RetrievalQuery,
     RetrievalResult,
+)
+from semantic_conversation_engine.rules.config import RuleEngineConfig
+from semantic_conversation_engine.rules.models import (
+    RuleDefinition,
+    RuleEvaluationInput,
+    RuleResult,
 )
 from semantic_conversation_engine.segmentation.config import SegmentationConfig
 
@@ -258,5 +266,59 @@ class Classifier(Protocol):
         Raises:
             PipelineError: If classification fails irrecoverably.
             ModelError: If the classification model cannot be loaded or run.
+        """
+        ...
+
+
+class RuleCompiler(Protocol):
+    """Protocol for rule compilation implementations.
+
+    A RuleCompiler takes a DSL text representation and compiles it
+    into a RuleDefinition with a typed AST ready for evaluation.
+    """
+
+    def compile(self, dsl_text: str, rule_id: str, rule_name: str) -> RuleDefinition:
+        """Compile a DSL text into a rule definition.
+
+        Args:
+            dsl_text: Rule text in the DSL format.
+            rule_id: Unique identifier for the compiled rule.
+            rule_name: Human-readable name for the compiled rule.
+
+        Returns:
+            RuleDefinition with compiled AST and identity.
+
+        Raises:
+            RuleError: If the DSL text is syntactically or semantically invalid.
+        """
+        ...
+
+
+class RuleEvaluator(Protocol):
+    """Protocol for rule evaluation implementations.
+
+    A RuleEvaluator takes a set of compiled rules and an evaluation input,
+    then produces rule results with match outcomes and evidence.
+    """
+
+    def evaluate(
+        self,
+        rules: list[RuleDefinition],
+        evaluation_input: RuleEvaluationInput,
+        config: RuleEngineConfig,
+    ) -> list[RuleResult]:
+        """Evaluate rules against an input.
+
+        Args:
+            rules: List of compiled rule definitions to evaluate.
+            evaluation_input: The object to evaluate rules against.
+            config: Evaluation configuration (mode, evidence policy, etc.).
+
+        Returns:
+            List of RuleResult objects, one per rule evaluated.
+            Order may differ from input if short-circuit policy reorders.
+
+        Raises:
+            RuleError: If rule evaluation fails irrecoverably.
         """
         ...

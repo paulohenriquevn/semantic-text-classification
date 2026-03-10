@@ -13,6 +13,8 @@ from semantic_conversation_engine.pipeline.protocols import (
     HybridRetriever,
     LexicalIndex,
     Reranker,
+    RuleCompiler,
+    RuleEvaluator,
     Segmenter,
     VectorIndex,
 )
@@ -27,6 +29,8 @@ __all__ = [
     "PipelineResult",
     "PipelineWarning",
     "Reranker",
+    "RuleCompiler",
+    "RuleEvaluator",
     "Segmenter",
     "TextProcessingPipeline",
     "VectorIndex",

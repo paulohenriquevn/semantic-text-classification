@@ -26,7 +26,7 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from semantic_conversation_engine.classification.features import (
     extract_lexical_features,
@@ -42,7 +42,9 @@ from semantic_conversation_engine.models.context_window import ContextWindow
 from semantic_conversation_engine.models.enums import ObjectType
 from semantic_conversation_engine.models.prediction import Prediction
 from semantic_conversation_engine.models.types import PredictionId
-from semantic_conversation_engine.pipeline.protocols import Classifier
+
+if TYPE_CHECKING:
+    from semantic_conversation_engine.pipeline.protocols import Classifier
 
 
 @dataclass(frozen=True)
@@ -221,9 +223,7 @@ class ClassificationOrchestrator:
             )
 
             merged = merge_feature_sets(lexical, structural)
-            embedding = (
-                embeddings.get(window.window_id, None) if embeddings else None
-            )
+            embedding = embeddings.get(window.window_id, None) if embeddings else None
 
             inputs.append(
                 ClassificationInput(
@@ -277,7 +277,5 @@ class ClassificationOrchestrator:
             "num_inputs": num_inputs,
             "num_results": num_results,
             "num_predictions": num_predictions,
-            "classification_latency_ms": round(
-                (time.perf_counter() - t0) * 1000, 2
-            ),
+            "classification_latency_ms": round((time.perf_counter() - t0) * 1000, 2),
         }

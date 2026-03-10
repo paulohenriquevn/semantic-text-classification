@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Rule engine configuration: `RuleEngineConfig`, `RuleEvaluationMode`, `EvidencePolicy`, `ShortCircuitPolicy`, `PredicateType` enums with frozen pydantic config and threshold/count validation (no-ticket)
+- Rule engine AST nodes: `PredicateNode`, `AndNode`, `OrNode`, `NotNode` frozen dataclasses with `ASTNode` type alias for arbitrary nesting and cost-hint annotation (no-ticket)
+- Rule engine internal models: `RuleDefinition`, `RuleEvaluationInput`, `PredicateResult`, `RuleResult` frozen dataclasses with `to_evidence_item()` mapping and short-circuit tracking (no-ticket)
+- Rule engine protocols: `RuleCompiler` (DSL → AST) and `RuleEvaluator` (rules + input → results) as `typing.Protocol` interfaces in pipeline protocols (no-ticket)
+- Rule engine protocol compliance tests: `StubRuleCompiler` and `StubRuleEvaluator` with duck-typed structural subtyping validation (no-ticket)
+- Rule DSL: declarative language for rule definition with 12 predicate functions across 4 signal families (lexical, semantic, structural, contextual) (no-ticket)
+- Rule DSL parser: tokenizer and recursive-descent parser with operator precedence (NOT > AND > OR), parenthesized groups, and positional error reporting (no-ticket)
+- `SimpleRuleCompiler`: concrete `RuleCompiler` implementation compiling DSL text → validated `RuleDefinition` with semantic validation (threshold range, cost hints, max depth) (no-ticket)
+- `PREDICATE_REGISTRY`: extensible registry mapping DSL function names to predicate type, operator, field, and cost hint defaults (no-ticket)
+- `SimpleRuleEvaluator`: concrete `RuleEvaluator` implementation with recursive AST walking, per-family predicate handlers (lexical, structural, contextual, semantic), short-circuit AND/OR evaluation, and cost-based reordering (no-ticket)
+- Rule predicate handlers: `keyword` (case-insensitive containment), `regex` (pattern matching), `speaker`/`channel`/`field_eq`/`field_gte`/`field_lte` (structural comparisons), `repeated` (window count), `occurs_after` (sequential occurrence), `intent`/`similarity` (threshold-based semantic scores) (no-ticket)
+- `map_to_rule_execution`: boundary mapping from internal `RuleResult` to domain `RuleExecution` entity with evidence items, ObjectType resolution, and execution metadata (no-ticket)
+- Rule evaluation observability: `short_circuited` flag, `execution_time_ms` timing, `predicate_count` in metadata, evidence policy filtering (`ALWAYS` vs `MATCH_ONLY`), and cost-ascending predicate reordering via `ShortCircuitPolicy` (no-ticket)
+- Classification evaluation dataset schema: `ClassificationDataset`, `ClassificationExample`, `GroundTruthLabel` with JSON save/load, multi-label ground truth, embedding/features attachment, and multi-level source type support (no-ticket)
+- Classification evaluation metrics: `precision`, `recall`, `f1_score`, `per_label_metrics`, `micro_f1`, `macro_f1` — pure functions over predicted vs ground truth label sets (no-ticket)
+- `ClassificationBenchmarkRunner`: classifier-agnostic evaluation runner with per-example metrics, per-label breakdown, aggregated metrics, threshold override, and multi-classifier comparison (no-ticket)
+- `ClassificationExperimentReport` with JSON and CSV export: comparison reports for similarity vs logistic classifiers with per-label and aggregated metrics (no-ticket)
+- Integration tests for classification evaluation benchmark: end-to-end pipeline → embedding → classification → evaluation dataset → multi-classifier comparison with JSON/CSV serialization (no-ticket)
 - Project scaffolding with `src/` layout, `pyproject.toml`, and quality gate tooling (no-ticket)
 - Domain exception hierarchy: `EngineError`, `EngineValidationError`, `PipelineError`, `ModelError`, `RuleError`, `ConfigurationError` (no-ticket)
 - Domain enums: `SpeakerRole`, `Channel`, `ObjectType`, `PoolingStrategy` using Python 3.11 `StrEnum` (no-ticket)
@@ -74,3 +92,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `EmbeddingSimilarityClassifier`: cosine similarity classifier using pre-computed label centroids, zero-training baseline for intent classification (no-ticket)
 - `LogisticRegressionClassifier`: sklearn-backed supervised classifier operating on FeatureSet vectors with conditional import (no-ticket)
 - Classifier serialization: `save_similarity_classifier` / `load_similarity_classifier` with JSON metadata + numpy centroid persistence (no-ticket)
+- `ClassificationOrchestrator`: composes feature extraction, classifier execution, and Prediction mapping for batch classification of ContextWindows (no-ticket)
+- `ClassificationBatchResult`: execution envelope carrying domain `Prediction` entities, raw `ClassificationResult` data, and operational stats (no-ticket)
+- Multi-level classification: orchestrator supports turn, window, and conversation-level classification via `classify_windows()` and `classify_inputs()` (no-ticket)
+- `ClassificationResult → Prediction` mapping: positive label scores automatically converted to domain Prediction entities with unique IDs and ObjectType resolution (no-ticket)
+- Integration tests for end-to-end classification pipeline: raw text → segmentation → windowing → embedding → similarity/logistic classification → Predictions (no-ticket)
+
+### Fixed
+- Circular import between `classification.orchestrator` and `pipeline.protocols` resolved with `TYPE_CHECKING` guard (no-ticket)
