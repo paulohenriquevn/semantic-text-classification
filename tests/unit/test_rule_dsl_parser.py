@@ -2,7 +2,8 @@
 
 Tests cover: tokenization, basic predicate parsing, logical operators (AND, OR, NOT),
 operator precedence, parenthesized groups, all predicate functions, error handling,
-and the parse_dsl public API.
+the parse_dsl public API, extended dotted namespace syntax, infix comparisons,
+list literals, RULE...WHEN...THEN block syntax, and the parse_rule_block API.
 """
 
 import pytest
@@ -15,7 +16,8 @@ from talkex.rules.ast import (
     PredicateNode,
 )
 from talkex.rules.config import PredicateType
-from talkex.rules.parser import TokenType, parse_dsl, tokenize
+from talkex.rules.models import ParsedRuleBlock, RuleAction
+from talkex.rules.parser import TokenType, parse_dsl, parse_rule_block, tokenize
 
 # ---------------------------------------------------------------------------
 # Tokenizer
@@ -432,3 +434,503 @@ class TestParserReexport:
         from talkex.rules import PREDICATE_REGISTRY
 
         assert "keyword" in PREDICATE_REGISTRY
+
+    def test_parse_rule_block_from_rules_package(self) -> None:
+        from talkex.rules import parse_rule_block as imported
+
+        assert imported is parse_rule_block
+
+    def test_namespace_map_from_rules_package(self) -> None:
+        from talkex.rules import NAMESPACE_PREDICATE_MAP
+
+        assert ("semantic", "intent") in NAMESPACE_PREDICATE_MAP
+
+
+# ---------------------------------------------------------------------------
+# Extended tokenizer — new token types
+# ---------------------------------------------------------------------------
+
+
+class TestExtendedTokenizer:
+    def test_dot_token(self) -> None:
+        tokens = tokenize("semantic.intent")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [TokenType.IDENTIFIER, TokenType.DOT, TokenType.IDENTIFIER]
+
+    def test_comparison_operators(self) -> None:
+        tokens = tokenize('speaker == "customer"')
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [TokenType.IDENTIFIER, TokenType.EQ_OP, TokenType.STRING]
+
+    def test_gt_gte_tokens(self) -> None:
+        tokens = tokenize("> >=")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [TokenType.GT, TokenType.GTE]
+
+    def test_lt_lte_tokens(self) -> None:
+        tokens = tokenize("< <=")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [TokenType.LT, TokenType.LTE]
+
+    def test_neq_token(self) -> None:
+        tokens = tokenize("!=")
+        assert tokens[0].token_type == TokenType.NEQ
+
+    def test_assign_token(self) -> None:
+        tokens = tokenize("intent=")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [TokenType.IDENTIFIER, TokenType.ASSIGN]
+
+    def test_brackets(self) -> None:
+        tokens = tokenize('["a", "b"]')
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [
+            TokenType.LBRACKET,
+            TokenType.STRING,
+            TokenType.COMMA,
+            TokenType.STRING,
+            TokenType.RBRACKET,
+        ]
+
+    def test_rule_when_then_keywords(self) -> None:
+        tokens = tokenize("RULE test WHEN x THEN y")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [
+            TokenType.RULE,
+            TokenType.IDENTIFIER,
+            TokenType.WHEN,
+            TokenType.IDENTIFIER,
+            TokenType.THEN,
+            TokenType.IDENTIFIER,
+        ]
+
+    def test_rule_when_then_case_insensitive(self) -> None:
+        tokens = tokenize("rule x when y then z")
+        types = [t.token_type for t in tokens if t.token_type != TokenType.EOF]
+        assert types == [
+            TokenType.RULE,
+            TokenType.IDENTIFIER,
+            TokenType.WHEN,
+            TokenType.IDENTIFIER,
+            TokenType.THEN,
+            TokenType.IDENTIFIER,
+        ]
+
+
+# ---------------------------------------------------------------------------
+# Infix comparison syntax
+# ---------------------------------------------------------------------------
+
+
+class TestInfixComparison:
+    def test_speaker_eq(self) -> None:
+        ast = parse_dsl('speaker == "customer"')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.STRUCTURAL
+        assert ast.field_name == "speaker_role"
+        assert ast.operator == "eq"
+        assert ast.value == "customer"
+
+    def test_channel_eq(self) -> None:
+        ast = parse_dsl('channel == "voice"')
+        assert isinstance(ast, PredicateNode)
+        assert ast.field_name == "channel"
+        assert ast.operator == "eq"
+        assert ast.value == "voice"
+
+    def test_speaker_neq(self) -> None:
+        ast = parse_dsl('speaker != "bot"')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "neq"
+
+    def test_unknown_infix_field_raises(self) -> None:
+        with pytest.raises(RuleError, match="Unknown field 'foobar'"):
+            parse_dsl('foobar == "x"')
+
+    def test_infix_in_and_expression(self) -> None:
+        ast = parse_dsl('speaker == "customer" AND keyword("billing")')
+        assert isinstance(ast, AndNode)
+        assert isinstance(ast.children[0], PredicateNode)
+        assert ast.children[0].operator == "eq"
+        assert isinstance(ast.children[1], PredicateNode)
+        assert ast.children[1].operator == "contains"
+
+
+# ---------------------------------------------------------------------------
+# Dotted namespace syntax
+# ---------------------------------------------------------------------------
+
+
+class TestDottedNamespace:
+    def test_semantic_intent_with_threshold(self) -> None:
+        ast = parse_dsl('semantic.intent("cancelamento") > 0.82')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.SEMANTIC
+        assert ast.field_name == "intent_score"
+        assert ast.value == "cancelamento"
+        assert ast.threshold == 0.82
+
+    def test_semantic_intent_gte(self) -> None:
+        ast = parse_dsl('semantic.intent("billing") >= 0.7')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "gte"
+        assert ast.threshold == 0.7
+
+    def test_semantic_intent_without_comparison(self) -> None:
+        ast = parse_dsl('semantic.intent("cancel")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.SEMANTIC
+        assert ast.value == "cancel"
+        assert ast.threshold is None
+
+    def test_semantic_similarity(self) -> None:
+        ast = parse_dsl('semantic.similarity("quero cancelar meu serviço") > 0.86')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.SEMANTIC
+        assert ast.field_name == "embedding_similarity"
+        assert ast.operator == "gt"
+        assert ast.value == "quero cancelar meu serviço"
+        assert ast.threshold == 0.86
+
+    def test_semantic_similarity_respects_comparison_operators(self) -> None:
+        """Similarity predicates should use the actual comparison operator."""
+        # Less-than
+        ast = parse_dsl('semantic.similarity("saudações") < 0.79')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "lt"
+        assert ast.threshold == 0.79
+
+        # Greater-equal
+        ast = parse_dsl('semantic.similarity("reclamação") >= 0.90')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "gte"
+        assert ast.threshold == 0.90
+
+        # Less-equal
+        ast = parse_dsl('semantic.similarity("elogio") <= 0.5')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "lte"
+        assert ast.threshold == 0.5
+
+    def test_semantic_similarity_no_operator_defaults_to_similarity_above(self) -> None:
+        """Without explicit operator, similarity defaults to similarity_above (>=)."""
+        ast = parse_dsl('semantic.similarity("teste")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "similarity_above"
+        assert ast.threshold is None
+
+    def test_lexical_contains(self) -> None:
+        ast = parse_dsl('lexical.contains("billing")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.LEXICAL
+        assert ast.operator == "contains"
+        assert ast.value == "billing"
+
+    def test_lexical_contains_any_with_list(self) -> None:
+        ast = parse_dsl('lexical.contains_any(["cancelar", "encerrar", "desistir"])')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.LEXICAL
+        assert ast.operator == "contains_any"
+        assert ast.value == ["cancelar", "encerrar", "desistir"]
+
+    def test_lexical_regex(self) -> None:
+        ast = parse_dsl('lexical.regex("cancel|terminate")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "regex"
+        assert ast.value == "cancel|terminate"
+
+    def test_unknown_namespace_method_raises(self) -> None:
+        with pytest.raises(RuleError, match="Unknown predicate"):
+            parse_dsl('foobar.baz("x")')
+
+    def test_dotted_in_and_or(self) -> None:
+        dsl = 'semantic.intent("cancel") > 0.8 AND lexical.contains("billing")'
+        ast = parse_dsl(dsl)
+        assert isinstance(ast, AndNode)
+        assert len(ast.children) == 2
+
+
+# ---------------------------------------------------------------------------
+# Context namespace with method chaining
+# ---------------------------------------------------------------------------
+
+
+class TestContextChaining:
+    def test_turn_window_count(self) -> None:
+        ast = parse_dsl('context.turn_window(5).count(intent="insatisfacao") >= 2')
+        assert isinstance(ast, PredicateNode)
+        assert ast.predicate_type == PredicateType.CONTEXTUAL
+        assert ast.field_name == "window_count"
+        assert ast.operator == "gte"
+        assert ast.value == 2
+        assert ast.metadata["window_size"] == 5
+        assert ast.metadata["intent"] == "insatisfacao"
+
+    def test_turn_window_count_gt(self) -> None:
+        ast = parse_dsl('context.turn_window(3).count(intent="reclamacao") > 1')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "gt"
+        assert ast.value == 1
+        assert ast.metadata["window_size"] == 3
+
+    def test_turn_window_without_chain_raises(self) -> None:
+        with pytest.raises(RuleError, match="requires a chained method"):
+            parse_dsl("context.turn_window(5)")
+
+    def test_unknown_context_method_raises(self) -> None:
+        with pytest.raises(RuleError, match="Unknown context method"):
+            parse_dsl("context.foobar(5)")
+
+
+# ---------------------------------------------------------------------------
+# contains_any predicate (inline function-call syntax)
+# ---------------------------------------------------------------------------
+
+
+class TestContainsAny:
+    def test_inline_contains_any(self) -> None:
+        ast = parse_dsl('contains_any("cancelar", "encerrar")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "contains_any"
+        assert ast.value == ["cancelar", "encerrar"]
+        assert ast.predicate_type == PredicateType.LEXICAL
+
+    def test_contains_any_single_word(self) -> None:
+        ast = parse_dsl('contains_any("billing")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.value == ["billing"]
+
+    def test_contains_any_no_args_raises(self) -> None:
+        with pytest.raises(RuleError, match="expects at least 1"):
+            parse_dsl("contains_any()")
+
+
+# ---------------------------------------------------------------------------
+# RULE...WHEN...THEN block syntax
+# ---------------------------------------------------------------------------
+
+
+class TestRuleBlock:
+    def test_simple_rule_block(self) -> None:
+        dsl = """
+        RULE billing_detection
+        WHEN keyword("billing") AND speaker("customer")
+        THEN tag("billing")
+        """
+        block = parse_rule_block(dsl)
+        assert isinstance(block, ParsedRuleBlock)
+        assert block.rule_name == "billing_detection"
+        assert isinstance(block.ast, AndNode)
+        assert len(block.actions) == 1
+        assert block.actions[0].action_type == "tag"
+        assert block.actions[0].value == "billing"
+
+    def test_rule_block_multiple_actions(self) -> None:
+        dsl = """
+        RULE test_rule
+        WHEN keyword("x")
+        THEN tag("label") score(0.95) priority("high")
+        """
+        block = parse_rule_block(dsl)
+        assert len(block.actions) == 3
+        assert block.actions[0] == RuleAction(action_type="tag", value="label")
+        assert block.actions[1] == RuleAction(action_type="score", value=0.95)
+        assert block.actions[2] == RuleAction(action_type="priority", value="high")
+
+    def test_rule_block_with_dotted_syntax(self) -> None:
+        dsl = """
+        RULE risco_cancelamento
+        WHEN
+            speaker == "customer"
+            AND semantic.intent("cancelamento") > 0.82
+            AND lexical.contains_any(["cancelar", "encerrar", "desistir"])
+        THEN
+            tag("cancelamento_risco") score(0.95) priority("high")
+        """
+        block = parse_rule_block(dsl)
+        assert block.rule_name == "risco_cancelamento"
+        assert isinstance(block.ast, AndNode)
+        assert len(block.ast.children) == 3
+
+        # First child: speaker == "customer"
+        speaker = block.ast.children[0]
+        assert isinstance(speaker, PredicateNode)
+        assert speaker.operator == "eq"
+        assert speaker.value == "customer"
+
+        # Second child: semantic.intent(...)
+        intent = block.ast.children[1]
+        assert isinstance(intent, PredicateNode)
+        assert intent.predicate_type == PredicateType.SEMANTIC
+        assert intent.threshold == 0.82
+
+        # Third child: lexical.contains_any(...)
+        contains = block.ast.children[2]
+        assert isinstance(contains, PredicateNode)
+        assert contains.operator == "contains_any"
+        assert contains.value == ["cancelar", "encerrar", "desistir"]
+
+        # Actions
+        assert len(block.actions) == 3
+
+    def test_users_full_example(self) -> None:
+        """Test the exact DSL from the user's request."""
+        dsl = """
+        RULE risco_cancelamento_alto
+        WHEN
+            speaker == "customer"
+            AND semantic.intent("cancelamento") > 0.82
+            AND (
+                lexical.contains_any(["cancelar", "encerrar", "desistir"])
+                OR semantic.similarity("quero cancelar meu serviço") > 0.86
+            )
+            AND context.turn_window(5).count(intent="insatisfacao") >= 2
+        THEN
+            tag("cancelamento_risco_alto")
+            score(0.95)
+            priority("high")
+        """
+        block = parse_rule_block(dsl)
+        assert block.rule_name == "risco_cancelamento_alto"
+        assert isinstance(block.ast, AndNode)
+        assert len(block.ast.children) == 4
+        assert len(block.actions) == 3
+
+        # Verify nested OR group
+        or_group = block.ast.children[2]
+        assert isinstance(or_group, OrNode)
+        assert len(or_group.children) == 2
+
+    def test_rule_block_without_then(self) -> None:
+        dsl = 'RULE simple WHEN keyword("test")'
+        block = parse_rule_block(dsl)
+        assert block.rule_name == "simple"
+        assert isinstance(block.ast, PredicateNode)
+        assert block.actions == []
+
+    def test_parse_dsl_detects_block_syntax(self) -> None:
+        """parse_dsl should extract AST from RULE block."""
+        dsl = 'RULE test WHEN keyword("billing") THEN tag("x")'
+        ast = parse_dsl(dsl)
+        assert isinstance(ast, PredicateNode)
+        assert ast.value == "billing"
+
+    def test_empty_rule_block_raises(self) -> None:
+        with pytest.raises(RuleError, match="Empty rule block"):
+            parse_rule_block("")
+
+    def test_non_rule_block_raises(self) -> None:
+        with pytest.raises(RuleError, match="must start with 'RULE'"):
+            parse_rule_block('keyword("x")')
+
+    def test_unknown_action_raises(self) -> None:
+        with pytest.raises(RuleError, match="Unknown action 'foobar'"):
+            parse_rule_block('RULE test WHEN keyword("x") THEN foobar("y")')
+
+
+# ---------------------------------------------------------------------------
+# Compiler integration with RULE blocks
+# ---------------------------------------------------------------------------
+
+
+class TestCompilerRuleBlock:
+    def test_compiler_handles_rule_block(self) -> None:
+        from talkex.rules.compiler import SimpleRuleCompiler
+
+        compiler = SimpleRuleCompiler()
+        dsl = """
+        RULE billing_detection
+        WHEN keyword("billing") AND speaker("customer")
+        THEN tag("billing_issue") score(0.9) priority("high")
+        """
+        rule = compiler.compile(dsl, "r1", "r1")
+        assert rule.rule_name == "billing_detection"
+        assert "billing_issue" in rule.tags
+        assert rule.priority == 10  # "high" maps to 10
+        assert rule.metadata.get("score_override") == 0.9
+
+    def test_compiler_preserves_inline_syntax(self) -> None:
+        from talkex.rules.compiler import SimpleRuleCompiler
+
+        compiler = SimpleRuleCompiler()
+        rule = compiler.compile('keyword("billing")', "r1", "billing_check")
+        assert rule.rule_name == "billing_check"
+        assert isinstance(rule.ast, PredicateNode)
+
+
+# ---------------------------------------------------------------------------
+# Evaluator integration with contains_any
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorContainsAny:
+    def test_contains_any_matches(self) -> None:
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_any("cancelar", "encerrar", "desistir")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="eu quero cancelar minha conta agora",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+        assert results[0].predicate_results[0].matched_text == "cancelar"
+
+    def test_contains_any_no_match(self) -> None:
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_any("cancelar", "encerrar")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="obrigado pela ajuda",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is False
+
+    def test_contains_any_multiple_matches(self) -> None:
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_any("cancelar", "encerrar", "desistir")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="quero cancelar e desistir de tudo",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+        # Score should reflect proportion of matched words
+        pr = results[0].predicate_results[0]
+        assert pr.score == pytest.approx(2.0 / 3.0)
+        assert pr.metadata["matched_words"] == ["cancelar", "desistir"]

@@ -17,12 +17,14 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+import numpy as np
 from demo.backend.services.conversation_store import ConversationStore
 
+from talkex.rules.ast import AndNode, ASTNode, NotNode, OrNode, PredicateNode
 from talkex.rules.compiler import SimpleRuleCompiler
-from talkex.rules.config import RuleEngineConfig
+from talkex.rules.config import PredicateType, RuleEngineConfig
 from talkex.rules.evaluator import SimpleRuleEvaluator
-from talkex.rules.models import RuleEvaluationInput
+from talkex.rules.models import RuleDefinition, RuleEvaluationInput
 
 logger = logging.getLogger(__name__)
 
@@ -53,20 +55,68 @@ class Category:
     apply_time_ms: float = 0.0
 
 
+# ---------------------------------------------------------------------------
+# Semantic feature computation
+# ---------------------------------------------------------------------------
+
+
+def _extract_similarity_refs(node: ASTNode) -> list[str]:
+    """Walk the AST and collect reference texts from similarity predicates.
+
+    Returns a deduplicated list of reference texts that need embedding
+    computation for semantic evaluation.
+    """
+    if isinstance(node, PredicateNode):
+        if node.predicate_type == PredicateType.SEMANTIC and node.field_name == "embedding_similarity" and node.value:
+            return [str(node.value)]
+        return []
+
+    if isinstance(node, (AndNode, OrNode)):
+        refs: list[str] = []
+        for child in node.children:
+            refs.extend(_extract_similarity_refs(child))
+        return list(dict.fromkeys(refs))  # deduplicate preserving order
+
+    if isinstance(node, NotNode):
+        return _extract_similarity_refs(node.child)
+
+    return []
+
+
+def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """Compute cosine similarity between two vectors."""
+    dot = float(np.dot(a, b))
+    norm_a = float(np.linalg.norm(a))
+    norm_b = float(np.linalg.norm(b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
 class CategoryService:
     """Manages categories backed by the TalkEx rule engine.
 
     Args:
         store: ConversationStore with loaded windows.
         persist_path: Path to JSON file for category persistence.
+        embedding_generator: Optional embedding generator for semantic features.
+        vector_index: Optional vector index for retrieving window embeddings.
     """
 
-    def __init__(self, store: ConversationStore, persist_path: str | Path) -> None:
+    def __init__(
+        self,
+        store: ConversationStore,
+        persist_path: str | Path,
+        embedding_generator: object | None = None,
+        vector_index: object | None = None,
+    ) -> None:
         self._store = store
         self._persist_path = Path(persist_path)
         self._categories: dict[str, Category] = {}
         self._compiler = SimpleRuleCompiler()
         self._evaluator = SimpleRuleEvaluator()
+        self._embedding_generator = embedding_generator
+        self._vector_index = vector_index
         self._load()
 
     def _load(self) -> None:
@@ -87,6 +137,93 @@ class CategoryService:
         data = [asdict(cat) for cat in self._categories.values()]
         with open(self._persist_path, "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def _compute_similarity_scores(self, rule_def: RuleDefinition) -> dict[str, dict[str, float]]:
+        """Compute embedding similarity scores for semantic predicates.
+
+        For each reference text found in similarity predicates, embeds the
+        reference text and uses the vector index to compute cosine similarity
+        against all stored window embeddings.
+
+        Returns:
+            Mapping of reference_text → {window_id → similarity_score}.
+            Empty dict if no semantic predicates or no embedding infrastructure.
+        """
+        if self._embedding_generator is None or self._vector_index is None:
+            return {}
+
+        ref_texts = _extract_similarity_refs(rule_def.ast)
+        if not ref_texts:
+            return {}
+
+        from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+        from talkex.models.enums import ObjectType
+        from talkex.models.types import EmbeddingId
+
+        scores_by_ref: dict[str, dict[str, float]] = {}
+
+        for ref_text in ref_texts:
+            # Embed the reference text
+            emb_input = EmbeddingInput(
+                embedding_id=EmbeddingId(f"emb_query_{uuid.uuid4().hex[:8]}"),
+                object_type=ObjectType.CONTEXT_WINDOW,
+                object_id="query",
+                text=ref_text,
+            )
+            batch = EmbeddingBatch(items=[emb_input])
+            records = self._embedding_generator.generate(batch)
+            if not records:
+                continue
+
+            query_vector = records[0].vector
+
+            # Use vector index to search against all windows
+            window_count = self._store.window_count
+            hits = self._vector_index.search_by_vector(query_vector, top_k=window_count)
+
+            # Build lookup: window_id → similarity score
+            score_map: dict[str, float] = {}
+            for hit in hits:
+                score_map[hit.object_id] = hit.score
+
+            scores_by_ref[ref_text] = score_map
+            logger.debug(
+                "Computed similarity scores for ref='%s': %d windows scored",
+                ref_text[:50],
+                len(score_map),
+            )
+
+        return scores_by_ref
+
+    def _build_features(
+        self,
+        window_id: str,
+        similarity_scores: dict[str, dict[str, float]],
+    ) -> dict[str, float]:
+        """Build the features dict for a window's rule evaluation.
+
+        Injects pre-computed similarity scores so semantic predicates
+        can read them during evaluation.
+
+        Args:
+            window_id: The window being evaluated.
+            similarity_scores: Mapping ref_text → {window_id → score}.
+
+        Returns:
+            Features dict with embedding_similarity populated.
+        """
+        features: dict[str, float] = {}
+
+        if similarity_scores:
+            # Use the first reference text's score (most common case: one
+            # similarity predicate per rule). For multiple, the rule engine
+            # reads features["embedding_similarity"] which gets the score
+            # for the first reference.
+            for _ref_text, score_map in similarity_scores.items():
+                features["embedding_similarity"] = score_map.get(window_id, 0.0)
+                break
+
+        return features
 
     def list_categories(self) -> list[Category]:
         """Return all categories, sorted by name."""
@@ -139,6 +276,75 @@ class CategoryService:
         self._persist()
         return True
 
+    def preview_dsl(self, dsl_expression: str, *, max_samples: int = 10) -> dict[str, object]:
+        """Dry-run a DSL expression against all windows without persisting.
+
+        Returns a dict with match_count, conversation_count, sample_matches
+        (with full text and per-predicate evidence), and latency_ms.
+        """
+        rule_def = self._compiler.compile(dsl_expression, "preview", "preview")
+        config = RuleEngineConfig()
+
+        start = time.monotonic()
+
+        # Pre-compute semantic similarity scores if needed
+        similarity_scores = self._compute_similarity_scores(rule_def)
+
+        matches: list[dict[str, object]] = []
+        matched_conversations: set[str] = set()
+
+        for window_id, window_meta in self._store.iter_windows():
+            text = window_meta.get("window_text", "")
+            conversation_id = window_meta.get("conversation_id", "")
+
+            features = self._build_features(window_id, similarity_scores)
+
+            eval_input = RuleEvaluationInput(
+                source_id=window_id,
+                source_type="context_window",
+                text=text,
+                features=features,
+                metadata={
+                    "domain": window_meta.get("domain", ""),
+                    "topic": window_meta.get("topic", ""),
+                },
+            )
+
+            results = self._evaluator.evaluate([rule_def], eval_input, config)
+            if results and results[0].matched:
+                evidence = [
+                    {
+                        "predicate_type": pr.predicate_type.value,
+                        "field_name": pr.field_name,
+                        "operator": pr.operator,
+                        "score": pr.score,
+                        "threshold": pr.threshold,
+                        "matched_text": pr.matched_text,
+                    }
+                    for pr in results[0].predicate_results
+                    if pr.matched
+                ]
+
+                matches.append(
+                    {
+                        "window_id": window_id,
+                        "conversation_id": conversation_id,
+                        "score": results[0].score,
+                        "window_text": text,
+                        "evidence": evidence,
+                    }
+                )
+                matched_conversations.add(conversation_id)
+
+        elapsed_ms = (time.monotonic() - start) * 1000
+
+        return {
+            "match_count": len(matches),
+            "conversation_count": len(matched_conversations),
+            "sample_matches": matches[:max_samples],
+            "latency_ms": round(elapsed_ms, 2),
+        }
+
     def apply_category(self, category_id: str) -> Category:
         """Apply a category's rule against all context windows.
 
@@ -163,6 +369,10 @@ class CategoryService:
         config = RuleEngineConfig()
 
         start = time.monotonic()
+
+        # Pre-compute semantic similarity scores if needed
+        similarity_scores = self._compute_similarity_scores(rule_def)
+
         matches: list[CategoryMatch] = []
         matched_conversations: set[str] = set()
 
@@ -171,10 +381,13 @@ class CategoryService:
             text = window_meta.get("window_text", "")
             conversation_id = window_meta.get("conversation_id", "")
 
+            features = self._build_features(window_id, similarity_scores)
+
             eval_input = RuleEvaluationInput(
                 source_id=window_id,
                 source_type="context_window",
                 text=text,
+                features=features,
                 metadata={
                     "domain": window_meta.get("domain", ""),
                     "topic": window_meta.get("topic", ""),

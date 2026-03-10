@@ -114,3 +114,29 @@ export interface ValidateDSLResponse {
   valid: boolean;
   error: string | null;
 }
+
+export interface PredicateEvidence {
+  predicate_type: string;
+  field_name: string;
+  operator: string;
+  score: number;
+  threshold: number;
+  matched_text: string | null;
+}
+
+export interface PreviewMatch {
+  window_id: string;
+  conversation_id: string;
+  score: number;
+  window_text: string;
+  evidence: PredicateEvidence[];
+}
+
+export interface PreviewDSLResponse {
+  valid: boolean;
+  error: string | null;
+  match_count: number;
+  conversation_count: number;
+  sample_matches: PreviewMatch[];
+  latency_ms: number;
+}

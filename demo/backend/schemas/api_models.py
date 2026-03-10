@@ -180,6 +180,44 @@ class ValidateDSLResponse(BaseModel):
     error: str | None = None
 
 
+class PreviewDSLRequest(BaseModel):
+    """POST /categories/preview request body."""
+
+    dsl_expression: str = Field(..., min_length=1, max_length=2000)
+
+
+class PredicateEvidenceResponse(BaseModel):
+    """Evidence from a single matched predicate."""
+
+    predicate_type: str
+    field_name: str
+    operator: str
+    score: float = 0.0
+    threshold: float = 0.0
+    matched_text: str | None = None
+
+
+class PreviewMatchResponse(BaseModel):
+    """A single window match in a preview — includes full text and per-predicate evidence."""
+
+    window_id: str
+    conversation_id: str
+    score: float
+    window_text: str
+    evidence: list[PredicateEvidenceResponse] = []
+
+
+class PreviewDSLResponse(BaseModel):
+    """POST /categories/preview response body — dry-run results without persisting."""
+
+    valid: bool
+    error: str | None = None
+    match_count: int = 0
+    conversation_count: int = 0
+    sample_matches: list[PreviewMatchResponse] = []
+    latency_ms: float = 0.0
+
+
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------

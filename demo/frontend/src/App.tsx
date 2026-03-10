@@ -6,16 +6,19 @@ import { ConversationView } from "@/components/ConversationView";
 import { FilterBar } from "@/components/FilterBar";
 import { ResultCard } from "@/components/ResultCard";
 import { SearchBar } from "@/components/SearchBar";
+import { SearchBuilderPanel } from "@/components/SearchBuilderPanel";
 import { searchConversations } from "@/lib/api";
 import type { SearchFilters, SearchResponse } from "@/types/api";
 
 type Tab = "search" | "categories" | "analytics";
+type SearchMode = "text" | "dsl";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("search");
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<SearchMode>("text");
 
   const searchMutation = useMutation({
     mutationFn: (query: string) =>
@@ -75,61 +78,85 @@ export default function App() {
           <CategoriesPanel onViewConversation={viewConversation} />
         ) : (
           <div className="space-y-4">
-            <SearchBar
-              onSearch={(q) => searchMutation.mutate(q)}
-              isLoading={searchMutation.isPending}
-            />
+            {/* Search mode toggle */}
+            <div className="flex items-center gap-2">
+              <SearchModeToggle
+                active={searchMode === "text"}
+                label="Natural Language"
+                onClick={() => setSearchMode("text")}
+              />
+              <SearchModeToggle
+                active={searchMode === "dsl"}
+                label="DSL Builder"
+                onClick={() => setSearchMode("dsl")}
+              />
+            </div>
 
-            <FilterBar filters={filters} onChange={setFilters} />
+            {/* Natural language search */}
+            {searchMode === "text" && (
+              <>
+                <SearchBar
+                  onSearch={(q) => searchMutation.mutate(q)}
+                  isLoading={searchMutation.isPending}
+                />
 
-            {/* Latency banner */}
-            {searchResult && (
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>
-                  {searchResult.results.length} results from{" "}
-                  {searchResult.total_candidates} candidates
-                </span>
-                <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
-                  Search completed in {searchResult.latency_ms} ms
-                </span>
-              </div>
-            )}
+                <FilterBar filters={filters} onChange={setFilters} />
 
-            {/* Error */}
-            {searchMutation.isError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                Search failed: {(searchMutation.error as Error).message}
-              </div>
-            )}
-
-            {/* Results */}
-            {searchResult && (
-              <div className="space-y-3">
-                {searchResult.results.map((hit) => (
-                  <ResultCard
-                    key={hit.window_id}
-                    hit={hit}
-                    onClick={setSelectedConversation}
-                  />
-                ))}
-                {searchResult.results.length === 0 && (
-                  <div className="text-center py-10 text-gray-400">
-                    No results found. Try a different query.
+                {/* Latency banner */}
+                {searchResult && (
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>
+                      {searchResult.results.length} results from{" "}
+                      {searchResult.total_candidates} candidates
+                    </span>
+                    <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
+                      Search completed in {searchResult.latency_ms} ms
+                    </span>
                   </div>
                 )}
-              </div>
+
+                {/* Error */}
+                {searchMutation.isError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                    Search failed: {(searchMutation.error as Error).message}
+                  </div>
+                )}
+
+                {/* Results */}
+                {searchResult && (
+                  <div className="space-y-3">
+                    {searchResult.results.map((hit) => (
+                      <ResultCard
+                        key={hit.window_id}
+                        hit={hit}
+                        onClick={setSelectedConversation}
+                      />
+                    ))}
+                    {searchResult.results.length === 0 && (
+                      <div className="text-center py-10 text-gray-400">
+                        No results found. Try a different query.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {!searchResult && !searchMutation.isPending && (
+                  <div className="text-center py-20 text-gray-400">
+                    <p className="text-lg mb-2">
+                      Search thousands of call center conversations
+                    </p>
+                    <p className="text-sm">
+                      Try: "customer complaint", "refund request", "technical support"
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Empty state */}
-            {!searchResult && !searchMutation.isPending && (
-              <div className="text-center py-20 text-gray-400">
-                <p className="text-lg mb-2">
-                  Search thousands of call center conversations
-                </p>
-                <p className="text-sm">
-                  Try: "customer complaint", "refund request", "technical support"
-                </p>
-              </div>
+            {/* DSL builder search */}
+            {searchMode === "dsl" && (
+              <SearchBuilderPanel onViewConversation={viewConversation} />
             )}
           </div>
         )}
@@ -157,6 +184,29 @@ function TabButton({
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+function SearchModeToggle({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+        active
+          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+          : "bg-white text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-700"
+      }`}
+    >
+      {label}
     </button>
   );
 }

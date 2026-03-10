@@ -52,19 +52,16 @@ def get_manifest() -> dict:
 
 
 @lru_cache
-def get_search_service() -> SearchService:
-    """Get search service (singleton, wired with retriever + store)."""
+def _get_qdrant_index() -> QdrantVectorIndex:
+    """Get shared Qdrant vector index (singleton).
+
+    Qdrant local mode uses an exclusive file lock, so only one client
+    instance can access the storage directory at a time.
+    """
     config = get_config()
     manifest = get_manifest()
     index_path = Path(config.index_dir)
 
-    # Load BM25 index
-    bm25_path = index_path / "bm25_index.pkl"
-    with open(bm25_path, "rb") as f:
-        bm25_index = pickle.load(f)
-    logger.info("BM25 index loaded from %s", bm25_path)
-
-    # Load Qdrant index
     dims = manifest.get("dimensions", 384)
     vec_config = VectorIndexConfig(dimensions=dims, metric=DistanceMetric.COSINE)
     qdrant_index = QdrantVectorIndex(
@@ -73,52 +70,75 @@ def get_search_service() -> SearchService:
         path=str(index_path / "qdrant_storage"),
     )
     logger.info("Qdrant index loaded from %s", index_path / "qdrant_storage")
+    return qdrant_index
 
-    # Create embedding generator for query embedding
+
+@lru_cache
+def _get_embedding_generator() -> NullEmbeddingGenerator:
+    """Get shared embedding generator (singleton)."""
+    manifest = get_manifest()
+    dims = manifest.get("dimensions", 384)
     model_name = manifest.get("embedding_model", "null")
+
     if model_name == "null":
         emb_config = EmbeddingModelConfig(
             model_name="null",
             model_version="1.0",
             pooling_strategy=PoolingStrategy.MEAN,
         )
-        emb_gen = NullEmbeddingGenerator(model_config=emb_config, dimensions=dims)
-    else:
-        try:
-            from talkex.embeddings.generator import SentenceTransformerGenerator
+        return NullEmbeddingGenerator(model_config=emb_config, dimensions=dims)
 
-            emb_config = EmbeddingModelConfig(
-                model_name=model_name,
-                model_version="1.0",
-                pooling_strategy=PoolingStrategy.MEAN,
-            )
-            emb_gen = SentenceTransformerGenerator(model_config=emb_config)
-        except ImportError:
-            logger.warning("sentence-transformers not available, using NullEmbeddingGenerator")
-            emb_config = EmbeddingModelConfig(
-                model_name="null",
-                model_version="1.0",
-                pooling_strategy=PoolingStrategy.MEAN,
-            )
-            emb_gen = NullEmbeddingGenerator(model_config=emb_config, dimensions=dims)
+    try:
+        from talkex.embeddings.generator import SentenceTransformerGenerator
 
-    # Wire retriever
+        emb_config = EmbeddingModelConfig(
+            model_name=model_name,
+            model_version="1.0",
+            pooling_strategy=PoolingStrategy.MEAN,
+        )
+        return SentenceTransformerGenerator(model_config=emb_config)
+    except ImportError:
+        logger.warning("sentence-transformers not available, using NullEmbeddingGenerator")
+        emb_config = EmbeddingModelConfig(
+            model_name="null",
+            model_version="1.0",
+            pooling_strategy=PoolingStrategy.MEAN,
+        )
+        return NullEmbeddingGenerator(model_config=emb_config, dimensions=dims)
+
+
+@lru_cache
+def get_search_service() -> SearchService:
+    """Get search service (singleton, wired with retriever + store)."""
+    config = get_config()
+    index_path = Path(config.index_dir)
+
+    # Load BM25 index
+    bm25_path = index_path / "bm25_index.pkl"
+    with open(bm25_path, "rb") as f:
+        bm25_index = pickle.load(f)
+    logger.info("BM25 index loaded from %s", bm25_path)
+
+    # Wire retriever with shared Qdrant + embedding generator
     retriever = SimpleHybridRetriever(
         lexical_index=bm25_index,
-        vector_index=qdrant_index,
-        embedding_generator=emb_gen,
+        vector_index=_get_qdrant_index(),
+        embedding_generator=_get_embedding_generator(),
         config=HybridRetrievalConfig(),
     )
 
-    store = get_store()
-
-    return SearchService(retriever=retriever, store=store)
+    return SearchService(retriever=retriever, store=get_store())
 
 
 @lru_cache
 def get_category_service() -> CategoryService:
-    """Get category service (singleton)."""
+    """Get category service (singleton, wired with shared embedding infrastructure)."""
     config = get_config()
-    store = get_store()
     persist_path = Path(config.index_dir) / "categories.json"
-    return CategoryService(store=store, persist_path=persist_path)
+
+    return CategoryService(
+        store=get_store(),
+        persist_path=persist_path,
+        embedding_generator=_get_embedding_generator(),
+        vector_index=_get_qdrant_index(),
+    )

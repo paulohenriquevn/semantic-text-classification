@@ -28,19 +28,26 @@ from talkex.rules.config import (
     RuleEvaluationMode,
     ShortCircuitPolicy,
 )
-from talkex.rules.dsl import PREDICATE_REGISTRY
+from talkex.rules.dsl import (
+    COMPARISON_OP_MAP,
+    INFIX_FIELD_MAP,
+    NAMESPACE_PREDICATE_MAP,
+    PREDICATE_REGISTRY,
+)
 from talkex.rules.evaluator import (
     SimpleRuleEvaluator,
     map_to_rule_execution,
 )
 from talkex.rules.metrics import compute_rule_metrics
 from talkex.rules.models import (
+    ParsedRuleBlock,
     PredicateResult,
+    RuleAction,
     RuleDefinition,
     RuleEvaluationInput,
     RuleResult,
 )
-from talkex.rules.parser import parse_dsl
+from talkex.rules.parser import parse_dsl, parse_rule_block
 from talkex.rules.report import (
     ConfigurationResult,
     RuleExperimentReport,
@@ -48,6 +55,9 @@ from talkex.rules.report import (
 )
 
 __all__ = [
+    "COMPARISON_OP_MAP",
+    "INFIX_FIELD_MAP",
+    "NAMESPACE_PREDICATE_MAP",
     "PREDICATE_REGISTRY",
     "ASTNode",
     "AndNode",
@@ -55,9 +65,11 @@ __all__ = [
     "EvidencePolicy",
     "NotNode",
     "OrNode",
+    "ParsedRuleBlock",
     "PredicateNode",
     "PredicateResult",
     "PredicateType",
+    "RuleAction",
     "RuleBenchmarkConfig",
     "RuleBenchmarkRunner",
     "RuleDefinition",
@@ -73,4 +85,5 @@ __all__ = [
     "compute_rule_metrics",
     "map_to_rule_execution",
     "parse_dsl",
+    "parse_rule_block",
 ]

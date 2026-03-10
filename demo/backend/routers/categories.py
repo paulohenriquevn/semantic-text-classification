@@ -9,6 +9,10 @@ from demo.backend.schemas.api_models import (
     CategoryMatchResponse,
     CategoryResponse,
     CreateCategoryRequest,
+    PredicateEvidenceResponse,
+    PreviewDSLRequest,
+    PreviewDSLResponse,
+    PreviewMatchResponse,
     ValidateDSLRequest,
     ValidateDSLResponse,
 )
@@ -145,3 +149,36 @@ def validate_dsl(
         return ValidateDSLResponse(valid=True)
     except Exception as e:
         return ValidateDSLResponse(valid=False, error=str(e))
+
+
+@router.post("/preview", response_model=PreviewDSLResponse)
+def preview_dsl(
+    request: PreviewDSLRequest,
+    service: CategoryService = Depends(get_category_service),  # noqa: B008
+) -> PreviewDSLResponse:
+    """Dry-run a DSL expression against all windows without creating or persisting."""
+    try:
+        result = service.preview_dsl(request.dsl_expression)
+    except Exception as e:
+        return PreviewDSLResponse(valid=False, error=str(e))
+
+    sample_matches = [
+        PreviewMatchResponse(
+            window_id=m["window_id"],  # type: ignore[index]
+            conversation_id=m["conversation_id"],  # type: ignore[index]
+            score=m["score"],  # type: ignore[index]
+            window_text=m["window_text"],  # type: ignore[index]
+            evidence=[
+                PredicateEvidenceResponse(**ev)  # type: ignore[arg-type]
+                for ev in m["evidence"]  # type: ignore[index]
+            ],
+        )
+        for m in result["sample_matches"]  # type: ignore[union-attr]
+    ]
+    return PreviewDSLResponse(
+        valid=True,
+        match_count=result["match_count"],  # type: ignore[arg-type]
+        conversation_count=result["conversation_count"],  # type: ignore[arg-type]
+        sample_matches=sample_matches,
+        latency_ms=result["latency_ms"],  # type: ignore[arg-type]
+    )

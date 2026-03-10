@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)
 
 ### Added
+- Extended Rule Engine DSL with `RULE...WHEN...THEN` block syntax, dotted namespace predicates (`semantic.intent()`, `lexical.contains_any()`, `context.turn_window().count()`), infix comparison operators (`speaker == "customer"`, `semantic.intent("x") > 0.82`), list arguments, keyword arguments, and THEN action blocks (`tag()`, `score()`, `priority()`) — fully backward compatible with existing inline function-call syntax (no-ticket)
+- `contains_any` predicate: matches if text contains any word from a list, with proportional scoring and matched-word evidence (no-ticket)
+- `parse_rule_block()` API for parsing full RULE blocks into `ParsedRuleBlock` with rule name, AST, and actions (no-ticket)
+- `NAMESPACE_PREDICATE_MAP`, `INFIX_FIELD_MAP`, `COMPARISON_OP_MAP` registries for extended DSL syntax resolution (no-ticket)
 - `QdrantVectorIndex`: Qdrant-backed ANN vector index implementing VectorIndex protocol — supports in-memory (`:memory:`) and persistent (disk path) modes, drop-in replacement for `InMemoryVectorIndex` (no-ticket)
 - `qdrant-client` added as optional dependency (`pip install talkex-engine[qdrant]`) (no-ticket)
 - Web demo backend (`demo/`): FastAPI server with hybrid search API (`POST /search`), conversation API (`GET /conversation/{id}`), filters API (`GET /filters`), and analytics API (`GET /analytics/summary`) (no-ticket)
@@ -20,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Demo performance test: `perf_test.py` measures search latency p50/p95/p99 across lexical, semantic, and hybrid modes with PRD target validation (< 200ms p95) (no-ticket)
 - Web demo frontend (`demo/frontend/`): React + Vite + TypeScript + Tailwind CSS SPA with search page, result cards with score breakdown, conversation viewer, domain filters, and analytics panel with domain distribution (no-ticket)
 - Categories system: create named categories with TalkEx Rule Engine DSL expressions, apply rules against entire corpus, view matched windows/conversations with evidence — full CRUD API (`POST/GET/DELETE /categories`, `POST /categories/{id}/apply`, `POST /categories/validate`) and React UI with DSL reference, validation, and expandable match lists (no-ticket)
+- Categories panel redesigned with template-based UX: 6 pre-built rule templates (Cancellation Risk, Billing Issues, Complaint, Technical Support, Positive Feedback, Escalation), visual condition builder with auto-DSL generation, raw DSL editor for power users, and 3-tab creation flow following market patterns (Gmail filters, Segment) (no-ticket)
+- Visual builder expanded with semantic, structural, and contextual condition types: intent score, semantic similarity (with threshold + operator), speaker/channel filters, and turn window count — templates upgraded to use full DSL syntax (no-ticket)
+- "Run" dry-run preview: `POST /categories/preview` endpoint evaluates a DSL expression against the entire corpus without persisting, returning match count, conversation count, sample matches with full window text and per-predicate evidence, and latency — "Run" button in the category creation panel shows highlighted matched text fragments and color-coded evidence badges per predicate type (no-ticket)
+- PT-BR demo dataset: `ingest_br_dataset.py` script ingests `RichardSakaguchiMS/brazilian-customer-service-conversations` (944 multi-turn PT-BR conversations, 8 sectors, 9 intents) and rule templates localized to Portuguese (Risco de Cancelamento, Reclamação, Suporte Técnico, Intenção de Compra, Elogio, Escalação) (no-ticket)
+- DSL Builder na tela de Search: busca semântica via Visual Builder ou DSL Editor com toggle "Natural Language / DSL Builder" — permite construir queries com predicados de Score (intent_score) e Similarity (embedding_similarity), predicados lexicais, estruturais e contextuais, com resultados exibidos com evidências e texto destacado (no-ticket)
+- Semantic predicates agora funcionam no demo: CategoryService computa embedding similarity on-the-fly usando o mesmo embedding generator e vector index do search — predicados `semantic.similarity()` e `semantic.intent()` produzem scores reais em vez de 0.0 (no-ticket)
+
+### Fixed
+- `semantic.similarity()` agora respeita o operador de comparação da DSL (`<`, `<=`, `>`, `>=`) — antes hardcodava `similarity_above` (>=) ignorando o operador escrito pelo usuário (no-ticket)
 - PRD for web demo documenting architecture, APIs, performance targets, and implementation roadmap (`docs/PRD-web-demo.md`) (no-ticket)
 - README.md rewritten to match implemented reality: Quick Start, Architecture, CLI Commands, Configuration, Transcript Format, Rule Engine DSL, Programmatic Usage, Benchmarking, Development, Package Structure, and Design Principles (no-ticket)
 - Example scripts: `examples/run_pipeline.py` (pipeline with rules and manifest access) and `examples/benchmark_pipeline.py` (3-scenario benchmark comparison with CSV/JSON export) (no-ticket)

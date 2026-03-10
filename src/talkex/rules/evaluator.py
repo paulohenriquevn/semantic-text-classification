@@ -188,6 +188,21 @@ def _evaluate_lexical(
             matched_text=str(node.value) if matched else None,
         )
 
+    if node.operator == "contains_any":
+        # Check if text contains any word from the list
+        word_list = node.value if isinstance(node.value, list) else [str(node.value)]
+        matched_words = [w for w in word_list if w.lower() in text_str]
+        matched = len(matched_words) > 0
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=len(matched_words) / len(word_list) if word_list else 0.0,
+            matched_text=", ".join(matched_words) if matched else None,
+            metadata={"matched_words": matched_words, "total_words": len(word_list)},
+        )
+
     if node.operator == "regex":
         pattern = str(node.value)
         match = re.search(pattern, str(_get_field_value(node.field_name, evaluation_input) or ""))
@@ -240,7 +255,18 @@ def _evaluate_structural(
             matched_text=str(actual) if matched else None,
         )
 
-    if node.operator in ("gte", "lte"):
+    if node.operator == "neq":
+        matched = str(actual).lower() != str(node.value).lower() if actual is not None else True
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=str(actual) if matched else None,
+        )
+
+    if node.operator in ("gte", "lte", "gt", "lt"):
         if actual is None:
             return PredicateResult(
                 predicate_type=node.predicate_type,
@@ -261,7 +287,14 @@ def _evaluate_structural(
                 score=0.0,
             )
 
-        matched = actual_num >= target_num if node.operator == "gte" else actual_num <= target_num
+        if node.operator == "gte":
+            matched = actual_num >= target_num
+        elif node.operator == "lte":
+            matched = actual_num <= target_num
+        elif node.operator == "gt":
+            matched = actual_num > target_num
+        else:  # lt
+            matched = actual_num < target_num
 
         return PredicateResult(
             predicate_type=node.predicate_type,
@@ -365,7 +398,16 @@ def _evaluate_semantic(
     score_value = evaluation_input.features.get(node.field_name, 0.0)
     threshold = node.threshold if node.threshold is not None else 0.5
 
-    matched = score_value >= threshold if node.operator in ("gte", "similarity_above") else False
+    if node.operator in ("gte", "similarity_above"):
+        matched = score_value >= threshold
+    elif node.operator == "gt":
+        matched = score_value > threshold
+    elif node.operator == "lte":
+        matched = score_value <= threshold
+    elif node.operator == "lt":
+        matched = score_value < threshold
+    else:
+        matched = False
 
     return PredicateResult(
         predicate_type=node.predicate_type,

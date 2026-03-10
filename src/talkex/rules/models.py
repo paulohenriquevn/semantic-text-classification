@@ -116,6 +116,41 @@ class PredicateResult:
 
 
 @dataclass(frozen=True)
+class RuleAction:
+    """An action from a RULE...THEN block.
+
+    Actions are declarative annotations that consuming code can interpret.
+    They do NOT change evaluation logic — they describe what should happen
+    when the rule matches.
+
+    Args:
+        action_type: Action kind: "tag", "score", or "priority".
+        value: Action argument (tag name, score float, or priority level).
+    """
+
+    action_type: str
+    value: str | float
+
+
+@dataclass(frozen=True)
+class ParsedRuleBlock:
+    """Result of parsing a RULE...WHEN...THEN block.
+
+    Contains the rule name extracted from the RULE header, the compiled
+    AST from the WHEN clause, and any actions from the THEN clause.
+
+    Args:
+        rule_name: Rule name from the RULE header.
+        ast: Compiled AST from the WHEN clause.
+        actions: List of actions from the THEN clause.
+    """
+
+    rule_name: str
+    ast: ASTNode
+    actions: list[RuleAction]
+
+
+@dataclass(frozen=True)
 class RuleResult:
     """Outcome of evaluating a single rule against an input.
 

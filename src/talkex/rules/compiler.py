@@ -26,7 +26,7 @@ from talkex.rules.ast import (
     PredicateNode,
 )
 from talkex.rules.models import RuleDefinition
-from talkex.rules.parser import parse_dsl
+from talkex.rules.parser import parse_dsl, parse_rule_block
 
 # Maximum AST depth to prevent abuse or stack overflow during evaluation
 _MAX_AST_DEPTH = 20
@@ -128,10 +128,51 @@ class SimpleRuleCompiler:
         Raises:
             RuleError: If the DSL text is syntactically or semantically invalid.
         """
+        # Detect RULE...WHEN...THEN block syntax
+        stripped = dsl_text.strip()
+        is_block = stripped.upper().startswith("RULE ")
+
+        if is_block:
+            block = parse_rule_block(dsl_text)
+            _validate_ast(block.ast)
+
+            # Apply THEN actions to rule definition
+            effective_tags = list(tags) if tags is not None else []
+            effective_priority = priority
+            metadata: dict[str, object] = {}
+
+            for action in block.actions:
+                if action.action_type == "tag":
+                    effective_tags.append(str(action.value))
+                elif action.action_type == "score":
+                    metadata["score_override"] = float(action.value)
+                elif action.action_type == "priority":
+                    priority_map = {"low": 0, "medium": 5, "high": 10, "critical": 20}
+                    if isinstance(action.value, str) and action.value.lower() in priority_map:
+                        effective_priority = priority_map[action.value.lower()]
+                    else:
+                        effective_priority = int(action.value) if isinstance(action.value, (int, float)) else 10
+
+            # Use block rule_name if caller didn't provide a specific one
+            effective_name = rule_name if rule_name != rule_id else block.rule_name
+            final_description = description if description else f"Compiled from: {stripped}"
+
+            return RuleDefinition(
+                rule_id=rule_id,
+                rule_name=effective_name,
+                rule_version=rule_version,
+                description=final_description,
+                ast=block.ast,
+                priority=effective_priority,
+                tags=effective_tags,
+                metadata=metadata,
+            )
+
+        # Inline expression syntax (original)
         ast = parse_dsl(dsl_text)
         _validate_ast(ast)
 
-        final_description = description if description else f"Compiled from: {dsl_text.strip()}"
+        final_description = description if description else f"Compiled from: {stripped}"
 
         return RuleDefinition(
             rule_id=rule_id,

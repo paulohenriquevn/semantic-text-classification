@@ -8,6 +8,7 @@ import type {
   ConversationResponse,
   CreateCategoryRequest,
   FiltersResponse,
+  PreviewDSLResponse,
   SearchRequest,
   SearchResponse,
   ValidateDSLResponse,
@@ -80,6 +81,14 @@ export function applyCategory(id: string): Promise<CategoryResponse> {
 
 export function validateDSL(dsl: string): Promise<ValidateDSLResponse> {
   return fetchJson<ValidateDSLResponse>("/categories/validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dsl_expression: dsl }),
+  });
+}
+
+export function previewDSL(dsl: string): Promise<PreviewDSLResponse> {
+  return fetchJson<PreviewDSLResponse>("/categories/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ dsl_expression: dsl }),
