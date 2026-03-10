@@ -132,6 +132,37 @@ export interface PreviewMatch {
   evidence: PredicateEvidence[];
 }
 
+export interface ScoreDistribution {
+  min: number;
+  max: number;
+  mean: number;
+  median: number;
+  p90: number;
+}
+
+export interface PreExecutionAnalysis {
+  predicate_families: string[];
+  missing_families: string[];
+  predicate_count: number;
+  complexity: string;
+  threshold_warnings: string[];
+  pitfalls: string[];
+}
+
+export interface PostExecutionAnalysis {
+  score_distribution: ScoreDistribution | null;
+  window_coverage_pct: number;
+  conversation_coverage_pct: number;
+  concentration_ratio: number;
+  signal_warnings: string[];
+  quality_score: number;
+}
+
+export interface QueryEvaluation {
+  pre_execution: PreExecutionAnalysis;
+  post_execution: PostExecutionAnalysis;
+}
+
 export interface PreviewDSLResponse {
   valid: boolean;
   error: string | null;
@@ -139,4 +170,5 @@ export interface PreviewDSLResponse {
   conversation_count: number;
   sample_matches: PreviewMatch[];
   latency_ms: number;
+  evaluation: QueryEvaluation | null;
 }

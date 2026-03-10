@@ -60,6 +60,195 @@ class Category:
 # ---------------------------------------------------------------------------
 
 
+ALL_PREDICATE_FAMILIES = {"lexical", "semantic", "structural", "contextual"}
+
+
+def _collect_predicates(node: ASTNode) -> list[PredicateNode]:
+    """Walk the AST and collect all predicate leaf nodes."""
+    if isinstance(node, PredicateNode):
+        return [node]
+    if isinstance(node, (AndNode, OrNode)):
+        result: list[PredicateNode] = []
+        for child in node.children:
+            result.extend(_collect_predicates(child))
+        return result
+    if isinstance(node, NotNode):
+        return _collect_predicates(node.child)
+    return []
+
+
+def _compute_ast_depth(node: ASTNode) -> int:
+    """Compute the maximum depth of an AST tree."""
+    if isinstance(node, PredicateNode):
+        return 1
+    if isinstance(node, (AndNode, OrNode)):
+        if not node.children:
+            return 1
+        return 1 + max(_compute_ast_depth(c) for c in node.children)
+    if isinstance(node, NotNode):
+        return 1 + _compute_ast_depth(node.child)
+    return 1
+
+
+def _analyze_pre_execution(ast: ASTNode, embedding_model: str) -> dict:
+    """Analyze a compiled DSL query before execution.
+
+    Returns pre-execution analysis with predicate coverage, threshold
+    warnings, complexity, and known pitfalls.
+    """
+    predicates = _collect_predicates(ast)
+    families_used = sorted({p.predicate_type.value for p in predicates})
+    families_missing = sorted(ALL_PREDICATE_FAMILIES - set(families_used))
+
+    count = len(predicates)
+    if count <= 2:
+        complexity = "simple"
+    elif count <= 5:
+        complexity = "moderate"
+    else:
+        complexity = "complex"
+
+    threshold_warnings: list[str] = []
+    pitfalls: list[str] = []
+
+    for p in predicates:
+        # Threshold warnings for semantic predicates
+        if p.predicate_type == PredicateType.SEMANTIC and p.threshold is not None:
+            if embedding_model == "null" and p.threshold > 0.15:
+                threshold_warnings.append(
+                    f"Null embedding model produces low scores. "
+                    f"Threshold {p.threshold} on '{p.field_name}' may match nothing. Try < 0.10"
+                )
+            elif embedding_model != "null" and p.threshold > 0.95:
+                threshold_warnings.append(f"Threshold {p.threshold} on '{p.field_name}' is very restrictive")
+
+        # Pitfalls
+        if p.predicate_type == PredicateType.SEMANTIC and embedding_model == "null":
+            pitfalls.append(
+                "Using semantic predicates with null embeddings — "
+                "scores are deterministic but not semantically meaningful"
+            )
+        if p.predicate_type == PredicateType.LEXICAL and p.operator == "contains":
+            val = str(p.value) if p.value else ""
+            if len(val) <= 2:
+                pitfalls.append(f"Keyword '{val}' is very short — may produce false positives")
+        if p.predicate_type == PredicateType.LEXICAL and p.operator == "regex":
+            val = str(p.value) if p.value else ""
+            if ".*" in val:
+                pitfalls.append(f"Regex '{val}' contains greedy '.*' — may match too broadly")
+
+    # Deduplicate pitfalls
+    pitfalls = list(dict.fromkeys(pitfalls))
+
+    return {
+        "predicate_families": families_used,
+        "missing_families": families_missing,
+        "predicate_count": count,
+        "complexity": complexity,
+        "threshold_warnings": threshold_warnings,
+        "pitfalls": pitfalls,
+    }
+
+
+def _analyze_post_execution(
+    all_scores: list[float],
+    match_count: int,
+    conversation_count: int,
+    total_windows: int,
+    total_conversations: int,
+    pre_analysis: dict,
+) -> dict:
+    """Analyze query results after execution.
+
+    Computes score distribution, coverage, concentration, signal warnings,
+    and an overall quality score (0-100).
+    """
+    window_coverage = (match_count / total_windows * 100) if total_windows > 0 else 0.0
+    conv_coverage = (conversation_count / total_conversations * 100) if total_conversations > 0 else 0.0
+    concentration = (conversation_count / match_count) if match_count > 0 else 0.0
+
+    # Score distribution
+    score_dist = None
+    if all_scores:
+        sorted_scores = sorted(all_scores)
+        n = len(sorted_scores)
+        score_dist = {
+            "min": round(sorted_scores[0], 4),
+            "max": round(sorted_scores[-1], 4),
+            "mean": round(sum(sorted_scores) / n, 4),
+            "median": round(sorted_scores[n // 2], 4),
+            "p90": round(sorted_scores[int(n * 0.9)], 4),
+        }
+
+    # Signal warnings
+    signal_warnings: list[str] = []
+    if all_scores:
+        low_score_count = sum(1 for s in all_scores if s < 0.05)
+        low_pct = low_score_count / len(all_scores) * 100
+        if low_pct > 70:
+            signal_warnings.append(
+                f"{low_pct:.0f}% of matches have score < 0.05 — possible noise from permissive threshold"
+            )
+
+    if window_coverage > 80:
+        signal_warnings.append(f"{window_coverage:.0f}% of corpus matched — rule may be too broad")
+    elif match_count > 0 and window_coverage < 0.5:
+        signal_warnings.append(f"Only {window_coverage:.1f}% of corpus matched — rule may be too restrictive")
+
+    if match_count > 0 and concentration < 0.1:
+        signal_warnings.append("Matches cluster in very few conversations")
+
+    if match_count == 0:
+        signal_warnings.append("No matches — try lowering thresholds or broadening conditions")
+
+    # Quality score (0-100)
+    quality = 50
+
+    # Coverage sweet spot: 1-30%
+    if 1 <= window_coverage <= 30:
+        quality += 20
+    elif 0.5 <= window_coverage < 1 or 30 < window_coverage <= 50:
+        quality += 10
+
+    # Score distribution quality
+    if score_dist:
+        if score_dist["mean"] > 0.5:
+            quality += 15
+        elif score_dist["mean"] > 0.3:
+            quality += 10
+        elif score_dist["mean"] > 0.1:
+            quality += 5
+
+    # Concentration
+    if concentration > 0.3:
+        quality += 10
+    elif concentration > 0.1:
+        quality += 5
+
+    # Predicate diversity
+    if len(pre_analysis.get("predicate_families", [])) >= 2:
+        quality += 5
+
+    # Penalty for no matches
+    if match_count == 0:
+        quality = max(quality - 30, 5)
+
+    # Penalty for too broad
+    if window_coverage > 80:
+        quality = max(quality - 20, 10)
+
+    quality = min(quality, 100)
+
+    return {
+        "score_distribution": score_dist,
+        "window_coverage_pct": round(window_coverage, 2),
+        "conversation_coverage_pct": round(conv_coverage, 2),
+        "concentration_ratio": round(concentration, 4),
+        "signal_warnings": signal_warnings,
+        "quality_score": quality,
+    }
+
+
 def _extract_similarity_refs(node: ASTNode) -> list[str]:
     """Walk the AST and collect reference texts from similarity predicates.
 
@@ -109,6 +298,7 @@ class CategoryService:
         persist_path: str | Path,
         embedding_generator: object | None = None,
         vector_index: object | None = None,
+        embedding_model_name: str = "null",
     ) -> None:
         self._store = store
         self._persist_path = Path(persist_path)
@@ -117,6 +307,7 @@ class CategoryService:
         self._evaluator = SimpleRuleEvaluator()
         self._embedding_generator = embedding_generator
         self._vector_index = vector_index
+        self._embedding_model_name = embedding_model_name
         self._load()
 
     def _load(self) -> None:
@@ -338,11 +529,27 @@ class CategoryService:
 
         elapsed_ms = (time.monotonic() - start) * 1000
 
+        # Compute query evaluation
+        pre_analysis = _analyze_pre_execution(rule_def.ast, self._embedding_model_name)
+        all_scores = [m["score"] for m in matches]
+        post_analysis = _analyze_post_execution(
+            all_scores=all_scores,
+            match_count=len(matches),
+            conversation_count=len(matched_conversations),
+            total_windows=self._store.window_count,
+            total_conversations=self._store.conversation_count,
+            pre_analysis=pre_analysis,
+        )
+
         return {
             "match_count": len(matches),
             "conversation_count": len(matched_conversations),
             "sample_matches": matches[:max_samples],
             "latency_ms": round(elapsed_ms, 2),
+            "evaluation": {
+                "pre_execution": pre_analysis,
+                "post_execution": post_analysis,
+            },
         }
 
     def apply_category(self, category_id: str) -> Category:

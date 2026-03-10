@@ -29,6 +29,7 @@ import type {
   PreviewDSLResponse,
   PreviewMatch,
 } from "@/types/api";
+import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -654,6 +655,13 @@ function PreviewResultsPanel({ result }: { result: PreviewDSLResponse }) {
           {result.latency_ms.toFixed(0)} ms
         </span>
       </div>
+
+      {/* Query evaluation */}
+      {result.evaluation && (
+        <div className="mt-3">
+          <QueryEvaluationPanel evaluation={result.evaluation} />
+        </div>
+      )}
 
       {/* Sample matches with highlighted text and evidence */}
       {result.sample_matches.length > 0 && (

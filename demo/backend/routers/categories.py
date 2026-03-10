@@ -9,10 +9,14 @@ from demo.backend.schemas.api_models import (
     CategoryMatchResponse,
     CategoryResponse,
     CreateCategoryRequest,
+    PostExecutionAnalysis,
     PredicateEvidenceResponse,
+    PreExecutionAnalysis,
     PreviewDSLRequest,
     PreviewDSLResponse,
     PreviewMatchResponse,
+    QueryEvaluation,
+    ScoreDistribution,
     ValidateDSLRequest,
     ValidateDSLResponse,
 )
@@ -175,10 +179,34 @@ def preview_dsl(
         )
         for m in result["sample_matches"]  # type: ignore[union-attr]
     ]
+    # Map evaluation dict to typed models
+    evaluation = None
+    raw_eval = result.get("evaluation")
+    if raw_eval:
+        raw_pre = raw_eval["pre_execution"]  # type: ignore[index]
+        raw_post = raw_eval["post_execution"]  # type: ignore[index]
+
+        score_dist = None
+        if raw_post.get("score_distribution"):
+            score_dist = ScoreDistribution(**raw_post["score_distribution"])
+
+        evaluation = QueryEvaluation(
+            pre_execution=PreExecutionAnalysis(**raw_pre),
+            post_execution=PostExecutionAnalysis(
+                score_distribution=score_dist,
+                window_coverage_pct=raw_post["window_coverage_pct"],
+                conversation_coverage_pct=raw_post["conversation_coverage_pct"],
+                concentration_ratio=raw_post["concentration_ratio"],
+                signal_warnings=raw_post["signal_warnings"],
+                quality_score=raw_post["quality_score"],
+            ),
+        )
+
     return PreviewDSLResponse(
         valid=True,
         match_count=result["match_count"],  # type: ignore[arg-type]
         conversation_count=result["conversation_count"],  # type: ignore[arg-type]
         sample_matches=sample_matches,
         latency_ms=result["latency_ms"],  # type: ignore[arg-type]
+        evaluation=evaluation,
     )

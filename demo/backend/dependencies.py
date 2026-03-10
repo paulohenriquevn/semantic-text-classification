@@ -136,9 +136,11 @@ def get_category_service() -> CategoryService:
     config = get_config()
     persist_path = Path(config.index_dir) / "categories.json"
 
+    manifest = get_manifest()
     return CategoryService(
         store=get_store(),
         persist_path=persist_path,
         embedding_generator=_get_embedding_generator(),
         vector_index=_get_qdrant_index(),
+        embedding_model_name=manifest.get("embedding_model", "null"),
     )

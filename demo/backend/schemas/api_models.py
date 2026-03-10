@@ -207,6 +207,45 @@ class PreviewMatchResponse(BaseModel):
     evidence: list[PredicateEvidenceResponse] = []
 
 
+class ScoreDistribution(BaseModel):
+    """Statistical summary of match scores."""
+
+    min: float
+    max: float
+    mean: float
+    median: float
+    p90: float
+
+
+class PreExecutionAnalysis(BaseModel):
+    """Static analysis of the DSL query before execution."""
+
+    predicate_families: list[str]
+    missing_families: list[str]
+    predicate_count: int
+    complexity: str
+    threshold_warnings: list[str] = []
+    pitfalls: list[str] = []
+
+
+class PostExecutionAnalysis(BaseModel):
+    """Analysis of query results after execution."""
+
+    score_distribution: ScoreDistribution | None = None
+    window_coverage_pct: float = 0.0
+    conversation_coverage_pct: float = 0.0
+    concentration_ratio: float = 0.0
+    signal_warnings: list[str] = []
+    quality_score: int = 0
+
+
+class QueryEvaluation(BaseModel):
+    """Combined pre- and post-execution query evaluation."""
+
+    pre_execution: PreExecutionAnalysis
+    post_execution: PostExecutionAnalysis
+
+
 class PreviewDSLResponse(BaseModel):
     """POST /categories/preview response body — dry-run results without persisting."""
 
@@ -216,6 +255,7 @@ class PreviewDSLResponse(BaseModel):
     conversation_count: int = 0
     sample_matches: list[PreviewMatchResponse] = []
     latency_ms: float = 0.0
+    evaluation: QueryEvaluation | None = None
 
 
 # ---------------------------------------------------------------------------

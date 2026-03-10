@@ -10,6 +10,7 @@ import {
 import { useMemo, useState } from "react";
 import { previewDSL } from "@/lib/api";
 import type { PredicateEvidence, PreviewDSLResponse, PreviewMatch } from "@/types/api";
+import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -329,6 +330,11 @@ function SearchResults({
           {result.latency_ms.toFixed(0)} ms
         </span>
       </div>
+
+      {/* Query evaluation */}
+      {result.evaluation && (
+        <QueryEvaluationPanel evaluation={result.evaluation} />
+      )}
 
       {/* Match cards */}
       {result.sample_matches.map((m, i) => (
