@@ -7,15 +7,15 @@ preservation, and error handling.
 
 import pytest
 
-from semantic_conversation_engine.exceptions import RuleError
-from semantic_conversation_engine.rules.ast import (
+from talkex.exceptions import RuleError
+from talkex.rules.ast import (
     AndNode,
     NotNode,
     OrNode,
     PredicateNode,
 )
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler, _validate_ast
-from semantic_conversation_engine.rules.config import PredicateType
+from talkex.rules.compiler import SimpleRuleCompiler, _validate_ast
+from talkex.rules.config import PredicateType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -260,6 +260,6 @@ class TestCompilerProtocolCompliance:
 
 class TestCompilerReexport:
     def test_simple_rule_compiler_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import SimpleRuleCompiler as Imported
+        from talkex.rules import SimpleRuleCompiler as Imported
 
         assert Imported is SimpleRuleCompiler

@@ -5,12 +5,12 @@ triple merge, text concatenation, offset extension, short turn filtering,
 and edge cases (empty input, single turn).
 """
 
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.segmentation.merging import (
+from talkex.models.enums import SpeakerRole
+from talkex.segmentation.merging import (
     filter_short_turns,
     merge_consecutive_same_speaker,
 )
-from semantic_conversation_engine.segmentation.parsing import RawTurn
+from talkex.segmentation.parsing import RawTurn
 
 # ---------------------------------------------------------------------------
 # Helpers

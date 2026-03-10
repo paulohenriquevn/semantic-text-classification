@@ -4,16 +4,16 @@ Tests cover: context_window_to_lexical_doc, context_windows_to_lexical_docs,
 embedding_record_to_hit_metadata, and reexport.
 """
 
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import (
+from talkex.models.context_window import ContextWindow
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import (
     ConversationId,
     EmbeddingId,
     TurnId,
     WindowId,
 )
-from semantic_conversation_engine.retrieval.builders import (
+from talkex.retrieval.builders import (
     context_window_to_lexical_doc,
     context_windows_to_lexical_docs,
     embedding_record_to_hit_metadata,
@@ -128,13 +128,13 @@ class TestEmbeddingRecordToHitMetadata:
 
 class TestBuildersReexport:
     def test_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             context_window_to_lexical_doc as cw2ld,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             context_windows_to_lexical_docs as cws2lds,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             embedding_record_to_hit_metadata as er2hm,
         )
 

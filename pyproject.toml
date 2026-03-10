@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel>=0.41.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "semantic-conversation-engine"
+name = "talkex-engine"
 version = "0.1.0"
 description = "NLP platform for large-scale conversation analysis in call centers and digital service channels"
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sce = "semantic_conversation_engine.pipeline.cli:main"
+talkex = "talkex.pipeline.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -49,7 +49,7 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["semantic_conversation_engine"]
+known-first-party = ["talkex"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -59,7 +59,7 @@ pythonpath = ["src"]
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
-packages = ["semantic_conversation_engine"]
+packages = ["talkex"]
 warn_return_any = true
 disallow_untyped_defs = true
 check_untyped_defs = true

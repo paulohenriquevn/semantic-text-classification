@@ -7,16 +7,16 @@ is verified via a placeholder implementation.
 
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.conversation import Conversation
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId
-from semantic_conversation_engine.pipeline.protocols import ContextBuilder, Segmenter
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
+from talkex.context.config import ContextWindowConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.context_window import ContextWindow
+from talkex.models.conversation import Conversation
+from talkex.models.enums import Channel
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId
+from talkex.pipeline.protocols import ContextBuilder, Segmenter
+from talkex.segmentation.config import SegmentationConfig
 
 # ---------------------------------------------------------------------------
 # Placeholder implementations for structural protocol check

@@ -8,18 +8,18 @@ empty scenarios, and reexports.
 import json
 from datetime import UTC, datetime, timedelta
 
-from semantic_conversation_engine.analytics.aggregators import SimpleAnalyticsEngine
-from semantic_conversation_engine.analytics.benchmark import (
+from talkex.analytics.aggregators import SimpleAnalyticsEngine
+from talkex.analytics.benchmark import (
     AnalyticsBenchmarkConfig,
     AnalyticsBenchmarkReport,
     AnalyticsBenchmarkRunner,
 )
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.models import (
+from talkex.analytics.models import (
     AnalyticsEvent,
     AnalyticsQuery,
 )
@@ -253,7 +253,7 @@ class TestBenchmarkReportSerialization:
 
 class TestBenchmarkReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             AnalyticsBenchmarkConfig,
             AnalyticsBenchmarkReport,
             AnalyticsBenchmarkRunner,

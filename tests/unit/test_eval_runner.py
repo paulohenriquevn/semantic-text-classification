@@ -6,13 +6,13 @@ aggregation, RunConfig, and reexport.
 
 from dataclasses import dataclass, field
 
-from semantic_conversation_engine.evaluation.dataset import (
+from talkex.evaluation.dataset import (
     EvaluationDataset,
     EvaluationExample,
     RelevanceJudgment,
 )
-from semantic_conversation_engine.evaluation.runner import BenchmarkRunner, RunConfig
-from semantic_conversation_engine.retrieval.models import (
+from talkex.evaluation.runner import BenchmarkRunner, RunConfig
+from talkex.retrieval.models import (
     RetrievalHit,
     RetrievalQuery,
     RetrievalResult,
@@ -201,10 +201,10 @@ class TestBenchmarkRunnerCompare:
 
 class TestRunnerReexport:
     def test_importable_from_evaluation_package(self) -> None:
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             BenchmarkRunner as BR,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             RunConfig as RC,
         )
 

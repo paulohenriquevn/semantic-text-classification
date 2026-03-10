@@ -4,11 +4,11 @@ Tests cover: RRF fusion, LINEAR fusion, deduplication, score merging,
 ordering contract, edge cases, and component score preservation.
 """
 
-from semantic_conversation_engine.retrieval.fusion import (
+from talkex.retrieval.fusion import (
     linear_fusion,
     reciprocal_rank_fusion,
 )
-from semantic_conversation_engine.retrieval.models import RetrievalHit
+from talkex.retrieval.models import RetrievalHit
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -243,14 +243,14 @@ class TestLinearFusionScoreSemantics:
 
 class TestFusionReexport:
     def test_rrf_importable(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             reciprocal_rank_fusion as rrf,
         )
 
         assert rrf is reciprocal_rank_fusion
 
     def test_linear_importable(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             linear_fusion as lf,
         )
 

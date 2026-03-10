@@ -6,11 +6,11 @@ validation, save/load, clear, stats, and protocol compliance.
 
 import pytest
 
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
-from semantic_conversation_engine.retrieval.config import DistanceMetric, VectorIndexConfig
-from semantic_conversation_engine.retrieval.vector_index import InMemoryVectorIndex
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
+from talkex.retrieval.config import DistanceMetric, VectorIndexConfig
+from talkex.retrieval.vector_index import InMemoryVectorIndex
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -287,7 +287,7 @@ class TestVectorIndexClear:
 
 class TestVectorIndexReexport:
     def test_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             InMemoryVectorIndex as IMVI,
         )
 

@@ -6,7 +6,7 @@ immutability, serialization, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
+from talkex.segmentation.config import SegmentationConfig
 
 # ---------------------------------------------------------------------------
 # Construction — defaults
@@ -119,6 +119,6 @@ class TestSegmentationConfigSerialization:
 
 class TestSegmentationConfigReexport:
     def test_importable_from_segmentation_package(self) -> None:
-        from semantic_conversation_engine.segmentation import SegmentationConfig as Imported
+        from talkex.segmentation import SegmentationConfig as Imported
 
         assert Imported is SegmentationConfig

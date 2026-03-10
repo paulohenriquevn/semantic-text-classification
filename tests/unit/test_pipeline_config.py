@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 
-from semantic_conversation_engine.pipeline.config import PipelineConfig
+from talkex.pipeline.config import PipelineConfig
 
 # ---------------------------------------------------------------------------
 # PipelineConfig — construction and defaults
@@ -129,6 +129,6 @@ class TestPipelineConfigJsonLoading:
 
 class TestPipelineConfigReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import PipelineConfig
+        from talkex.pipeline import PipelineConfig
 
         assert PipelineConfig is not None

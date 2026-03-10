@@ -5,19 +5,19 @@ per-rule metrics collection, aggregated metrics, config params traceability,
 protocol compliance, and report generation.
 """
 
-from semantic_conversation_engine.rules.benchmark import (
+from talkex.rules.benchmark import (
     RuleBenchmarkConfig,
     RuleBenchmarkRunner,
 )
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
-from semantic_conversation_engine.rules.config import (
+from talkex.rules.compiler import SimpleRuleCompiler
+from talkex.rules.config import (
     EvidencePolicy,
     RuleEngineConfig,
     RuleEvaluationMode,
     ShortCircuitPolicy,
 )
-from semantic_conversation_engine.rules.evaluator import SimpleRuleEvaluator
-from semantic_conversation_engine.rules.models import (
+from talkex.rules.evaluator import SimpleRuleEvaluator
+from talkex.rules.models import (
     RuleDefinition,
     RuleEvaluationInput,
 )
@@ -270,7 +270,7 @@ class TestMultipleInputs:
 
 class TestBenchmarkReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleBenchmarkConfig,
             RuleBenchmarkRunner,
         )

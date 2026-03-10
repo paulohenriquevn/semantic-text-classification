@@ -7,14 +7,14 @@ field mapping, and TYPE_CHECKING import boundary.
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from semantic_conversation_engine.analytics.builders import (
+from talkex.analytics.builders import (
     prediction_to_event,
     rule_execution_to_event,
 )
-from semantic_conversation_engine.analytics.config import MetricType
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.models.prediction import Prediction
-from semantic_conversation_engine.models.rule_execution import RuleExecution
+from talkex.analytics.config import MetricType
+from talkex.models.enums import ObjectType
+from talkex.models.prediction import Prediction
+from talkex.models.rule_execution import RuleExecution
 
 _NOW = datetime(2026, 3, 10, 12, 0, 0, tzinfo=UTC)
 
@@ -201,7 +201,7 @@ class TestRuleExecutionToEvent:
 
 class TestBuildersReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             prediction_to_event,
             rule_execution_to_event,
         )

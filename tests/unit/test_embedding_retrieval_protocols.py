@@ -5,16 +5,16 @@ work correctly with the type system. This validates DIP — concrete
 implementations need no inheritance from Protocol classes.
 """
 
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
     ClassificationResult,
     LabelScore,
 )
-from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
-from semantic_conversation_engine.pipeline.protocols import (
+from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
+from talkex.pipeline.protocols import (
     Classifier,
     EmbeddingGenerator,
     HybridRetriever,
@@ -22,7 +22,7 @@ from semantic_conversation_engine.pipeline.protocols import (
     Reranker,
     VectorIndex,
 )
-from semantic_conversation_engine.retrieval.models import (
+from talkex.retrieval.models import (
     RetrievalHit,
     RetrievalMode,
     RetrievalQuery,
@@ -283,33 +283,33 @@ class TestClassifierProtocol:
 
 class TestProtocolReexport:
     def test_embedding_generator_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             EmbeddingGenerator as Imported,
         )
 
         assert Imported is EmbeddingGenerator
 
     def test_vector_index_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import VectorIndex as Imported
+        from talkex.pipeline import VectorIndex as Imported
 
         assert Imported is VectorIndex
 
     def test_lexical_index_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import LexicalIndex as Imported
+        from talkex.pipeline import LexicalIndex as Imported
 
         assert Imported is LexicalIndex
 
     def test_hybrid_retriever_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import HybridRetriever as Imported
+        from talkex.pipeline import HybridRetriever as Imported
 
         assert Imported is HybridRetriever
 
     def test_reranker_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import Reranker as Imported
+        from talkex.pipeline import Reranker as Imported
 
         assert Imported is Reranker
 
     def test_classifier_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import Classifier as Imported
+        from talkex.pipeline import Classifier as Imported
 
         assert Imported is Classifier

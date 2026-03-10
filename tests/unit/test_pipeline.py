@@ -12,17 +12,17 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.conversation import Conversation
-from semantic_conversation_engine.models.enums import Channel, SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId, WindowId
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.pipeline.result import PipelineWarning
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
+from talkex.context.config import ContextWindowConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.context_window import ContextWindow
+from talkex.models.conversation import Conversation
+from talkex.models.enums import Channel, SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId, WindowId
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.pipeline.result import PipelineWarning
+from talkex.segmentation.config import SegmentationConfig
 
 # ---------------------------------------------------------------------------
 # Stubs (protocol-conforming, no inheritance needed)
@@ -351,27 +351,27 @@ class TestResultImmutability:
 
 class TestPipelineReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             TextProcessingPipeline as Imported,
         )
 
         assert Imported is TextProcessingPipeline
 
     def test_result_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             PipelineResult as Imported,
         )
-        from semantic_conversation_engine.pipeline.result import (
+        from talkex.pipeline.result import (
             PipelineResult as Direct,
         )
 
         assert Imported is Direct
 
     def test_warning_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             PipelineWarning as Imported,
         )
-        from semantic_conversation_engine.pipeline.result import (
+        from talkex.pipeline.result import (
             PipelineWarning as Direct,
         )
 

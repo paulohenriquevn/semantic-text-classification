@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.pipeline.config import EmbeddingConfig, PipelineConfig
-from semantic_conversation_engine.pipeline.runner import PipelineRunner
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.pipeline.config import EmbeddingConfig, PipelineConfig
+from talkex.pipeline.runner import PipelineRunner
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 _SAMPLE_TRANSCRIPT = _FIXTURES_DIR / "sample_transcript.txt"

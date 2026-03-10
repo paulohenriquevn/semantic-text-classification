@@ -4,8 +4,8 @@ Tests cover: Unicode NFKC, whitespace collapsing, line stripping,
 flag combinations, and identity when all flags are disabled.
 """
 
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
-from semantic_conversation_engine.segmentation.normalization import normalize_text
+from talkex.segmentation.config import SegmentationConfig
+from talkex.segmentation.normalization import normalize_text
 
 # ---------------------------------------------------------------------------
 # Helpers

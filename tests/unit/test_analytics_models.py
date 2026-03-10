@@ -6,12 +6,12 @@ and reexports for all 5 analytics model types.
 
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.models import (
+from talkex.analytics.models import (
     AggregationResult,
     AnalyticsEvent,
     AnalyticsQuery,
@@ -308,7 +308,7 @@ class TestAnalyticsQuery:
 
 class TestModelsReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             AggregationResult,
             AnalyticsEvent,
             AnalyticsQuery,

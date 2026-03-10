@@ -6,7 +6,7 @@ construction, frozen immutability, JSON/CSV serialization, and reexports.
 
 import json
 
-from semantic_conversation_engine.analytics.report import (
+from talkex.analytics.report import (
     AnalyticsReport,
     AnalyticsSection,
     GroupedMetric,
@@ -281,7 +281,7 @@ class TestAnalyticsReport:
 
 class TestReportReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             AnalyticsReport,
             AnalyticsSection,
             GroupedMetric,

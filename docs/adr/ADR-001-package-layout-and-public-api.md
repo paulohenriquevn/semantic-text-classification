@@ -13,15 +13,15 @@ extensibility across 9+ pipeline modules.
 Two layout options were considered:
 
 1. **`src/` as namespace**: `import src.models` — uses `src` as the top-level package
-2. **`src/` as build layout**: `import semantic_conversation_engine.models` — `src/` is invisible to consumers
+2. **`src/` as build layout**: `import talkex.models` — `src/` is invisible to consumers
 
 ## Decision
 
-**Option 2: `src/` as build layout with `semantic_conversation_engine` as the real package.**
+**Option 2: `src/` as build layout with `talkex` as the real package.**
 
 ```
 src/
-  semantic_conversation_engine/
+  talkex/
     __init__.py
     models/
     ingestion/
@@ -31,8 +31,8 @@ src/
 
 Public imports:
 ```python
-from semantic_conversation_engine.models import Conversation
-from semantic_conversation_engine.exceptions import EngineError
+from talkex.models import Conversation
+from talkex.exceptions import EngineError
 ```
 
 ## Consequences
@@ -44,7 +44,7 @@ from semantic_conversation_engine.exceptions import EngineError
 - ruff isort, mypy, and pytest all resolve the package correctly via `pythonpath = ["src"]`
 
 ### Negative
-- Package name is long (`semantic_conversation_engine`). Accepted trade-off: specificity > brevity.
+- Package name is long (`talkex`). Accepted trade-off: specificity > brevity.
 - Every `__init__.py` must explicitly control re-exports to avoid accidental public API growth.
 
 ### Rules

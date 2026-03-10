@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from semantic_conversation_engine.models.types import (
+from talkex.models.types import (
     ConversationId,
     EmbeddingId,
     PredictionId,
@@ -73,7 +73,7 @@ class TestIdsImportFromModelsPackage:
     """Verify types are properly re-exported from the models package."""
 
     def test_all_ids_importable(self) -> None:
-        from semantic_conversation_engine.models import (  # noqa: F401
+        from talkex.models import (  # noqa: F401
             ConversationId,
             EmbeddingId,
             PredictionId,
@@ -83,4 +83,4 @@ class TestIdsImportFromModelsPackage:
         )
 
     def test_aliases_importable(self) -> None:
-        from semantic_conversation_engine.models import Score, Vector  # noqa: F401
+        from talkex.models import Score, Vector  # noqa: F401

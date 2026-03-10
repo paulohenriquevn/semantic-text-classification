@@ -6,7 +6,7 @@ immutability, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.classification.labels import LabelSpace
+from talkex.classification.labels import LabelSpace
 
 # ---------------------------------------------------------------------------
 # Construction
@@ -153,7 +153,7 @@ class TestLabelSpaceImmutability:
 
 class TestLabelSpaceReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             LabelSpace as LS,
         )
 

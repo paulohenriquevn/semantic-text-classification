@@ -9,35 +9,35 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
     ClassificationResult,
     LabelScore,
 )
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-from semantic_conversation_engine.embeddings.preprocessing import PreprocessingConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.pipeline.system_pipeline import (
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import NullEmbeddingGenerator
+from talkex.embeddings.preprocessing import PreprocessingConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.pipeline.system_pipeline import (
     StageResult,
     SystemPipeline,
     SystemPipelineResult,
     _build_embedding_inputs,
 )
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
-from semantic_conversation_engine.rules.config import (
+from talkex.rules.compiler import SimpleRuleCompiler
+from talkex.rules.config import (
     EvidencePolicy,
     RuleEngineConfig,
     RuleEvaluationMode,
     ShortCircuitPolicy,
 )
-from semantic_conversation_engine.rules.evaluator import SimpleRuleEvaluator
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.rules.evaluator import SimpleRuleEvaluator
+from talkex.segmentation.segmenter import TurnSegmenter
 
 _TRANSCRIPT = TranscriptInput(
     conversation_id="conv_test_system",
@@ -451,8 +451,8 @@ class TestFullPipelineComposition:
 
 class TestIndexingStage:
     def test_indexes_embeddings_in_vector_index(self) -> None:
-        from semantic_conversation_engine.retrieval.config import VectorIndexConfig
-        from semantic_conversation_engine.retrieval.vector_index import (
+        from talkex.retrieval.config import VectorIndexConfig
+        from talkex.retrieval.vector_index import (
             InMemoryVectorIndex,
         )
 
@@ -471,7 +471,7 @@ class TestIndexingStage:
         assert vector_index.vector_count > 0
 
     def test_indexes_windows_in_lexical_index(self) -> None:
-        from semantic_conversation_engine.retrieval.bm25 import InMemoryBM25Index
+        from talkex.retrieval.bm25 import InMemoryBM25Index
 
         lexical_index = InMemoryBM25Index()
 
@@ -526,7 +526,7 @@ class TestBuildEmbeddingInputs:
 
 class TestReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             StageResult,
             SystemPipeline,
             SystemPipelineResult,

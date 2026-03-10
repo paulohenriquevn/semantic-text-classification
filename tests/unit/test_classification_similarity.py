@@ -6,12 +6,12 @@ error handling, determinism, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.classification.labels import LabelSpace
-from semantic_conversation_engine.classification.models import ClassificationInput
-from semantic_conversation_engine.classification.similarity import (
+from talkex.classification.labels import LabelSpace
+from talkex.classification.models import ClassificationInput
+from talkex.classification.similarity import (
     EmbeddingSimilarityClassifier,
 )
-from semantic_conversation_engine.exceptions import ModelError
+from talkex.exceptions import ModelError
 
 
 def _make_label_space() -> LabelSpace:
@@ -259,7 +259,7 @@ class TestSimilarityDeterminism:
 
 class TestSimilarityClassifierReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             EmbeddingSimilarityClassifier as ESC,
         )
 

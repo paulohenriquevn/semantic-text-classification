@@ -6,7 +6,7 @@ RuleExperimentReport JSON/CSV serialization, and edge cases.
 
 import json
 
-from semantic_conversation_engine.rules.report import (
+from talkex.rules.report import (
     ConfigurationResult,
     RuleExperimentReport,
     RuleMetrics,
@@ -180,7 +180,7 @@ class TestReportCsv:
 
 class TestReportReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             ConfigurationResult,
             RuleExperimentReport,
             RuleMetrics,

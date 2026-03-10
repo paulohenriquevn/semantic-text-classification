@@ -7,15 +7,15 @@ speaker hints, format routing, and reexport.
 
 from typing import Any
 
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import (
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import (
     SpeakerHint,
     TranscriptInput,
 )
-from semantic_conversation_engine.models.enums import Channel, SpeakerRole
-from semantic_conversation_engine.models.types import ConversationId
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.models.enums import Channel, SpeakerRole
+from talkex.models.types import ConversationId
+from talkex.segmentation.config import SegmentationConfig
+from talkex.segmentation.segmenter import TurnSegmenter
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -342,6 +342,6 @@ class TestNormalizationApplied:
 
 class TestSegmenterReexport:
     def test_importable_from_segmentation_package(self) -> None:
-        from semantic_conversation_engine.segmentation import TurnSegmenter as Imported
+        from talkex.segmentation import TurnSegmenter as Imported
 
         assert Imported is TurnSegmenter

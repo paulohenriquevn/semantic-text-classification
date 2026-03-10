@@ -9,7 +9,7 @@ import io
 import json
 from pathlib import Path
 
-from semantic_conversation_engine.evaluation.report import (
+from talkex.evaluation.report import (
     ExperimentReport,
     MethodResult,
     QueryMetrics,
@@ -188,10 +188,10 @@ class TestExperimentReportCSV:
 
 class TestReportReexport:
     def test_importable_from_evaluation_package(self) -> None:
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             ExperimentReport as ER,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             MethodResult as MR,
         )
 

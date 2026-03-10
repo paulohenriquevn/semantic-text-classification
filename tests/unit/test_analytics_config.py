@@ -7,7 +7,7 @@ immutability, strict mode, validation, and reexports.
 import pytest
 from pydantic import ValidationError
 
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsConfig,
     AnalyticsLevel,
@@ -130,7 +130,7 @@ class TestAnalyticsConfigFrozen:
 
 class TestConfigReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             AggregationWindow,
             AnalyticsConfig,
             AnalyticsLevel,

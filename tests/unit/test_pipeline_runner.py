@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from semantic_conversation_engine.pipeline.config import PipelineConfig
-from semantic_conversation_engine.pipeline.runner import PipelineRunner
+from talkex.pipeline.config import PipelineConfig
+from talkex.pipeline.runner import PipelineRunner
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 _SAMPLE_TRANSCRIPT = _FIXTURES_DIR / "sample_transcript.txt"
@@ -37,8 +37,8 @@ class TestBuildPipeline:
         assert pipeline._rule_evaluator is not None
 
     def test_builds_with_embedding_config(self) -> None:
-        from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-        from semantic_conversation_engine.pipeline.config import EmbeddingConfig
+        from talkex.embeddings.config import EmbeddingModelConfig
+        from talkex.pipeline.config import EmbeddingConfig
 
         config = PipelineConfig(
             embedding=EmbeddingConfig(
@@ -157,7 +157,7 @@ class TestSaveOutputs:
 
 class TestRunnerReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import PipelineRunner, RunSummary
+        from talkex.pipeline import PipelineRunner, RunSummary
 
         assert PipelineRunner is not None
         assert RunSummary is not None

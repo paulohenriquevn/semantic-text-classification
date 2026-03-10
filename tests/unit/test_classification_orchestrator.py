@@ -4,18 +4,18 @@ Tests cover: window classification, input classification, Prediction mapping,
 multi-label, stats, batch processing, and reexport.
 """
 
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
     ClassificationResult,
     LabelScore,
 )
-from semantic_conversation_engine.classification.orchestrator import (
+from talkex.classification.orchestrator import (
     ClassificationBatchResult,
     ClassificationOrchestrator,
 )
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.models.types import WindowId
+from talkex.models.context_window import ContextWindow
+from talkex.models.enums import ObjectType
+from talkex.models.types import WindowId
 
 # ---------------------------------------------------------------------------
 # Stub classifier (satisfies Classifier protocol via duck typing)
@@ -340,14 +340,14 @@ class TestPredictionValidation:
 
 class TestOrchestratorReexport:
     def test_orchestrator_importable(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationOrchestrator as CO,
         )
 
         assert CO is ClassificationOrchestrator
 
     def test_batch_result_importable(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationBatchResult as CBR,
         )
 

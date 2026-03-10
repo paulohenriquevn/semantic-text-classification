@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.models.prediction import Prediction
-from semantic_conversation_engine.models.types import PredictionId
+from talkex.models.enums import ObjectType
+from talkex.models.prediction import Prediction
+from talkex.models.types import PredictionId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -314,6 +314,6 @@ class TestPredictionBoundaryDeserialization:
 
 class TestPredictionReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import Prediction as Imported
+        from talkex.models import Prediction as Imported
 
         assert Imported is Prediction

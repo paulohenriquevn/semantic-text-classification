@@ -6,12 +6,12 @@ thresholds, error handling, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.classification.labels import LabelSpace
-from semantic_conversation_engine.classification.logistic import (
+from talkex.classification.labels import LabelSpace
+from talkex.classification.logistic import (
     LogisticRegressionClassifier,
 )
-from semantic_conversation_engine.classification.models import ClassificationInput
-from semantic_conversation_engine.exceptions import ModelError
+from talkex.classification.models import ClassificationInput
+from talkex.exceptions import ModelError
 
 
 def _make_label_space() -> LabelSpace:
@@ -352,7 +352,7 @@ class TestLogisticThresholds:
 
 class TestLogisticReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             LogisticRegressionClassifier as LRC,
         )
 

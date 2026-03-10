@@ -6,20 +6,20 @@ short-circuit behavior, cost-based reordering, evidence policy, RuleResult → R
 mapping, and SimpleRuleEvaluator protocol compliance.
 """
 
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
-from semantic_conversation_engine.rules.config import (
+from talkex.models.enums import ObjectType
+from talkex.rules.compiler import SimpleRuleCompiler
+from talkex.rules.config import (
     EvidencePolicy,
     PredicateType,
     RuleEngineConfig,
     RuleEvaluationMode,
     ShortCircuitPolicy,
 )
-from semantic_conversation_engine.rules.evaluator import (
+from talkex.rules.evaluator import (
     SimpleRuleEvaluator,
     map_to_rule_execution,
 )
-from semantic_conversation_engine.rules.models import (
+from talkex.rules.models import (
     RuleDefinition,
     RuleEvaluationInput,
 )
@@ -566,11 +566,11 @@ class TestEvaluatorProtocolCompliance:
 
 class TestEvaluatorReexport:
     def test_simple_rule_evaluator_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import SimpleRuleEvaluator as Imported
+        from talkex.rules import SimpleRuleEvaluator as Imported
 
         assert Imported is SimpleRuleEvaluator
 
     def test_map_to_rule_execution_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import map_to_rule_execution as imported
+        from talkex.rules import map_to_rule_execution as imported
 
         assert imported is map_to_rule_execution

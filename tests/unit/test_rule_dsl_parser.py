@@ -7,15 +7,15 @@ and the parse_dsl public API.
 
 import pytest
 
-from semantic_conversation_engine.exceptions import RuleError
-from semantic_conversation_engine.rules.ast import (
+from talkex.exceptions import RuleError
+from talkex.rules.ast import (
     AndNode,
     NotNode,
     OrNode,
     PredicateNode,
 )
-from semantic_conversation_engine.rules.config import PredicateType
-from semantic_conversation_engine.rules.parser import TokenType, parse_dsl, tokenize
+from talkex.rules.config import PredicateType
+from talkex.rules.parser import TokenType, parse_dsl, tokenize
 
 # ---------------------------------------------------------------------------
 # Tokenizer
@@ -424,11 +424,11 @@ class TestParserErrors:
 
 class TestParserReexport:
     def test_parse_dsl_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import parse_dsl as imported
+        from talkex.rules import parse_dsl as imported
 
         assert imported is parse_dsl
 
     def test_predicate_registry_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import PREDICATE_REGISTRY
+        from talkex.rules import PREDICATE_REGISTRY
 
         assert "keyword" in PREDICATE_REGISTRY

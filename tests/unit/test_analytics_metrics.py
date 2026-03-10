@@ -5,7 +5,7 @@ avg_group_count, avg_trend_point_count, total_events_considered,
 compute_analytics_metrics, and empty inputs.
 """
 
-from semantic_conversation_engine.analytics.metrics import (
+from talkex.analytics.metrics import (
     avg_generation_time_ms,
     avg_group_count,
     avg_result_count,
@@ -14,7 +14,7 @@ from semantic_conversation_engine.analytics.metrics import (
     empty_report_rate,
     total_events_considered,
 )
-from semantic_conversation_engine.analytics.report import (
+from talkex.analytics.report import (
     AnalyticsReport,
     AnalyticsSection,
     GroupedMetric,
@@ -159,6 +159,6 @@ class TestComputeAnalyticsMetrics:
 
 class TestMetricsReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import compute_analytics_metrics
+        from talkex.analytics import compute_analytics_metrics
 
         assert compute_analytics_metrics is not None

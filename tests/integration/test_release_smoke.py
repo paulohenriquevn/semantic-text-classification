@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from semantic_conversation_engine import __version__
+from talkex import __version__
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 _SAMPLE_TRANSCRIPT = _FIXTURES_DIR / "sample_transcript.txt"
@@ -34,12 +34,12 @@ class TestPackageInstallation:
         assert __version__ == "0.1.0"
 
     def test_package_importable(self) -> None:
-        import semantic_conversation_engine
+        import talkex
 
-        assert hasattr(semantic_conversation_engine, "__version__")
+        assert hasattr(talkex, "__version__")
 
     def test_pipeline_package_importable(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             PipelineConfig,
             PipelineRunManifest,
             PipelineRunner,
@@ -65,7 +65,7 @@ class TestCliEntrypoint:
 
     def test_sce_version(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "semantic_conversation_engine", "version"],
+            [sys.executable, "-m", "talkex", "version"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -75,7 +75,7 @@ class TestCliEntrypoint:
 
     def test_sce_config_defaults(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "semantic_conversation_engine", "config"],
+            [sys.executable, "-m", "talkex", "config"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -93,7 +93,7 @@ class TestEndToEndExecution:
 
         assert isinstance(tmp_path, pathlib.Path)
 
-        from semantic_conversation_engine.pipeline.runner import PipelineRunner
+        from talkex.pipeline.runner import PipelineRunner
 
         runner = PipelineRunner()
         summary = runner.run_file(
@@ -111,8 +111,8 @@ class TestEndToEndExecution:
         assert (run_dir / "summary.json").exists()
 
     def test_benchmark_run(self) -> None:
-        from semantic_conversation_engine.pipeline.benchmark import SystemBenchmarkRunner
-        from semantic_conversation_engine.pipeline.runner import PipelineRunner
+        from talkex.pipeline.benchmark import SystemBenchmarkRunner
+        from talkex.pipeline.runner import PipelineRunner
 
         def _text_only() -> object:
             return PipelineRunner().run_file(_SAMPLE_TRANSCRIPT, enable_embeddings=False, enable_rules=False).result
@@ -128,7 +128,7 @@ class TestEndToEndExecution:
 
         assert isinstance(tmp_path, pathlib.Path)
 
-        from semantic_conversation_engine.pipeline.config import PipelineConfig
+        from talkex.pipeline.config import PipelineConfig
 
         # Export
         config = PipelineConfig()

@@ -4,7 +4,7 @@ Tests cover: precision, recall, f1_score, per_label_metrics, micro_f1, macro_f1.
 Each metric is tested for happy path, edge cases, and determinism.
 """
 
-from semantic_conversation_engine.classification_eval.metrics import (
+from talkex.classification_eval.metrics import (
     f1_score,
     macro_f1,
     micro_f1,
@@ -222,19 +222,19 @@ class TestMacroF1:
 
 class TestMetricsReexport:
     def test_importable_from_package(self) -> None:
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             f1_score as f1,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             macro_f1 as maf1,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             micro_f1 as mif1,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             precision as p,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             recall as r,
         )
 

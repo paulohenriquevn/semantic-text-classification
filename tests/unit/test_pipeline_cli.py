@@ -11,7 +11,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from semantic_conversation_engine.pipeline.cli import cli
+from talkex.pipeline.cli import cli
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 _SAMPLE_TRANSCRIPT = _FIXTURES_DIR / "sample_transcript.txt"
@@ -27,7 +27,7 @@ class TestCliVersion:
         runner = CliRunner()
         result = runner.invoke(cli, ["version"])
         assert result.exit_code == 0
-        assert "semantic-conversation-engine" in result.output
+        assert "talkex" in result.output
         assert "0.1.0" in result.output
 
 
@@ -165,7 +165,7 @@ class TestMainModule:
         """The __main__.py module exists and contains main."""
         from pathlib import Path
 
-        main_path = Path(__file__).parent.parent.parent / "src" / "semantic_conversation_engine" / "__main__.py"
+        main_path = Path(__file__).parent.parent.parent / "src" / "talkex" / "__main__.py"
         assert main_path.exists()
         content = main_path.read_text()
-        assert "from semantic_conversation_engine.pipeline.cli import main" in content
+        assert "from talkex.pipeline.cli import main" in content

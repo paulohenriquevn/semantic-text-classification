@@ -7,10 +7,10 @@ offset correctness, and RawTurn construction.
 
 import pytest
 
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
-from semantic_conversation_engine.segmentation.parsing import (
+from talkex.ingestion.enums import SourceFormat
+from talkex.models.enums import SpeakerRole
+from talkex.segmentation.config import SegmentationConfig
+from talkex.segmentation.parsing import (
     RawTurn,
     parse_transcript,
 )

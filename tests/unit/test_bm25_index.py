@@ -6,8 +6,8 @@ stats, incremental indexing, edge cases, and protocol compliance.
 
 import pytest
 
-from semantic_conversation_engine.retrieval.bm25 import InMemoryBM25Index
-from semantic_conversation_engine.retrieval.config import LexicalIndexConfig
+from talkex.retrieval.bm25 import InMemoryBM25Index
+from talkex.retrieval.config import LexicalIndexConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -252,7 +252,7 @@ class TestBM25CaseInsensitivity:
 
 class TestBM25Reexport:
     def test_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             InMemoryBM25Index as IMBM25,
         )
 

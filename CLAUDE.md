@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Semantic Conversation Intelligence Engine — an NLP platform for large-scale conversation analysis in call centers and digital service channels. Transforms conversations into structured, searchable, actionable insights using hybrid NLP (lexical + semantic + rules).
+TalkEx — Conversation Intelligence Engine — an NLP platform for large-scale conversation analysis in call centers and digital service channels. Transforms conversations into structured, searchable, actionable insights using hybrid NLP (lexical + semantic + rules).
 
 **Current state:** Foundation phase. Project scaffolding complete with package structure, quality gates, and core model stubs. Building toward V1.
 
@@ -50,10 +50,10 @@ Ingestion → ASR/Transcription → Turn Segmentation → Context Window Builder
 
 ### Package Layout
 
-Package name: `semantic_conversation_engine`. Imports: `from semantic_conversation_engine.models import Conversation`.
+Package name: `talkex`. Imports: `from talkex.models import Conversation`.
 
 ```
-src/semantic_conversation_engine/
+src/talkex/
 ├── __init__.py       # Package root, exports __version__
 ├── exceptions.py     # Domain exception hierarchy (EngineError base)
 ├── models/           # Shared pydantic data types (frozen, strict)

@@ -7,15 +7,15 @@ all pipeline stages compose correctly and produce valid output.
 
 from typing import Any
 
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.models.types import ConversationId
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.segmentation.config import SegmentationConfig
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel
+from talkex.models.types import ConversationId
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.segmentation.config import SegmentationConfig
+from talkex.segmentation.segmenter import TurnSegmenter
 
 # ---------------------------------------------------------------------------
 # Helpers

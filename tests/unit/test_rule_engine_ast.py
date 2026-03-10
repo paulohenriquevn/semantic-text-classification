@@ -4,14 +4,14 @@ Tests cover: PredicateNode construction, composite node composition,
 immutability, nesting, ASTNode type alias, reexport.
 """
 
-from semantic_conversation_engine.rules.ast import (
+from talkex.rules.ast import (
     AndNode,
     ASTNode,
     NotNode,
     OrNode,
     PredicateNode,
 )
-from semantic_conversation_engine.rules.config import PredicateType
+from talkex.rules.config import PredicateType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -245,19 +245,19 @@ def _make_structural_predicate() -> PredicateNode:
 
 class TestASTReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             AndNode as And,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             ASTNode as AN,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             NotNode as Not,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             OrNode as Or,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             PredicateNode as PN,
         )
 

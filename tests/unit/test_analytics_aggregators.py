@@ -7,18 +7,18 @@ and reexports.
 
 from datetime import UTC, datetime, timedelta
 
-from semantic_conversation_engine.analytics.aggregators import (
+from talkex.analytics.aggregators import (
     SimpleAnalyticsEngine,
     aggregate_by_dimension,
     aggregate_temporal,
     filter_events,
 )
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.models import (
+from talkex.analytics.models import (
     AnalyticsEvent,
     AnalyticsQuery,
 )
@@ -434,7 +434,7 @@ class TestSimpleAnalyticsEngine:
 
 class TestAggregatorsReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import (
+        from talkex.analytics import (
             SimpleAnalyticsEngine,
             aggregate_by_dimension,
             aggregate_temporal,

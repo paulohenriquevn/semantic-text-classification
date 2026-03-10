@@ -5,8 +5,8 @@ total_predicates_evaluated/matched, predicate_type_distribution,
 compute_rule_metrics, and edge cases (empty input).
 """
 
-from semantic_conversation_engine.rules.config import PredicateType
-from semantic_conversation_engine.rules.metrics import (
+from talkex.rules.config import PredicateType
+from talkex.rules.metrics import (
     avg_execution_time_ms,
     compute_rule_metrics,
     match_rate,
@@ -15,7 +15,7 @@ from semantic_conversation_engine.rules.metrics import (
     total_predicates_evaluated,
     total_predicates_matched,
 )
-from semantic_conversation_engine.rules.models import PredicateResult, RuleResult
+from talkex.rules.models import PredicateResult, RuleResult
 
 
 def _pr(
@@ -211,6 +211,6 @@ class TestComputeRuleMetrics:
 
 class TestMetricsReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import compute_rule_metrics as fn
+        from talkex.rules import compute_rule_metrics as fn
 
         assert callable(fn)

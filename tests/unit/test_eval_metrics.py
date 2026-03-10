@@ -6,7 +6,7 @@ nDCG with binary and graded relevance, edge cases.
 
 import math
 
-from semantic_conversation_engine.evaluation.metrics import (
+from talkex.evaluation.metrics import (
     ndcg,
     precision_at_k,
     recall_at_k,
@@ -209,16 +209,16 @@ class TestNDCG:
 
 class TestMetricsReexport:
     def test_importable_from_evaluation_package(self) -> None:
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             ndcg as _ndcg,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             precision_at_k as _pak,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             recall_at_k as _rak,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             reciprocal_rank as _rr,
         )
 

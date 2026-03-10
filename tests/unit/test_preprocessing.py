@@ -6,15 +6,15 @@ prepare_batch_texts, estimate_token_count, and edge cases.
 
 import pytest
 
-from semantic_conversation_engine.embeddings.inputs import EmbeddingInput
-from semantic_conversation_engine.embeddings.preprocessing import (
+from talkex.embeddings.inputs import EmbeddingInput
+from talkex.embeddings.preprocessing import (
     PreprocessingConfig,
     estimate_token_count,
     prepare_batch_texts,
     prepare_embedding_text,
 )
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.models.types import EmbeddingId
+from talkex.models.enums import ObjectType
+from talkex.models.types import EmbeddingId
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -168,13 +168,13 @@ class TestEstimateTokenCount:
 
 class TestPreprocessingReexport:
     def test_importable_from_embeddings_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             PreprocessingConfig as PC,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             prepare_batch_texts as pbt,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             prepare_embedding_text as pet,
         )
 

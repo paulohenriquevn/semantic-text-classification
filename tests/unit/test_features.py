@@ -6,7 +6,7 @@ avg_word_length, and edge cases (empty string, single word).
 
 import pytest
 
-from semantic_conversation_engine.segmentation.features import extract_lexical_features
+from talkex.segmentation.features import extract_lexical_features
 
 # ---------------------------------------------------------------------------
 # Individual features

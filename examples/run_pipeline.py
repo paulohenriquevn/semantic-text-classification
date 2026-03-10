@@ -9,8 +9,8 @@ Usage:
 
 from pathlib import Path
 
-from semantic_conversation_engine.pipeline.config import EmbeddingConfig, PipelineConfig
-from semantic_conversation_engine.pipeline.runner import PipelineRunner
+from talkex.pipeline.config import EmbeddingConfig, PipelineConfig
+from talkex.pipeline.runner import PipelineRunner
 
 # Use the sample transcript from test fixtures
 TRANSCRIPT_PATH = Path(__file__).parent.parent / "tests" / "fixtures" / "sample_transcript.txt"

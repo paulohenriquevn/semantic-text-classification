@@ -7,40 +7,40 @@ runner comparison → JSON/CSV export.
 
 import json
 
-from semantic_conversation_engine.classification.features import (
+from talkex.classification.features import (
     extract_lexical_features,
     extract_structural_features,
     merge_feature_sets,
 )
-from semantic_conversation_engine.classification.labels import LabelSpace
-from semantic_conversation_engine.classification.logistic import (
+from talkex.classification.labels import LabelSpace
+from talkex.classification.logistic import (
     LogisticRegressionClassifier,
 )
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
 )
-from semantic_conversation_engine.classification.similarity import (
+from talkex.classification.similarity import (
     EmbeddingSimilarityClassifier,
 )
-from semantic_conversation_engine.classification_eval.dataset import (
+from talkex.classification_eval.dataset import (
     ClassificationDataset,
     ClassificationExample,
     GroundTruthLabel,
 )
-from semantic_conversation_engine.classification_eval.runner import (
+from talkex.classification_eval.runner import (
     ClassificationBenchmarkRunner,
 )
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel, ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import NullEmbeddingGenerator
+from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel, ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.segmentation.segmenter import TurnSegmenter
 
 _TRANSCRIPT_TEXT = """\
 Customer: I have a billing issue with my credit card.

@@ -9,10 +9,10 @@ Usage:
 
 from pathlib import Path
 
-from semantic_conversation_engine.pipeline.benchmark import SystemBenchmarkRunner
-from semantic_conversation_engine.pipeline.config import EmbeddingConfig, PipelineConfig
-from semantic_conversation_engine.pipeline.runner import PipelineRunner
-from semantic_conversation_engine.pipeline.system_pipeline import SystemPipelineResult
+from talkex.pipeline.benchmark import SystemBenchmarkRunner
+from talkex.pipeline.config import EmbeddingConfig, PipelineConfig
+from talkex.pipeline.runner import PipelineRunner
+from talkex.pipeline.system_pipeline import SystemPipelineResult
 
 TRANSCRIPT_PATH = Path(__file__).parent.parent / "tests" / "fixtures" / "sample_transcript.txt"
 OUTPUT_DIR = Path(__file__).parent / "output"

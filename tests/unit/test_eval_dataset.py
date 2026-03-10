@@ -7,7 +7,7 @@ EvaluationDataset save/load round-trip, and reexport.
 import json
 from pathlib import Path
 
-from semantic_conversation_engine.evaluation.dataset import (
+from talkex.evaluation.dataset import (
     EvaluationDataset,
     EvaluationExample,
     RelevanceJudgment,
@@ -186,13 +186,13 @@ class TestEvaluationDataset:
 
 class TestDatasetReexport:
     def test_importable_from_evaluation_package(self) -> None:
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             EvaluationDataset as ED,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             EvaluationExample as EE,
         )
-        from semantic_conversation_engine.evaluation import (
+        from talkex.evaluation import (
             RelevanceJudgment as RJ,
         )
 

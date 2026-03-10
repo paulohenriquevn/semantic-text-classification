@@ -49,5 +49,5 @@ array = np.array(record.vector, dtype=np.float32)
 ### Rules
 - `EmbeddingRecord.vector` is always `list[float]`
 - Conversion to `ndarray` is done once at the boundary of the consuming module
-- No numpy imports in `src/semantic_conversation_engine/models/`
+- No numpy imports in `src/talkex/models/`
 - The `dimensions` field validates vector length at construction time

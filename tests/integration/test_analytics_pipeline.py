@@ -10,43 +10,43 @@ Proves the analytics subsystem operates on real pipeline outputs, not synthetic 
 import json
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.analytics.aggregators import SimpleAnalyticsEngine
-from semantic_conversation_engine.analytics.benchmark import (
+from talkex.analytics.aggregators import SimpleAnalyticsEngine
+from talkex.analytics.benchmark import (
     AnalyticsBenchmarkRunner,
 )
-from semantic_conversation_engine.analytics.builders import (
+from talkex.analytics.builders import (
     rule_execution_to_event,
 )
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.metrics import compute_analytics_metrics
-from semantic_conversation_engine.analytics.models import AnalyticsQuery
-from semantic_conversation_engine.analytics.query_runner import AnalyticsQueryRunner
-from semantic_conversation_engine.classification.features import (
+from talkex.analytics.metrics import compute_analytics_metrics
+from talkex.analytics.models import AnalyticsQuery
+from talkex.analytics.query_runner import AnalyticsQueryRunner
+from talkex.classification.features import (
     extract_lexical_features,
 )
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
-from semantic_conversation_engine.rules.config import (
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.rules.compiler import SimpleRuleCompiler
+from talkex.rules.config import (
     EvidencePolicy,
     RuleEngineConfig,
     RuleEvaluationMode,
     ShortCircuitPolicy,
 )
-from semantic_conversation_engine.rules.evaluator import (
+from talkex.rules.evaluator import (
     SimpleRuleEvaluator,
     map_to_rule_execution,
 )
-from semantic_conversation_engine.rules.models import RuleEvaluationInput
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.rules.models import RuleEvaluationInput
+from talkex.segmentation.segmenter import TurnSegmenter
 
 _TRANSCRIPT_TEXT = """\
 Customer: I have a billing issue with my credit card.

@@ -4,7 +4,7 @@ Tests cover: ClassificationInput, LabelScore, ClassificationResult
 construction, properties, score semantics, and reexport.
 """
 
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
     ClassificationResult,
     LabelScore,
@@ -199,13 +199,13 @@ class TestClassificationResult:
 
 class TestClassificationModelsReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationInput as CI,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationResult as CR,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             LabelScore as LS,
         )
 

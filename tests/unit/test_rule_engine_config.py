@@ -4,7 +4,7 @@ Tests cover: construction, defaults, validation, enum values,
 immutability, reexport.
 """
 
-from semantic_conversation_engine.rules.config import (
+from talkex.rules.config import (
     EvidencePolicy,
     PredicateType,
     RuleEngineConfig,
@@ -155,19 +155,19 @@ class TestRuleEngineConfigImmutability:
 
 class TestConfigReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             EvidencePolicy as EP,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             PredicateType as PT,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleEngineConfig as REC,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleEvaluationMode as REM,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             ShortCircuitPolicy as SCP,
         )
 

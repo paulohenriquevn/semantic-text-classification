@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -261,6 +261,6 @@ class TestEmbeddingRecordBoundaryDeserialization:
 
 class TestEmbeddingRecordReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import EmbeddingRecord as Imported
+        from talkex.models import EmbeddingRecord as Imported
 
         assert Imported is EmbeddingRecord

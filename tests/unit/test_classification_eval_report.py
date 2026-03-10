@@ -8,7 +8,7 @@ import csv
 import io
 import json
 
-from semantic_conversation_engine.classification_eval.report import (
+from talkex.classification_eval.report import (
     ClassificationExperimentReport,
     ClassificationMethodResult,
     ExampleMetrics,
@@ -200,13 +200,13 @@ class TestReportCSV:
 
 class TestReportReexport:
     def test_importable_from_package(self) -> None:
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationExperimentReport as CER,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationMethodResult as CMR,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ExampleMetrics as EM,
         )
 

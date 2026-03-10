@@ -9,14 +9,14 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.context.windowing import (
+from talkex.context.config import ContextWindowConfig
+from talkex.context.windowing import (
     WindowSlice,
     generate_window_slices,
 )
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId
+from talkex.models.enums import SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId
 
 # ---------------------------------------------------------------------------
 # Helpers

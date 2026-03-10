@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from semantic_conversation_engine.embeddings.config import (
+from talkex.embeddings.config import (
     EmbeddingModelConfig,
     EmbeddingRuntimeConfig,
 )
-from semantic_conversation_engine.models.enums import PoolingStrategy
+from talkex.models.enums import PoolingStrategy
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -160,14 +160,14 @@ class TestRuntimeConfig:
 
 class TestEmbeddingConfigReexport:
     def test_model_config_importable_from_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             EmbeddingModelConfig as Imported,
         )
 
         assert Imported is EmbeddingModelConfig
 
     def test_runtime_config_importable_from_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             EmbeddingRuntimeConfig as Imported,
         )
 

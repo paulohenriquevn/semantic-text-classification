@@ -8,14 +8,14 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import (
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import (
     QualitySignals,
     SpeakerHint,
     TranscriptInput,
 )
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.models.types import ConversationId
+from talkex.models.enums import Channel
+from talkex.models.types import ConversationId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -281,21 +281,21 @@ class TestTranscriptInputBoundaryDeserialization:
 
 class TestIngestionReexport:
     def test_transcript_input_importable_from_ingestion(self) -> None:
-        from semantic_conversation_engine.ingestion import TranscriptInput as Imported
+        from talkex.ingestion import TranscriptInput as Imported
 
         assert Imported is TranscriptInput
 
     def test_source_format_importable_from_ingestion(self) -> None:
-        from semantic_conversation_engine.ingestion import SourceFormat as Imported
+        from talkex.ingestion import SourceFormat as Imported
 
         assert Imported is SourceFormat
 
     def test_quality_signals_importable_from_ingestion(self) -> None:
-        from semantic_conversation_engine.ingestion import QualitySignals as Imported
+        from talkex.ingestion import QualitySignals as Imported
 
         assert Imported is QualitySignals
 
     def test_speaker_hint_importable_from_ingestion(self) -> None:
-        from semantic_conversation_engine.ingestion import SpeakerHint as Imported
+        from talkex.ingestion import SpeakerHint as Imported
 
         assert Imported is SpeakerHint

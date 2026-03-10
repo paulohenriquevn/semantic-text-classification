@@ -2,7 +2,7 @@
 
 import pytest
 
-from semantic_conversation_engine.models.enums import (
+from talkex.models.enums import (
     Channel,
     ObjectType,
     PoolingStrategy,
@@ -122,21 +122,21 @@ class TestEnumsImportFromModelsPackage:
     """Verify enums are properly re-exported from the models package."""
 
     def test_speaker_role_importable(self) -> None:
-        from semantic_conversation_engine.models import SpeakerRole as Imported
+        from talkex.models import SpeakerRole as Imported
 
         assert Imported is SpeakerRole
 
     def test_channel_importable(self) -> None:
-        from semantic_conversation_engine.models import Channel as Imported
+        from talkex.models import Channel as Imported
 
         assert Imported is Channel
 
     def test_object_type_importable(self) -> None:
-        from semantic_conversation_engine.models import ObjectType as Imported
+        from talkex.models import ObjectType as Imported
 
         assert Imported is ObjectType
 
     def test_pooling_strategy_importable(self) -> None:
-        from semantic_conversation_engine.models import PoolingStrategy as Imported
+        from talkex.models import PoolingStrategy as Imported
 
         assert Imported is PoolingStrategy

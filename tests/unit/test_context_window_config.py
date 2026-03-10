@@ -6,7 +6,7 @@ validation, strict mode, immutability, serialization, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.context.config import ContextWindowConfig
+from talkex.context.config import ContextWindowConfig
 
 # ---------------------------------------------------------------------------
 # Construction — defaults
@@ -144,6 +144,6 @@ class TestContextWindowConfigSerialization:
 
 class TestContextWindowConfigReexport:
     def test_importable_from_context_package(self) -> None:
-        from semantic_conversation_engine.context import ContextWindowConfig as Imported
+        from talkex.context import ContextWindowConfig as Imported
 
         assert Imported is ContextWindowConfig

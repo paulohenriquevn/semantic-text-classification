@@ -8,16 +8,16 @@ from pathlib import Path
 
 import pytest
 
-from semantic_conversation_engine.classification.labels import LabelSpace
-from semantic_conversation_engine.classification.models import ClassificationInput
-from semantic_conversation_engine.classification.serialization import (
+from talkex.classification.labels import LabelSpace
+from talkex.classification.models import ClassificationInput
+from talkex.classification.serialization import (
     load_similarity_classifier,
     save_similarity_classifier,
 )
-from semantic_conversation_engine.classification.similarity import (
+from talkex.classification.similarity import (
     EmbeddingSimilarityClassifier,
 )
-from semantic_conversation_engine.exceptions import ModelError
+from talkex.exceptions import ModelError
 
 
 def _make_classifier() -> EmbeddingSimilarityClassifier:
@@ -140,14 +140,14 @@ class TestSerializationErrors:
 
 class TestSerializationReexport:
     def test_save_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             save_similarity_classifier as save_fn,
         )
 
         assert save_fn is save_similarity_classifier
 
     def test_load_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             load_similarity_classifier as load_fn,
         )
 

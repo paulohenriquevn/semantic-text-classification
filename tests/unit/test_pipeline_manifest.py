@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.pipeline.manifest import (
+from talkex.pipeline.manifest import (
     PipelineRunManifest,
     compute_config_fingerprint,
 )
@@ -181,14 +181,14 @@ class TestComputeConfigFingerprint:
 class TestManifestInSystemPipelineResult:
     def test_result_has_manifest_field(self) -> None:
         """SystemPipelineResult accepts a manifest field."""
-        from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-        from semantic_conversation_engine.context.config import ContextWindowConfig
-        from semantic_conversation_engine.ingestion.enums import SourceFormat
-        from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-        from semantic_conversation_engine.models.enums import Channel
-        from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-        from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
-        from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+        from talkex.context.builder import SlidingWindowBuilder
+        from talkex.context.config import ContextWindowConfig
+        from talkex.ingestion.enums import SourceFormat
+        from talkex.ingestion.inputs import TranscriptInput
+        from talkex.models.enums import Channel
+        from talkex.pipeline.pipeline import TextProcessingPipeline
+        from talkex.pipeline.system_pipeline import SystemPipeline
+        from talkex.segmentation.segmenter import TurnSegmenter
 
         transcript = TranscriptInput(
             conversation_id="conv_manifest",
@@ -211,17 +211,17 @@ class TestManifestInSystemPipelineResult:
 
     def test_manifest_tracks_embedding_model(self) -> None:
         """Manifest records embedding model version when generator is provided."""
-        from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-        from semantic_conversation_engine.context.config import ContextWindowConfig
-        from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-        from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-        from semantic_conversation_engine.embeddings.preprocessing import PreprocessingConfig
-        from semantic_conversation_engine.ingestion.enums import SourceFormat
-        from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-        from semantic_conversation_engine.models.enums import Channel
-        from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-        from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
-        from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+        from talkex.context.builder import SlidingWindowBuilder
+        from talkex.context.config import ContextWindowConfig
+        from talkex.embeddings.config import EmbeddingModelConfig
+        from talkex.embeddings.generator import NullEmbeddingGenerator
+        from talkex.embeddings.preprocessing import PreprocessingConfig
+        from talkex.ingestion.enums import SourceFormat
+        from talkex.ingestion.inputs import TranscriptInput
+        from talkex.models.enums import Channel
+        from talkex.pipeline.pipeline import TextProcessingPipeline
+        from talkex.pipeline.system_pipeline import SystemPipeline
+        from talkex.segmentation.segmenter import TurnSegmenter
 
         transcript = TranscriptInput(
             conversation_id="conv_emb_manifest",
@@ -247,14 +247,14 @@ class TestManifestInSystemPipelineResult:
 
     def test_manifest_config_fingerprint_changes_with_config(self) -> None:
         """Different configs produce different fingerprints."""
-        from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-        from semantic_conversation_engine.context.config import ContextWindowConfig
-        from semantic_conversation_engine.ingestion.enums import SourceFormat
-        from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-        from semantic_conversation_engine.models.enums import Channel
-        from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-        from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
-        from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+        from talkex.context.builder import SlidingWindowBuilder
+        from talkex.context.config import ContextWindowConfig
+        from talkex.ingestion.enums import SourceFormat
+        from talkex.ingestion.inputs import TranscriptInput
+        from talkex.models.enums import Channel
+        from talkex.pipeline.pipeline import TextProcessingPipeline
+        from talkex.pipeline.system_pipeline import SystemPipeline
+        from talkex.segmentation.segmenter import TurnSegmenter
 
         transcript = TranscriptInput(
             conversation_id="conv_fp",
@@ -278,14 +278,14 @@ class TestManifestInSystemPipelineResult:
 
     def test_each_run_gets_unique_run_id(self) -> None:
         """Two pipeline runs produce different run_ids."""
-        from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-        from semantic_conversation_engine.context.config import ContextWindowConfig
-        from semantic_conversation_engine.ingestion.enums import SourceFormat
-        from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-        from semantic_conversation_engine.models.enums import Channel
-        from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-        from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
-        from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+        from talkex.context.builder import SlidingWindowBuilder
+        from talkex.context.config import ContextWindowConfig
+        from talkex.ingestion.enums import SourceFormat
+        from talkex.ingestion.inputs import TranscriptInput
+        from talkex.models.enums import Channel
+        from talkex.pipeline.pipeline import TextProcessingPipeline
+        from talkex.pipeline.system_pipeline import SystemPipeline
+        from talkex.segmentation.segmenter import TurnSegmenter
 
         transcript = TranscriptInput(
             conversation_id="conv_unique",
@@ -315,7 +315,7 @@ class TestManifestInSystemPipelineResult:
 
 class TestManifestReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             PipelineRunManifest,
             compute_config_fingerprint,
         )

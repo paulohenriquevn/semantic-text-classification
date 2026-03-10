@@ -4,7 +4,7 @@ Tests cover: FeatureSet, lexical features, structural features,
 feature merging, and reexport.
 """
 
-from semantic_conversation_engine.classification.features import (
+from talkex.classification.features import (
     FeatureSet,
     extract_lexical_features,
     extract_structural_features,
@@ -192,16 +192,16 @@ class TestMergeFeatureSets:
 
 class TestFeaturesReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             FeatureSet as FS,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             extract_lexical_features as elf,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             extract_structural_features as esf,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             merge_feature_sets as mfs,
         )
 

@@ -5,14 +5,14 @@ has_customer/has_agent, customer/agent turn counts, role texts,
 edge cases (single speaker, all unknown), and build-level coverage metrics.
 """
 
-from semantic_conversation_engine.context.metrics import (
+from talkex.context.metrics import (
     compute_build_coverage,
     compute_window_metrics,
 )
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId, WindowId
+from talkex.models.context_window import ContextWindow
+from talkex.models.enums import SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId, WindowId
 
 # ---------------------------------------------------------------------------
 # Helpers

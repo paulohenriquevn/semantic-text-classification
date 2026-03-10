@@ -1,20 +1,25 @@
 # Changelog
 
-All notable changes to the Semantic Conversation Intelligence Engine will be documented in this file.
+All notable changes to the TalkEx — Conversation Intelligence Engine will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Package renamed from `semantic_conversation_engine` to `talkex` — shorter, product-ready branding (RFC-005, no-ticket)
+- CLI entrypoint renamed from `sce` to `talkex` (no-ticket)
+- PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)
+
 ### Added
 - README.md rewritten to match implemented reality: Quick Start, Architecture, CLI Commands, Configuration, Transcript Format, Rule Engine DSL, Programmatic Usage, Benchmarking, Development, Package Structure, and Design Principles (no-ticket)
 - Example scripts: `examples/run_pipeline.py` (pipeline with rules and manifest access) and `examples/benchmark_pipeline.py` (3-scenario benchmark comparison with CSV/JSON export) (no-ticket)
 - Release smoke tests: package installation, CLI entrypoint, end-to-end pipeline execution, config roundtrip, and example script verification (no-ticket)
-- `sce` CLI entrypoint with commands: `run` (execute pipeline on transcript file), `benchmark` (compare pipeline configurations), `config` (export/validate configuration), `version` (show engine version) (no-ticket)
+- `talkex` CLI entrypoint with commands: `run` (execute pipeline on transcript file), `benchmark` (compare pipeline configurations), `config` (export/validate configuration), `version` (show engine version) (no-ticket)
 - `PipelineConfig`: unified pipeline configuration aggregating all stage configs (segmentation, context, embedding, rules) with JSON loading (`from_json`), serialization (`to_json`), and validation (no-ticket)
 - `PipelineRunner`: operational runner bridging CLI and SystemPipeline — builds pipeline from config, loads transcripts from files, persists outputs (manifest + summary) to structured output directories (no-ticket)
-- `__main__.py`: enables `python -m semantic_conversation_engine` execution (no-ticket)
+- `__main__.py`: enables `python -m talkex` execution (no-ticket)
 - `click` added as core dependency for CLI framework (no-ticket)
 - `PipelineRunManifest`: execution identity and version manifest for pipeline runs — unique `run_id`, UTC timestamp, component versions (embedding model, classifier, rule evaluator), deterministic config fingerprint (`sha256:`), and JSON serialization for auditability (no-ticket)
 - `compute_config_fingerprint`: deterministic SHA-256 fingerprint of pipeline configuration dicts for drift detection across runs (no-ticket)
@@ -69,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Core data model `EmbeddingRecord` — versioned dense vector with `dimensions == len(vector)` invariant (no-ticket)
 - Core data model `Prediction` — classification result with score/confidence/threshold ranges and `is_above_threshold` property (no-ticket)
 - Core data model `RuleExecution` — auditable rule evaluation with typed `EvidenceItem` and `matched=True → evidence required` invariant (no-ticket)
-- ADR-001: Package layout and public API (`src/` layout, `semantic_conversation_engine` package) (no-ticket)
+- ADR-001: Package layout and public API (`src/` layout, `talkex` package) (no-ticket)
 - ADR-002: Frozen and strict pydantic models (`ConfigDict(frozen=True, strict=True)`) (no-ticket)
 - ADR-003: Embedding vectors as `list[float]` in data models, `ndarray` at computation boundaries (no-ticket)
 - ADR-004: ContextWindow structural fields for auditability and reproducibility (no-ticket)

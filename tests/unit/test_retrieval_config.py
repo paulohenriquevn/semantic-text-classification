@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from semantic_conversation_engine.retrieval.config import (
+from talkex.retrieval.config import (
     DistanceMetric,
     FusionStrategy,
     HybridRetrievalConfig,
@@ -18,7 +18,7 @@ from semantic_conversation_engine.retrieval.config import (
     LexicalIndexConfig,
     VectorIndexConfig,
 )
-from semantic_conversation_engine.retrieval.models import (
+from talkex.retrieval.models import (
     QueryType,
     RetrievalFilter,
     RetrievalHit,
@@ -400,13 +400,13 @@ class TestRetrievalResult:
 
 class TestRetrievalReexport:
     def test_configs_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             HybridRetrievalConfig as HRC,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             LexicalIndexConfig as LIC,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             VectorIndexConfig as VIC,
         )
 
@@ -415,13 +415,13 @@ class TestRetrievalReexport:
         assert VIC is VectorIndexConfig
 
     def test_enums_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             DistanceMetric as DM,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             FusionStrategy as FS,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             IndexType as IT,
         )
 
@@ -430,13 +430,13 @@ class TestRetrievalReexport:
         assert IT is IndexType
 
     def test_models_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             RetrievalHit as RH,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             RetrievalQuery as RQ,
         )
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             RetrievalResult as RR,
         )
 

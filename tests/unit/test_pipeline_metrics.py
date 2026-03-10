@@ -9,27 +9,27 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.classification.orchestrator import (
+from talkex.classification.orchestrator import (
     ClassificationBatchResult,
 )
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.conversation import Conversation
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import (
+from talkex.models.context_window import ContextWindow
+from talkex.models.conversation import Conversation
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import (
     Channel,
     ObjectType,
     PoolingStrategy,
     SpeakerRole,
 )
-from semantic_conversation_engine.models.prediction import Prediction
-from semantic_conversation_engine.models.rule_execution import EvidenceItem, RuleExecution
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import (
+from talkex.models.prediction import Prediction
+from talkex.models.rule_execution import EvidenceItem, RuleExecution
+from talkex.models.turn import Turn
+from talkex.models.types import (
     EmbeddingId,
     PredictionId,
     RuleId,
 )
-from semantic_conversation_engine.pipeline.metrics import (
+from talkex.pipeline.metrics import (
     avg_outputs_per_stage,
     avg_stage_latency_ms,
     avg_total_pipeline_ms,
@@ -37,8 +37,8 @@ from semantic_conversation_engine.pipeline.metrics import (
     stage_skip_rate,
     total_artifacts_produced,
 )
-from semantic_conversation_engine.pipeline.result import PipelineResult
-from semantic_conversation_engine.pipeline.system_pipeline import (
+from talkex.pipeline.result import PipelineResult
+from talkex.pipeline.system_pipeline import (
     StageResult,
     SystemPipelineResult,
 )

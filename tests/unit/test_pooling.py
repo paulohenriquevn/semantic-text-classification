@@ -7,13 +7,13 @@ edge cases (empty input, zero vector), and normalization.
 import numpy as np
 import pytest
 
-from semantic_conversation_engine.embeddings.pooling import (
+from talkex.embeddings.pooling import (
     apply_pooling,
     l2_normalize,
     max_pool,
     mean_pool,
 )
-from semantic_conversation_engine.models.enums import PoolingStrategy
+from talkex.models.enums import PoolingStrategy
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -152,16 +152,16 @@ class TestApplyPooling:
 
 class TestPoolingReexport:
     def test_importable_from_embeddings_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             apply_pooling as ap,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             l2_normalize as ln,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             max_pool as mxp,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             mean_pool as mp,
         )
 

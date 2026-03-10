@@ -8,17 +8,17 @@ and reexport.
 import json
 from datetime import UTC, datetime, timedelta
 
-from semantic_conversation_engine.analytics.aggregators import SimpleAnalyticsEngine
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.aggregators import SimpleAnalyticsEngine
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.models import (
+from talkex.analytics.models import (
     AnalyticsEvent,
     AnalyticsQuery,
 )
-from semantic_conversation_engine.analytics.query_runner import AnalyticsQueryRunner
+from talkex.analytics.query_runner import AnalyticsQueryRunner
 
 _BASE = datetime(2026, 3, 10, 12, 0, 0, tzinfo=UTC)
 
@@ -345,6 +345,6 @@ class TestRunComposite:
 
 class TestQueryRunnerReexport:
     def test_importable_from_analytics_package(self) -> None:
-        from semantic_conversation_engine.analytics import AnalyticsQueryRunner
+        from talkex.analytics import AnalyticsQueryRunner
 
         assert AnalyticsQueryRunner is not None

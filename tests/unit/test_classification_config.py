@@ -6,7 +6,7 @@ immutability, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.classification.config import (
+from talkex.classification.config import (
     ClassificationLevel,
     ClassificationMode,
     ClassifierConfig,
@@ -116,13 +116,13 @@ class TestClassifierConfigImmutability:
 
 class TestClassificationConfigReexport:
     def test_importable_from_classification_package(self) -> None:
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationLevel as CL,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassificationMode as CM,
         )
-        from semantic_conversation_engine.classification import (
+        from talkex.classification import (
             ClassifierConfig as CC,
         )
 

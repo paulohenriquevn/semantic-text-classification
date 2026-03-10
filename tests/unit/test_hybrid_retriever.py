@@ -5,25 +5,25 @@ deduplication, RRF fusion, ordering contract, score preservation, stats,
 top_k enforcement, and protocol compliance.
 """
 
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
-from semantic_conversation_engine.retrieval.bm25 import InMemoryBM25Index
-from semantic_conversation_engine.retrieval.config import (
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import NullEmbeddingGenerator
+from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
+from talkex.retrieval.bm25 import InMemoryBM25Index
+from talkex.retrieval.config import (
     FusionStrategy,
     HybridRetrievalConfig,
     VectorIndexConfig,
 )
-from semantic_conversation_engine.retrieval.hybrid import SimpleHybridRetriever
-from semantic_conversation_engine.retrieval.models import (
+from talkex.retrieval.hybrid import SimpleHybridRetriever
+from talkex.retrieval.models import (
     QueryType,
     RetrievalMode,
     RetrievalQuery,
 )
-from semantic_conversation_engine.retrieval.vector_index import InMemoryVectorIndex
+from talkex.retrieval.vector_index import InMemoryVectorIndex
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -360,7 +360,7 @@ class TestHybridFusionConfig:
 
 class TestHybridReexport:
     def test_importable_from_retrieval_package(self) -> None:
-        from semantic_conversation_engine.retrieval import (
+        from talkex.retrieval import (
             SimpleHybridRetriever as SHR,
         )
 

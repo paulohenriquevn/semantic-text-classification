@@ -4,9 +4,9 @@ Tests cover: RuleDefinition, RuleEvaluationInput, PredicateResult,
 RuleResult — construction, defaults, immutability, evidence mapping, reexport.
 """
 
-from semantic_conversation_engine.rules.ast import AndNode, PredicateNode
-from semantic_conversation_engine.rules.config import PredicateType
-from semantic_conversation_engine.rules.models import (
+from talkex.rules.ast import AndNode, PredicateNode
+from talkex.rules.config import PredicateType
+from talkex.rules.models import (
     PredicateResult,
     RuleDefinition,
     RuleEvaluationInput,
@@ -344,16 +344,16 @@ class TestRuleResult:
 
 class TestModelsReexport:
     def test_importable_from_rules_package(self) -> None:
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             PredicateResult as PR,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleDefinition as RD,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleEvaluationInput as REI,
         )
-        from semantic_conversation_engine.rules import (
+        from talkex.rules import (
             RuleResult as RR,
         )
 

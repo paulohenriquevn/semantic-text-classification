@@ -8,9 +8,9 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId
+from talkex.models.enums import SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -268,6 +268,6 @@ class TestTurnBoundaryDeserialization:
 
 class TestTurnReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import Turn as Imported
+        from talkex.models import Turn as Imported
 
         assert Imported is Turn

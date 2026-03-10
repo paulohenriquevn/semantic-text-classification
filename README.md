@@ -1,4 +1,4 @@
-# Semantic Conversation Intelligence Engine
+# TalkEx — Conversation Intelligence Engine
 
 A scalable **NLP platform for large-scale conversation analysis** designed for call centers, customer support operations, and digital service channels.
 
@@ -11,19 +11,19 @@ Transforms raw conversations into **structured, searchable, and actionable insig
 pip install -e ".[dev]"
 
 # Run pipeline on a transcript
-sce run transcript.txt --channel voice --format labeled
+talkex run transcript.txt --channel voice --format labeled
 
 # Run with DSL rules
-sce run transcript.txt --rule 'keyword("billing")' --rule 'keyword("cancel")'
+talkex run transcript.txt --rule 'keyword("billing")' --rule 'keyword("cancel")'
 
 # Run benchmark comparing configurations
-sce benchmark transcript.txt --output benchmark_output/
+talkex benchmark transcript.txt --output benchmark_output/
 
 # Export config template
-sce config --export config.json
+talkex config --export config.json
 
 # Show version
-sce version
+talkex version
 ```
 
 ## Architecture
@@ -68,19 +68,19 @@ Each stage is optional — the pipeline degrades gracefully when components are 
 
 ```bash
 # Run pipeline on a transcript file
-sce run <file> [--channel voice|chat|email] [--format labeled|plain]
+talkex run <file> [--channel voice|chat|email] [--format labeled|plain]
                 [--config config.json] [--output output/]
                 [--rule 'keyword("term")'] [--no-embeddings] [--no-rules]
                 [--conversation-id conv_123]
 
 # Run benchmark comparing pipeline configurations
-sce benchmark <file> [--config config.json] [--output output/]
+talkex benchmark <file> [--config config.json] [--output output/]
 
 # Export or validate configuration
-sce config [--export template.json] [--validate config.json]
+talkex config [--export template.json] [--validate config.json]
 
 # Show version
-sce version
+talkex version
 ```
 
 ### Output Structure
@@ -146,7 +146,7 @@ I can help you with that. What is the issue?
 Rules combine four signal families into auditable, traceable evaluations:
 
 ```python
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
+from talkex.rules.compiler import SimpleRuleCompiler
 
 compiler = SimpleRuleCompiler()
 
@@ -167,8 +167,8 @@ rule = compiler.compile(
 ## Programmatic Usage
 
 ```python
-from semantic_conversation_engine.pipeline.config import PipelineConfig
-from semantic_conversation_engine.pipeline.runner import PipelineRunner
+from talkex.pipeline.config import PipelineConfig
+from talkex.pipeline.runner import PipelineRunner
 
 # Configure and run
 config = PipelineConfig.from_json("config.json")
@@ -191,11 +191,11 @@ PipelineRunner.save_outputs(summary, "output/")
 ### Direct Pipeline Usage
 
 ```python
-from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
+from talkex.pipeline.system_pipeline import SystemPipeline
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.segmentation.segmenter import TurnSegmenter
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
 
 pipeline = SystemPipeline(
     text_pipeline=TextProcessingPipeline(
@@ -219,7 +219,7 @@ print(f"Windows: {len(result.pipeline_result.windows)}")
 Compare pipeline configurations with the built-in benchmark runner:
 
 ```python
-from semantic_conversation_engine.pipeline.benchmark import SystemBenchmarkRunner
+from talkex.pipeline.benchmark import SystemBenchmarkRunner
 
 runner = SystemBenchmarkRunner()
 report = runner.compare({
@@ -253,7 +253,7 @@ pytest tests/unit/test_foo.py -x -v -k "test_name"
 ### Package Structure
 
 ```
-src/semantic_conversation_engine/
+src/talkex/
 ├── models/           # Shared pydantic data types (frozen, strict)
 ├── ingestion/        # Data ingestion from multiple sources
 ├── segmentation/     # Turn segmentation and normalization

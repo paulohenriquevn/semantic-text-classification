@@ -7,19 +7,19 @@ the pipeline package.
 
 from datetime import UTC, datetime
 
-from semantic_conversation_engine.analytics.config import (
+from talkex.analytics.config import (
     AggregationWindow,
     AnalyticsLevel,
     MetricType,
 )
-from semantic_conversation_engine.analytics.models import (
+from talkex.analytics.models import (
     AggregationResult,
     AnalyticsEvent,
     AnalyticsQuery,
     MetricValue,
     TrendPoint,
 )
-from semantic_conversation_engine.pipeline.protocols import (
+from talkex.pipeline.protocols import (
     AnalyticsAggregator,
     AnalyticsReporter,
 )
@@ -203,7 +203,7 @@ class TestAnalyticsReporterProtocol:
 
 class TestProtocolReexport:
     def test_importable_from_pipeline_package(self) -> None:
-        from semantic_conversation_engine.pipeline import (
+        from talkex.pipeline import (
             AnalyticsAggregator,
             AnalyticsReporter,
         )

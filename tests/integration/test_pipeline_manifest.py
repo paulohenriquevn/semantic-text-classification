@@ -11,23 +11,23 @@ from __future__ import annotations
 
 import json
 
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-from semantic_conversation_engine.embeddings.preprocessing import PreprocessingConfig
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.pipeline.benchmark import SystemBenchmarkRunner
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.pipeline.system_pipeline import (
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import NullEmbeddingGenerator
+from talkex.embeddings.preprocessing import PreprocessingConfig
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel
+from talkex.pipeline.benchmark import SystemBenchmarkRunner
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.pipeline.system_pipeline import (
     SystemPipeline,
     SystemPipelineResult,
 )
-from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
-from semantic_conversation_engine.rules.evaluator import SimpleRuleEvaluator
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.rules.compiler import SimpleRuleCompiler
+from talkex.rules.evaluator import SimpleRuleEvaluator
+from talkex.segmentation.segmenter import TurnSegmenter
 
 _TRANSCRIPT = TranscriptInput(
     conversation_id="conv_manifest_integ",

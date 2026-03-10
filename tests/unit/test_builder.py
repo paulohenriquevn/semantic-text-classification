@@ -8,12 +8,12 @@ ContextWindow invariant compliance, and reexport.
 from datetime import UTC, datetime
 from typing import Any
 
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.models.conversation import Conversation
-from semantic_conversation_engine.models.enums import Channel, SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.models.conversation import Conversation
+from talkex.models.enums import Channel, SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -320,7 +320,7 @@ class TestContextWindowInvariants:
 
 class TestBuilderReexport:
     def test_importable_from_context_package(self) -> None:
-        from semantic_conversation_engine.context import (
+        from talkex.context import (
             SlidingWindowBuilder as Imported,
         )
 

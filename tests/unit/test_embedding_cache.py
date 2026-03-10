@@ -6,13 +6,13 @@ make_cache_key, clear, contains, and reexport.
 
 import pytest
 
-from semantic_conversation_engine.embeddings.cache import (
+from talkex.embeddings.cache import (
     EmbeddingCache,
     make_cache_key,
 )
-from semantic_conversation_engine.models.embedding_record import EmbeddingRecord
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
+from talkex.models.embedding_record import EmbeddingRecord
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -249,10 +249,10 @@ class TestCacheClear:
 
 class TestCacheReexport:
     def test_importable_from_embeddings_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             EmbeddingCache as EC,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             make_cache_key as mck,
         )
 

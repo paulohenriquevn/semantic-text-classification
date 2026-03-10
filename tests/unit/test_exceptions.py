@@ -2,7 +2,7 @@
 
 import pytest
 
-from semantic_conversation_engine.exceptions import (
+from talkex.exceptions import (
     ConfigurationError,
     EngineError,
     EngineValidationError,
@@ -140,7 +140,7 @@ class TestExceptionsImportFromPackageRoot:
     """Verify exceptions are properly re-exported from package root."""
 
     def test_all_exceptions_importable(self) -> None:
-        from semantic_conversation_engine import (  # noqa: F401
+        from talkex import (  # noqa: F401
             ConfigurationError,
             EngineError,
             EngineValidationError,

@@ -4,17 +4,17 @@ Tests cover: single classifier evaluation, multi-classifier comparison,
 per-example metrics, aggregation, config, reexport.
 """
 
-from semantic_conversation_engine.classification.models import (
+from talkex.classification.models import (
     ClassificationInput,
     ClassificationResult,
     LabelScore,
 )
-from semantic_conversation_engine.classification_eval.dataset import (
+from talkex.classification_eval.dataset import (
     ClassificationDataset,
     ClassificationExample,
     GroundTruthLabel,
 )
-from semantic_conversation_engine.classification_eval.runner import (
+from talkex.classification_eval.runner import (
     ClassificationBenchmarkRunner,
     ClassificationRunConfig,
 )
@@ -214,10 +214,10 @@ class TestRunConfig:
 
 class TestRunnerReexport:
     def test_importable_from_package(self) -> None:
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationBenchmarkRunner as CBR,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationRunConfig as CRC,
         )
 

@@ -8,9 +8,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from semantic_conversation_engine.models.conversation import Conversation
-from semantic_conversation_engine.models.enums import Channel
-from semantic_conversation_engine.models.types import ConversationId
+from talkex.models.conversation import Conversation
+from talkex.models.enums import Channel
+from talkex.models.types import ConversationId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -253,6 +253,6 @@ class TestConversationBoundaryDeserialization:
 
 class TestConversationReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import Conversation as Imported
+        from talkex.models import Conversation as Imported
 
         assert Imported is Conversation

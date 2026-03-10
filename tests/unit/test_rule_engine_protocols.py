@@ -11,13 +11,13 @@ to avoid the circular import triggered by ``pipeline.__init__`` →
 ``classification.orchestrator`` → ``pipeline.protocols``.
 """
 
-from semantic_conversation_engine.rules.ast import PredicateNode
-from semantic_conversation_engine.rules.config import (
+from talkex.rules.ast import PredicateNode
+from talkex.rules.config import (
     PredicateType,
     RuleEngineConfig,
     RuleEvaluationMode,
 )
-from semantic_conversation_engine.rules.models import (
+from talkex.rules.models import (
     PredicateResult,
     RuleDefinition,
     RuleEvaluationInput,
@@ -273,16 +273,16 @@ class TestRuleEvaluatorProtocol:
 
 class TestRuleProtocolReexport:
     def test_rule_compiler_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import RuleCompiler
-        from semantic_conversation_engine.pipeline.protocols import (
+        from talkex.pipeline import RuleCompiler
+        from talkex.pipeline.protocols import (
             RuleCompiler as DirectImport,
         )
 
         assert RuleCompiler is DirectImport
 
     def test_rule_evaluator_from_pipeline(self) -> None:
-        from semantic_conversation_engine.pipeline import RuleEvaluator
-        from semantic_conversation_engine.pipeline.protocols import (
+        from talkex.pipeline import RuleEvaluator
+        from talkex.pipeline.protocols import (
             RuleEvaluator as DirectImport,
         )
 

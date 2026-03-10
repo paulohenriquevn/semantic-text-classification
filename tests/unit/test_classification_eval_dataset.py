@@ -5,7 +5,7 @@ Tests cover: construction, properties, immutability, JSON round-trip, reexport.
 
 import json
 
-from semantic_conversation_engine.classification_eval.dataset import (
+from talkex.classification_eval.dataset import (
     ClassificationDataset,
     ClassificationExample,
     GroundTruthLabel,
@@ -238,13 +238,13 @@ class TestDatasetSerialization:
 
 class TestDatasetReexport:
     def test_importable_from_package(self) -> None:
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationDataset as CD,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             ClassificationExample as CE,
         )
-        from semantic_conversation_engine.classification_eval import (
+        from talkex.classification_eval import (
             GroundTruthLabel as GT,
         )
 

@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-from semantic_conversation_engine.models.enums import Channel, ObjectType
-from semantic_conversation_engine.models.types import EmbeddingId
+from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+from talkex.models.enums import Channel, ObjectType
+from talkex.models.types import EmbeddingId
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -180,10 +180,10 @@ class TestEmbeddingInputSerialization:
 
 class TestEmbeddingInputReexport:
     def test_importable_from_embeddings_package(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             EmbeddingBatch as BatchImported,
         )
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             EmbeddingInput as InputImported,
         )
 

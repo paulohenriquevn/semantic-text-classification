@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.models.context_window import ContextWindow
-from semantic_conversation_engine.models.types import ConversationId, TurnId, WindowId
+from talkex.models.context_window import ContextWindow
+from talkex.models.types import ConversationId, TurnId, WindowId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -315,6 +315,6 @@ class TestContextWindowBoundaryDeserialization:
 
 class TestContextWindowReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import ContextWindow as Imported
+        from talkex.models import ContextWindow as Imported
 
         assert Imported is ContextWindow

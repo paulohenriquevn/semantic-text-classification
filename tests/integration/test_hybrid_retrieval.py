@@ -7,33 +7,33 @@ Validates that the full pipeline produces correct hybrid search results
 with fused scores, mode reporting, and stats.
 """
 
-from semantic_conversation_engine.context.builder import SlidingWindowBuilder
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import NullEmbeddingGenerator
-from semantic_conversation_engine.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-from semantic_conversation_engine.ingestion.enums import SourceFormat
-from semantic_conversation_engine.ingestion.inputs import TranscriptInput
-from semantic_conversation_engine.models.enums import Channel, ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import ConversationId, EmbeddingId
-from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
-from semantic_conversation_engine.retrieval.bm25 import InMemoryBM25Index
-from semantic_conversation_engine.retrieval.builders import (
+from talkex.context.builder import SlidingWindowBuilder
+from talkex.context.config import ContextWindowConfig
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import NullEmbeddingGenerator
+from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.enums import Channel, ObjectType, PoolingStrategy
+from talkex.models.types import ConversationId, EmbeddingId
+from talkex.pipeline.pipeline import TextProcessingPipeline
+from talkex.retrieval.bm25 import InMemoryBM25Index
+from talkex.retrieval.builders import (
     context_windows_to_lexical_docs,
 )
-from semantic_conversation_engine.retrieval.config import (
+from talkex.retrieval.config import (
     FusionStrategy,
     HybridRetrievalConfig,
     VectorIndexConfig,
 )
-from semantic_conversation_engine.retrieval.hybrid import SimpleHybridRetriever
-from semantic_conversation_engine.retrieval.models import (
+from talkex.retrieval.hybrid import SimpleHybridRetriever
+from talkex.retrieval.models import (
     QueryType,
     RetrievalMode,
     RetrievalQuery,
 )
-from semantic_conversation_engine.retrieval.vector_index import InMemoryVectorIndex
-from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from talkex.retrieval.vector_index import InMemoryVectorIndex
+from talkex.segmentation.segmenter import TurnSegmenter
 
 _TRANSCRIPT = (
     "Customer: I need help with my billing issue\n"

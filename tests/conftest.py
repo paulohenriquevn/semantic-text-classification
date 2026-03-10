@@ -1,1 +1,1 @@
-"""Shared test fixtures for the Semantic Conversation Intelligence Engine."""
+"""Shared test fixtures for the TalkEx — Conversation Intelligence Engine."""

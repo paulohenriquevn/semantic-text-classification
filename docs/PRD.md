@@ -1,4 +1,4 @@
-# PRD — Semantic Conversation Intelligence Engine (Call Center)
+# PRD — TalkEx — Conversation Intelligence Engine (Call Center)
 
 **Versão:** 1.0
 **Status:** Draft
@@ -9,7 +9,7 @@
 
 ## 1. Visão Geral
 
-O **Semantic Conversation Intelligence Engine** é uma plataforma de processamento semântico para ambientes de atendimento (voz, chat e canais digitais) desenhada para analisar, classificar, buscar, auditar e extrair inteligência operacional de milhões de conversas. O sistema combina **transcrição**, **segmentação de turnos**, **janelas de contexto conversacional**, **embeddings semânticos**, **busca híbrida (lexical + vetorial)**, **classificação multi-label**, **reranking** e um **motor de regras semânticas auditável baseado em AST**.
+O **TalkEx — Conversation Intelligence Engine** é uma plataforma de processamento semântico para ambientes de atendimento (voz, chat e canais digitais) desenhada para analisar, classificar, buscar, auditar e extrair inteligência operacional de milhões de conversas. O sistema combina **transcrição**, **segmentação de turnos**, **janelas de contexto conversacional**, **embeddings semânticos**, **busca híbrida (lexical + vetorial)**, **classificação multi-label**, **reranking** e um **motor de regras semânticas auditável baseado em AST**.
 
 O objetivo central é transformar conversas brutas em sinais acionáveis para operação, qualidade, compliance, produto, retenção, cobrança, fraude, atendimento e analytics.
 

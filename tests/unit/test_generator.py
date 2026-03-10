@@ -8,19 +8,19 @@ import guard.
 import numpy as np
 import pytest
 
-from semantic_conversation_engine.embeddings.config import EmbeddingModelConfig
-from semantic_conversation_engine.embeddings.generator import (
+from talkex.embeddings.config import EmbeddingModelConfig
+from talkex.embeddings.generator import (
     GenerationStats,
     NullEmbeddingGenerator,
     SentenceTransformerGenerator,
 )
-from semantic_conversation_engine.embeddings.inputs import (
+from talkex.embeddings.inputs import (
     EmbeddingBatch,
     EmbeddingInput,
 )
-from semantic_conversation_engine.embeddings.preprocessing import PreprocessingConfig
-from semantic_conversation_engine.models.enums import ObjectType, PoolingStrategy
-from semantic_conversation_engine.models.types import EmbeddingId
+from talkex.embeddings.preprocessing import PreprocessingConfig
+from talkex.models.enums import ObjectType, PoolingStrategy
+from talkex.models.types import EmbeddingId
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -266,14 +266,14 @@ class TestSentenceTransformerGuard:
 
 class TestGeneratorReexport:
     def test_null_generator_importable(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             NullEmbeddingGenerator as NG,
         )
 
         assert NG is NullEmbeddingGenerator
 
     def test_stats_importable(self) -> None:
-        from semantic_conversation_engine.embeddings import (
+        from talkex.embeddings import (
             GenerationStats as GS,
         )
 

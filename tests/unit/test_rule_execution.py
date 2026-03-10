@@ -9,9 +9,9 @@ from typing import Any
 
 import pytest
 
-from semantic_conversation_engine.models.enums import ObjectType
-from semantic_conversation_engine.models.rule_execution import EvidenceItem, RuleExecution
-from semantic_conversation_engine.models.types import RuleId
+from talkex.models.enums import ObjectType
+from talkex.models.rule_execution import EvidenceItem, RuleExecution
+from talkex.models.types import RuleId
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -381,11 +381,11 @@ class TestRuleExecutionBoundaryDeserialization:
 
 class TestRuleExecutionReexport:
     def test_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import RuleExecution as Imported
+        from talkex.models import RuleExecution as Imported
 
         assert Imported is RuleExecution
 
     def test_evidence_item_importable_from_models_package(self) -> None:
-        from semantic_conversation_engine.models import EvidenceItem as Imported
+        from talkex.models import EvidenceItem as Imported
 
         assert Imported is EvidenceItem

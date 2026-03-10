@@ -4,14 +4,14 @@ Tests cover: speaker label rendering, delimiter handling, normalized_text
 preference, role-aware extraction, empty role text, and determinism.
 """
 
-from semantic_conversation_engine.context.config import ContextWindowConfig
-from semantic_conversation_engine.context.rendering import (
+from talkex.context.config import ContextWindowConfig
+from talkex.context.rendering import (
     extract_role_text,
     render_window_text,
 )
-from semantic_conversation_engine.models.enums import SpeakerRole
-from semantic_conversation_engine.models.turn import Turn
-from semantic_conversation_engine.models.types import ConversationId, TurnId
+from talkex.models.enums import SpeakerRole
+from talkex.models.turn import Turn
+from talkex.models.types import ConversationId, TurnId
 
 # ---------------------------------------------------------------------------
 # Helpers
