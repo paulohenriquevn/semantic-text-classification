@@ -31,6 +31,7 @@ from talkex.retrieval.models import (
     RetrievalQuery,
     RetrievalResult,
 )
+from talkex.retrieval.qdrant import QdrantVectorIndex
 from talkex.retrieval.vector_index import InMemoryVectorIndex
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "InMemoryVectorIndex",
     "IndexType",
     "LexicalIndexConfig",
+    "QdrantVectorIndex",
     "QueryType",
     "RetrievalFilter",
     "RetrievalHit",

@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)
 
 ### Added
+- `QdrantVectorIndex`: Qdrant-backed ANN vector index implementing VectorIndex protocol — supports in-memory (`:memory:`) and persistent (disk path) modes, drop-in replacement for `InMemoryVectorIndex` (no-ticket)
+- `qdrant-client` added as optional dependency (`pip install talkex-engine[qdrant]`) (no-ticket)
+- Web demo backend (`demo/`): FastAPI server with hybrid search API (`POST /search`), conversation API (`GET /conversation/{id}`), filters API (`GET /filters`), and analytics API (`GET /analytics/summary`) (no-ticket)
+- Demo data pipeline: `ingest_dataset.py` (HuggingFace → JSONL) and `build_index.py` (segmentation → embeddings → BM25 + Qdrant index build) for offline precomputation (no-ticket)
+- Demo performance test: `perf_test.py` measures search latency p50/p95/p99 across lexical, semantic, and hybrid modes with PRD target validation (< 200ms p95) (no-ticket)
+- Web demo frontend (`demo/frontend/`): React + Vite + TypeScript + Tailwind CSS SPA with search page, result cards with score breakdown, conversation viewer, domain filters, and analytics panel with domain distribution (no-ticket)
+- Categories system: create named categories with TalkEx Rule Engine DSL expressions, apply rules against entire corpus, view matched windows/conversations with evidence — full CRUD API (`POST/GET/DELETE /categories`, `POST /categories/{id}/apply`, `POST /categories/validate`) and React UI with DSL reference, validation, and expandable match lists (no-ticket)
+- PRD for web demo documenting architecture, APIs, performance targets, and implementation roadmap (`docs/PRD-web-demo.md`) (no-ticket)
 - README.md rewritten to match implemented reality: Quick Start, Architecture, CLI Commands, Configuration, Transcript Format, Rule Engine DSL, Programmatic Usage, Benchmarking, Development, Package Structure, and Design Principles (no-ticket)
 - Example scripts: `examples/run_pipeline.py` (pipeline with rules and manifest access) and `examples/benchmark_pipeline.py` (3-scenario benchmark comparison with CSV/JSON export) (no-ticket)
 - Release smoke tests: package installation, CLI entrypoint, end-to-end pipeline execution, config roundtrip, and example script verification (no-ticket)
