@@ -215,9 +215,9 @@ function defaultsForType(type: ConditionType): Partial<BuilderCondition> {
     case "channel":
       return { value: "voice" };
     case "intent_score":
-      return { value: "", threshold: "0.80", operator: ">" };
+      return { value: "", threshold: "0.50", operator: ">" };
     case "similarity":
-      return { value: "", threshold: "0.85", operator: ">" };
+      return { value: "", threshold: "0.50", operator: ">" };
     case "window_count":
       return { value: "", windowSize: "5", countValue: "2", operator: ">=" };
     default:

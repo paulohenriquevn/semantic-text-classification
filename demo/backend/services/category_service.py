@@ -67,7 +67,7 @@ def _collect_predicates(node: ASTNode) -> list[PredicateNode]:
     """Walk the AST and collect all predicate leaf nodes."""
     if isinstance(node, PredicateNode):
         return [node]
-    if isinstance(node, (AndNode, OrNode)):
+    if isinstance(node, AndNode | OrNode):
         result: list[PredicateNode] = []
         for child in node.children:
             result.extend(_collect_predicates(child))
@@ -81,7 +81,7 @@ def _compute_ast_depth(node: ASTNode) -> int:
     """Compute the maximum depth of an AST tree."""
     if isinstance(node, PredicateNode):
         return 1
-    if isinstance(node, (AndNode, OrNode)):
+    if isinstance(node, AndNode | OrNode):
         if not node.children:
             return 1
         return 1 + max(_compute_ast_depth(c) for c in node.children)
@@ -249,25 +249,30 @@ def _analyze_post_execution(
     }
 
 
-def _extract_similarity_refs(node: ASTNode) -> list[str]:
-    """Walk the AST and collect reference texts from similarity predicates.
+SEMANTIC_FEATURE_FIELDS = {"embedding_similarity", "intent_score"}
 
-    Returns a deduplicated list of reference texts that need embedding
-    computation for semantic evaluation.
+
+def _extract_semantic_refs(node: ASTNode) -> list[tuple[str, str]]:
+    """Walk the AST and collect (field_name, reference_text) from semantic predicates.
+
+    Both intent_score and embedding_similarity predicates need embedding
+    computation — they differ only in their feature key name.
+
+    Returns a deduplicated list of (field_name, ref_text) tuples.
     """
     if isinstance(node, PredicateNode):
-        if node.predicate_type == PredicateType.SEMANTIC and node.field_name == "embedding_similarity" and node.value:
-            return [str(node.value)]
+        if node.predicate_type == PredicateType.SEMANTIC and node.field_name in SEMANTIC_FEATURE_FIELDS and node.value:
+            return [(node.field_name, str(node.value))]
         return []
 
-    if isinstance(node, (AndNode, OrNode)):
-        refs: list[str] = []
+    if isinstance(node, AndNode | OrNode):
+        refs: list[tuple[str, str]] = []
         for child in node.children:
-            refs.extend(_extract_similarity_refs(child))
+            refs.extend(_extract_semantic_refs(child))
         return list(dict.fromkeys(refs))  # deduplicate preserving order
 
     if isinstance(node, NotNode):
-        return _extract_similarity_refs(node.child)
+        return _extract_semantic_refs(node.child)
 
     return []
 
@@ -280,6 +285,57 @@ def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     if norm_a == 0 or norm_b == 0:
         return 0.0
     return dot / (norm_a * norm_b)
+
+
+def _find_best_sentence(text: str, query_vector: list[float], embedding_generator: object) -> str | None:
+    """Find the sentence in text most similar to the query vector.
+
+    Splits the text into sentences, embeds each one, and returns the
+    sentence with the highest cosine similarity to the query. This gives
+    an approximate highlight for semantic matches.
+
+    Returns None if text is too short to split meaningfully.
+    """
+    import re
+
+    from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
+    from talkex.models.enums import ObjectType
+    from talkex.models.types import EmbeddingId
+
+    # Split into sentences on newlines (turn boundaries) and punctuation
+    sentences = [s.strip() for s in re.split(r"\n|(?<=[.!?])\s+", text) if s.strip()]
+    # Remove speaker tags like [UNKNOWN], [customer], [agent]
+    clean = [re.sub(r"\[[\w]+\]\s*", "", s).strip() for s in sentences]
+    clean_pairs = [(orig, c) for orig, c in zip(sentences, clean, strict=True) if len(c) > 5]
+
+    if len(clean_pairs) <= 1:
+        return None
+
+    # Embed all sentences
+    items = [
+        EmbeddingInput(
+            embedding_id=EmbeddingId(f"emb_sent_{i}"),
+            object_type=ObjectType.CONTEXT_WINDOW,
+            object_id=f"sent_{i}",
+            text=c,
+        )
+        for i, (_orig, c) in enumerate(clean_pairs)
+    ]
+    batch = EmbeddingBatch(items=items)
+    records = embedding_generator.generate(batch)
+    if not records:
+        return None
+
+    query_arr = np.array(query_vector)
+    best_score = -1.0
+    best_text = None
+    for rec, (orig, _c) in zip(records, clean_pairs, strict=False):
+        sim = _cosine_similarity(query_arr, np.array(rec.vector))
+        if sim > best_score:
+            best_score = sim
+            best_text = orig
+
+    return best_text
 
 
 class CategoryService:
@@ -329,31 +385,36 @@ class CategoryService:
         with open(self._persist_path, "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-    def _compute_similarity_scores(self, rule_def: RuleDefinition) -> dict[str, dict[str, float]]:
+    def _compute_similarity_scores(
+        self, rule_def: RuleDefinition
+    ) -> tuple[dict[str, dict[str, float]], list[float] | None]:
         """Compute embedding similarity scores for semantic predicates.
 
-        For each reference text found in similarity predicates, embeds the
-        reference text and uses the vector index to compute cosine similarity
-        against all stored window embeddings.
+        For each semantic predicate (intent_score or embedding_similarity),
+        embeds the reference text and uses the vector index to compute cosine
+        similarity against all stored window embeddings.
 
         Returns:
-            Mapping of reference_text → {window_id → similarity_score}.
-            Empty dict if no semantic predicates or no embedding infrastructure.
+            Tuple of:
+            - Mapping of field_name → {window_id → similarity_score}.
+            - Query vector (from the first semantic predicate) for sentence highlighting.
+            Both are empty/None if no semantic predicates or no infrastructure.
         """
         if self._embedding_generator is None or self._vector_index is None:
-            return {}
+            return {}, None
 
-        ref_texts = _extract_similarity_refs(rule_def.ast)
-        if not ref_texts:
-            return {}
+        semantic_refs = _extract_semantic_refs(rule_def.ast)
+        if not semantic_refs:
+            return {}, None
 
         from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
         from talkex.models.enums import ObjectType
         from talkex.models.types import EmbeddingId
 
-        scores_by_ref: dict[str, dict[str, float]] = {}
+        scores_by_field: dict[str, dict[str, float]] = {}
+        first_query_vector: list[float] | None = None
 
-        for ref_text in ref_texts:
+        for field_name, ref_text in semantic_refs:
             # Embed the reference text
             emb_input = EmbeddingInput(
                 embedding_id=EmbeddingId(f"emb_query_{uuid.uuid4().hex[:8]}"),
@@ -367,6 +428,8 @@ class CategoryService:
                 continue
 
             query_vector = records[0].vector
+            if first_query_vector is None:
+                first_query_vector = query_vector
 
             # Use vector index to search against all windows
             window_count = self._store.window_count
@@ -377,14 +440,15 @@ class CategoryService:
             for hit in hits:
                 score_map[hit.object_id] = hit.score
 
-            scores_by_ref[ref_text] = score_map
+            scores_by_field[field_name] = score_map
             logger.debug(
-                "Computed similarity scores for ref='%s': %d windows scored",
+                "Computed %s scores for ref='%s': %d windows scored",
+                field_name,
                 ref_text[:50],
                 len(score_map),
             )
 
-        return scores_by_ref
+        return scores_by_field, first_query_vector
 
     def _build_features(
         self,
@@ -398,21 +462,15 @@ class CategoryService:
 
         Args:
             window_id: The window being evaluated.
-            similarity_scores: Mapping ref_text → {window_id → score}.
+            similarity_scores: Mapping field_name → {window_id → score}.
 
         Returns:
-            Features dict with embedding_similarity populated.
+            Features dict with intent_score and/or embedding_similarity.
         """
         features: dict[str, float] = {}
 
-        if similarity_scores:
-            # Use the first reference text's score (most common case: one
-            # similarity predicate per rule). For multiple, the rule engine
-            # reads features["embedding_similarity"] which gets the score
-            # for the first reference.
-            for _ref_text, score_map in similarity_scores.items():
-                features["embedding_similarity"] = score_map.get(window_id, 0.0)
-                break
+        for field_name, score_map in similarity_scores.items():
+            features[field_name] = score_map.get(window_id, 0.0)
 
         return features
 
@@ -479,10 +537,13 @@ class CategoryService:
         start = time.monotonic()
 
         # Pre-compute semantic similarity scores if needed
-        similarity_scores = self._compute_similarity_scores(rule_def)
+        similarity_scores, query_vector = self._compute_similarity_scores(rule_def)
 
         matches: list[dict[str, object]] = []
         matched_conversations: set[str] = set()
+
+        # Cache best-sentence results per window to avoid re-embedding
+        best_sentence_cache: dict[str, str | None] = {}
 
         for window_id, window_meta in self._store.iter_windows():
             text = window_meta.get("window_text", "")
@@ -503,18 +564,35 @@ class CategoryService:
 
             results = self._evaluator.evaluate([rule_def], eval_input, config)
             if results and results[0].matched:
-                evidence = [
-                    {
-                        "predicate_type": pr.predicate_type.value,
-                        "field_name": pr.field_name,
-                        "operator": pr.operator,
-                        "score": pr.score,
-                        "threshold": pr.threshold,
-                        "matched_text": pr.matched_text,
-                    }
-                    for pr in results[0].predicate_results
-                    if pr.matched
-                ]
+                evidence = []
+                for pr in results[0].predicate_results:
+                    if not pr.matched:
+                        continue
+                    matched_text = pr.matched_text
+                    # For semantic predicates, find the best-matching sentence
+                    if (
+                        matched_text is None
+                        and pr.predicate_type == PredicateType.SEMANTIC
+                        and query_vector is not None
+                        and self._embedding_generator is not None
+                        and len(matches) < max_samples  # only for displayed matches
+                    ):
+                        if window_id not in best_sentence_cache:
+                            best_sentence_cache[window_id] = _find_best_sentence(
+                                text, query_vector, self._embedding_generator
+                            )
+                        matched_text = best_sentence_cache[window_id]
+
+                    evidence.append(
+                        {
+                            "predicate_type": pr.predicate_type.value,
+                            "field_name": pr.field_name,
+                            "operator": pr.operator,
+                            "score": pr.score,
+                            "threshold": pr.threshold,
+                            "matched_text": matched_text,
+                        }
+                    )
 
                 matches.append(
                     {
@@ -578,7 +656,7 @@ class CategoryService:
         start = time.monotonic()
 
         # Pre-compute semantic similarity scores if needed
-        similarity_scores = self._compute_similarity_scores(rule_def)
+        similarity_scores, _query_vector = self._compute_similarity_scores(rule_def)
 
         matches: list[CategoryMatch] = []
         matched_conversations: set[str] = set()

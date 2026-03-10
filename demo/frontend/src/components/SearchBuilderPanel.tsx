@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import {
+  BookOpen,
   Code,
   Layers,
   Loader2,
@@ -16,7 +17,7 @@ import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 // Types
 // ---------------------------------------------------------------------------
 
-type SearchMode = "builder" | "dsl";
+type SearchMode = "examples" | "builder" | "dsl";
 
 type ConditionType =
   | "keyword"
@@ -92,9 +93,9 @@ function defaultsForType(type: ConditionType): Partial<BuilderCondition> {
     case "channel":
       return { value: "voice" };
     case "intent_score":
-      return { value: "", threshold: "0.80", operator: ">" };
+      return { value: "", threshold: "0.50", operator: ">" };
     case "similarity":
-      return { value: "", threshold: "0.85", operator: ">" };
+      return { value: "", threshold: "0.50", operator: ">" };
     case "window_count":
       return { value: "", windowSize: "5", countValue: "2", operator: ">=" };
     default:
@@ -156,6 +157,95 @@ function generateSearchDSL(conditions: BuilderCondition[]): string {
   return `RULE search_query\nWHEN\n${whenClause}\nTHEN\n    tag("search_result")`;
 }
 
+// ---------------------------------------------------------------------------
+// Example search templates
+// ---------------------------------------------------------------------------
+
+interface SearchExample {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  dsl: string;
+  type: "semantic" | "lexical" | "combined";
+}
+
+const SEARCH_EXAMPLES: SearchExample[] = [
+  {
+    id: "cancelamento",
+    name: "Cancelamento",
+    icon: "🔴",
+    color: "border-red-300 bg-red-50 hover:bg-red-100",
+    description: "Detecta intenção de cancelamento via similaridade semântica",
+    dsl: `RULE search_query\nWHEN\n    semantic.similarity("quero cancelar meu serviço") > 0.50\nTHEN\n    tag("search_result")`,
+    type: "semantic",
+  },
+  {
+    id: "reclamacao",
+    name: "Reclamacao / Insatisfacao",
+    icon: "😠",
+    color: "border-orange-300 bg-orange-50 hover:bg-orange-100",
+    description: "Combina semantica + palavras-chave de reclamacao",
+    dsl: `RULE search_query\nWHEN\n    semantic.similarity("reclamação sobre serviço de telefonia") > 0.45\n    AND lexical.contains_any(["internet", "telefone", "plano", "sinal"])\nTHEN\n    tag("search_result")`,
+    type: "combined",
+  },
+  {
+    id: "cobranca",
+    name: "Cobranca Indevida",
+    icon: "💰",
+    color: "border-yellow-300 bg-yellow-50 hover:bg-yellow-100",
+    description: "Busca por questoes de cobranca e faturamento",
+    dsl: `RULE search_query\nWHEN\n    semantic.similarity("recebi uma cobrança indevida na minha fatura") > 0.50\nTHEN\n    tag("search_result")`,
+    type: "semantic",
+  },
+  {
+    id: "suporte",
+    name: "Suporte Tecnico",
+    icon: "🔧",
+    color: "border-blue-300 bg-blue-50 hover:bg-blue-100",
+    description: "Problemas tecnicos como internet, sistema, erro",
+    dsl: `RULE search_query\nWHEN\n    semantic.similarity("minha internet não está funcionando") > 0.50\nTHEN\n    tag("search_result")`,
+    type: "semantic",
+  },
+  {
+    id: "elogio",
+    name: "Elogios",
+    icon: "⭐",
+    color: "border-green-300 bg-green-50 hover:bg-green-100",
+    description: "Combina semantica de satisfacao + palavras de agradecimento",
+    dsl: `RULE search_query\nWHEN\n    semantic.intent("elogio satisfação") > 0.45\n    AND lexical.contains_any(["obrigado", "obrigada", "parabéns", "excelente"])\nTHEN\n    tag("search_result")`,
+    type: "combined",
+  },
+  {
+    id: "entrega",
+    name: "Prazo de Entrega",
+    icon: "📦",
+    color: "border-indigo-300 bg-indigo-50 hover:bg-indigo-100",
+    description: "Duvidas e reclamacoes sobre prazo de entrega",
+    dsl: `RULE search_query\nWHEN\n    semantic.similarity("qual o prazo de entrega do meu pedido") > 0.50\nTHEN\n    tag("search_result")`,
+    type: "semantic",
+  },
+  {
+    id: "cancel_lexical",
+    name: "Cancelamento (Lexical)",
+    icon: "🔍",
+    color: "border-gray-300 bg-gray-50 hover:bg-gray-100",
+    description: "Busca por palavras-chave de cancelamento — baseline lexical",
+    dsl: `RULE search_query\nWHEN\n    lexical.contains_any(["cancelar", "cancelamento", "desistir", "encerrar"])\nTHEN\n    tag("search_result")`,
+    type: "lexical",
+  },
+  {
+    id: "cancel_combo",
+    name: "Cancelamento (Hibrido)",
+    icon: "🎯",
+    color: "border-purple-300 bg-purple-50 hover:bg-purple-100",
+    description: "Semantica + lexical: alta precisao combinando ambos sinais",
+    dsl: `RULE search_query\nWHEN\n    semantic.intent("cancelamento") > 0.50\n    AND lexical.contains_any(["cancelar", "desistir", "encerrar"])\nTHEN\n    tag("search_result")`,
+    type: "combined",
+  },
+];
+
 function nextId(): string {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -175,7 +265,7 @@ export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelPro
 
   // Builder state — start with a similarity condition
   const [conditions, setConditions] = useState<BuilderCondition[]>([
-    { id: nextId(), type: "similarity", value: "", connector: "AND", threshold: "0.85", operator: ">" },
+    { id: nextId(), type: "similarity", value: "", connector: "AND", threshold: "0.50", operator: ">" },
   ]);
 
   const generatedDsl = useMemo(
@@ -198,6 +288,12 @@ export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelPro
         <div className="flex items-center border-b border-gray-100 px-4 py-2">
           <div className="flex gap-1">
             <ModeTab
+              active={mode === "examples"}
+              icon={<BookOpen className="h-3.5 w-3.5" />}
+              label="Examples"
+              onClick={() => setMode("examples")}
+            />
+            <ModeTab
               active={mode === "builder"}
               icon={<Layers className="h-3.5 w-3.5" />}
               label="Visual Builder"
@@ -213,6 +309,17 @@ export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelPro
         </div>
 
         <div className="p-4 space-y-4">
+          {/* Example templates */}
+          {mode === "examples" && (
+            <ExamplesGrid
+              onSelect={(example) => {
+                setDsl(example.dsl);
+                setMode("dsl");
+                setSearchResult(null);
+              }}
+            />
+          )}
+
           {/* Visual builder */}
           {mode === "builder" && (
             <ConditionBuilder
@@ -756,5 +863,47 @@ function ConditionValueInput({
       className="flex-1 px-2 py-1.5 rounded-md border border-gray-200 text-sm bg-white
                  focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Examples grid
+// ---------------------------------------------------------------------------
+
+const TYPE_BADGE: Record<string, { label: string; color: string }> = {
+  semantic: { label: "Semantic", color: "bg-purple-100 text-purple-700" },
+  lexical: { label: "Lexical", color: "bg-blue-100 text-blue-700" },
+  combined: { label: "Hybrid", color: "bg-indigo-100 text-indigo-700" },
+};
+
+function ExamplesGrid({ onSelect }: { onSelect: (example: SearchExample) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-2">
+        Click an example to load it in the DSL Editor
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {SEARCH_EXAMPLES.map((ex) => {
+          const badge = TYPE_BADGE[ex.type];
+          return (
+            <button
+              key={ex.id}
+              onClick={() => onSelect(ex)}
+              className={`text-left rounded-lg border px-3 py-2.5 transition-all ${ex.color}`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold text-gray-800">
+                  {ex.icon} {ex.name}
+                </span>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.color}`}>
+                  {badge.label}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">{ex.description}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

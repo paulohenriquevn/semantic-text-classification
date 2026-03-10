@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - DSL Builder na tela de Search: busca semântica via Visual Builder ou DSL Editor com toggle "Natural Language / DSL Builder" — permite construir queries com predicados de Score (intent_score) e Similarity (embedding_similarity), predicados lexicais, estruturais e contextuais, com resultados exibidos com evidências e texto destacado (no-ticket)
 - Semantic predicates agora funcionam no demo: CategoryService computa embedding similarity on-the-fly usando o mesmo embedding generator e vector index do search — predicados `semantic.similarity()` e `semantic.intent()` produzem scores reais em vez de 0.0 (no-ticket)
 - Query Score Evaluator: análise de qualidade em duas fases para queries DSL — pré-execução (análise estática do AST: famílias de predicados, complexidade, threshold warnings, pitfalls) e pós-execução (distribuição de scores, cobertura do corpus, concentração, quality score 0-100) — exibido como painel colapsável nos resultados de Search e Categories Preview (no-ticket)
+- Embedding model atualizado para `paraphrase-multilingual-MiniLM-L12-v2` — suporte nativo a PT-BR e 50+ idiomas, scores de similaridade calibrados para o dataset (no-ticket)
+- Predicado `semantic.intent()` agora funciona no demo — computa embeddings e similaridade igual ao `semantic.similarity()`, populando `features["intent_score"]` corretamente (no-ticket)
+- Aba "Examples" no Search DSL Builder com 8 pesquisas prontas cobrindo cancelamento, reclamação, cobrança, suporte técnico, elogios, prazo de entrega, busca lexical e busca híbrida — clique carrega no DSL Editor (no-ticket)
+- Destaque de trechos em resultados semânticos: para matches de `semantic.similarity()` e `semantic.intent()`, o sistema identifica a sentença mais relevante dentro da janela de contexto via embedding por sentença e destaca visualmente no texto do resultado (no-ticket)
 
 ### Fixed
 - `semantic.similarity()` agora respeita o operador de comparação da DSL (`<`, `<=`, `>`, `>=`) — antes hardcodava `similarity_above` (>=) ignorando o operador escrito pelo usuário (no-ticket)

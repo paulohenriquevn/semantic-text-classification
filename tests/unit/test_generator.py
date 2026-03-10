@@ -27,6 +27,16 @@ from talkex.models.types import EmbeddingId
 # ---------------------------------------------------------------------------
 
 
+def _has_sentence_transformers() -> bool:
+    """Check if sentence-transformers is available in the test environment."""
+    try:
+        import sentence_transformers  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _model_config(**overrides: object) -> EmbeddingModelConfig:
     defaults = {
         "model_name": "null-test-model",
@@ -253,8 +263,12 @@ class TestGenerationStats:
 
 
 class TestSentenceTransformerGuard:
+    @pytest.mark.skipif(
+        _has_sentence_transformers(),
+        reason="sentence-transformers is installed — import guard not testable",
+    )
     def test_raises_import_error_without_library(self) -> None:
-        """sentence-transformers is not installed in test env."""
+        """When sentence-transformers is not installed, init raises ImportError."""
         with pytest.raises(ImportError, match="sentence-transformers"):
             SentenceTransformerGenerator(model_config=_model_config())
 
