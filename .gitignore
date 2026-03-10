@@ -31,6 +31,10 @@ htmlcov/
 *.swp
 *.swo
 
+# Pipeline output
+output/
+examples/output/
+
 # Environment / secrets
 .env
 .env.*

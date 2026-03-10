@@ -13,15 +13,27 @@ Protocols defined:
     HybridRetriever   — combined lexical + semantic retrieval
     Reranker          — optional cross-encoder reranking
     Classifier        — feature vectors → classification results
-    RuleCompiler      — DSL text → RuleDefinition (compiled AST)
-    RuleEvaluator     — rules + input → RuleResult outcomes
+    RuleCompiler         — DSL text → RuleDefinition (compiled AST)
+    RuleEvaluator        — rules + input → RuleResult outcomes
+    AnalyticsAggregator  — events → aggregated metrics
+    AnalyticsReporter    — query → analytical results
 
 Usage:
     Concrete implementations inherit from or structurally match these protocols.
     The pipeline orchestrator accepts any object that satisfies the protocol.
 """
 
-from typing import Protocol
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from semantic_conversation_engine.analytics.models import (
+        AggregationResult,
+        AnalyticsEvent,
+        AnalyticsQuery,
+        TrendPoint,
+    )
 
 from semantic_conversation_engine.classification.models import (
     ClassificationInput,
@@ -320,5 +332,67 @@ class RuleEvaluator(Protocol):
 
         Raises:
             RuleError: If rule evaluation fails irrecoverably.
+        """
+        ...
+
+
+class AnalyticsAggregator(Protocol):
+    """Protocol for analytics aggregation implementations.
+
+    An AnalyticsAggregator ingests analytical events and produces
+    aggregated metrics grouped by configurable dimensions.
+    """
+
+    def aggregate(
+        self,
+        events: list[AnalyticsEvent],
+        group_by: str,
+    ) -> list[AggregationResult]:
+        """Aggregate events into grouped metrics.
+
+        Args:
+            events: List of analytics events to aggregate.
+            group_by: Dimension to group by (e.g., "channel", "label").
+
+        Returns:
+            List of AggregationResult objects, one per group.
+        """
+        ...
+
+
+class AnalyticsReporter(Protocol):
+    """Protocol for analytics reporting implementations.
+
+    An AnalyticsReporter executes analytical queries and produces
+    structured results (aggregations, trends, summaries).
+    """
+
+    def query(
+        self,
+        analytics_query: AnalyticsQuery,
+    ) -> list[AggregationResult]:
+        """Execute an analytics query.
+
+        Args:
+            analytics_query: Typed query specifying level, filters, grouping.
+
+        Returns:
+            List of AggregationResult objects matching the query.
+        """
+        ...
+
+    def trend(
+        self,
+        analytics_query: AnalyticsQuery,
+        metric_name: str,
+    ) -> list[TrendPoint]:
+        """Compute a time-series trend for a metric.
+
+        Args:
+            analytics_query: Query specifying time range and filters.
+            metric_name: Name of the metric to track over time.
+
+        Returns:
+            Ordered list of TrendPoint objects (ascending by timestamp).
         """
         ...

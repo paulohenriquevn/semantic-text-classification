@@ -4,6 +4,9 @@ Compiles a human-readable DSL into AST for safe, auditable execution.
 Combines four signal families: lexical, semantic, structural, and contextual.
 Supports short-circuit execution ordered by predicate cost and produces
 traceable evidence for every rule evaluation.
+
+Includes operational metrics, benchmark runner for comparing configurations,
+and structured reporting with JSON/CSV export.
 """
 
 from semantic_conversation_engine.rules.ast import (
@@ -12,6 +15,10 @@ from semantic_conversation_engine.rules.ast import (
     NotNode,
     OrNode,
     PredicateNode,
+)
+from semantic_conversation_engine.rules.benchmark import (
+    RuleBenchmarkConfig,
+    RuleBenchmarkRunner,
 )
 from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
 from semantic_conversation_engine.rules.config import (
@@ -26,6 +33,7 @@ from semantic_conversation_engine.rules.evaluator import (
     SimpleRuleEvaluator,
     map_to_rule_execution,
 )
+from semantic_conversation_engine.rules.metrics import compute_rule_metrics
 from semantic_conversation_engine.rules.models import (
     PredicateResult,
     RuleDefinition,
@@ -33,25 +41,36 @@ from semantic_conversation_engine.rules.models import (
     RuleResult,
 )
 from semantic_conversation_engine.rules.parser import parse_dsl
+from semantic_conversation_engine.rules.report import (
+    ConfigurationResult,
+    RuleExperimentReport,
+    RuleMetrics,
+)
 
 __all__ = [
     "PREDICATE_REGISTRY",
     "ASTNode",
     "AndNode",
+    "ConfigurationResult",
     "EvidencePolicy",
     "NotNode",
     "OrNode",
     "PredicateNode",
     "PredicateResult",
     "PredicateType",
+    "RuleBenchmarkConfig",
+    "RuleBenchmarkRunner",
     "RuleDefinition",
     "RuleEngineConfig",
     "RuleEvaluationInput",
     "RuleEvaluationMode",
+    "RuleExperimentReport",
+    "RuleMetrics",
     "RuleResult",
     "ShortCircuitPolicy",
     "SimpleRuleCompiler",
     "SimpleRuleEvaluator",
+    "compute_rule_metrics",
     "map_to_rule_execution",
     "parse_dsl",
 ]

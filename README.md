@@ -2,484 +2,279 @@
 
 A scalable **NLP platform for large-scale conversation analysis** designed for call centers, customer support operations, and digital service channels.
 
-This engine transforms raw conversations into **structured, searchable, and actionable insights** using a hybrid architecture that combines:
+Transforms raw conversations into **structured, searchable, and actionable insights** using a hybrid architecture combining lexical search, semantic embeddings, supervised classification, and deterministic rule engines.
 
-* speech transcription
-* conversational context modeling
-* semantic embeddings
-* hybrid search (lexical + vector)
-* supervised classification
-* semantic rule engines
-* large-scale analytics pipelines
-
-The system is designed to process **millions of conversations per month** while maintaining explainability, governance, and operational efficiency.
-
----
-
-# Table of Contents
-
-* Overview
-* Architecture
-* Key Features
-* Core Components
-* NLP Pipeline
-* Embedding Strategy
-* Hybrid Retrieval
-* Semantic Rule Engine
-* Scaling Strategy
-* Installation
-* Usage
-* APIs
-* Evaluation & Metrics
-* Roadmap
-* Contributing
-* License
-
----
-
-# Overview
-
-Customer service conversations contain large amounts of **unstructured knowledge** that is difficult to analyze with traditional tools.
-
-Typical problems include:
-
-* poor intent classification
-* difficulty discovering new topics
-* inefficient search across historical conversations
-* lack of explainability for automated decisions
-* high cost of manual QA and analytics
-
-The **Semantic Conversation Intelligence Engine** solves these problems by converting conversations into structured semantic signals that support:
-
-* intent detection
-* topic discovery
-* compliance monitoring
-* churn risk detection
-* customer experience analysis
-* operational intelligence
-* conversational search
-
----
-
-# Architecture
-
-The platform uses a **multi-layer semantic processing architecture** designed for scalability and interpretability.
-
-```
-Ingestion
-   ↓
-ASR / Transcription
-   ↓
-Turn Segmentation
-   ↓
-Context Window Builder
-   ↓
-Embedding Generation
-   ↓
-Vector Index + Lexical Index
-   ↓
-Hybrid Retrieval
-   ↓
-Classification
-   ↓
-Semantic Rule Engine (AST)
-   ↓
-Analytics & APIs
-```
-
-This layered design ensures:
-
-* modular evolution
-* cost-efficient inference
-* explainable outputs
-* high recall in search
-* strong classification accuracy
-
----
-
-# Key Features
-
-### Conversational NLP Pipeline
-
-Processes conversations with multi-level semantic representations:
-
-* turn-level embeddings
-* context-window embeddings
-* conversation-level embeddings
-* role-aware embeddings (agent vs customer)
-
----
-
-### Hybrid Search
-
-Combines:
-
-* **BM25 lexical search**
-* **vector similarity search**
-* optional **cross-encoder reranking**
-
-This approach significantly improves recall and precision compared to purely lexical or purely semantic retrieval.
-
----
-
-### Multi-Label Classification
-
-Supports classification tasks such as:
-
-* intent detection
-* contact reason
-* complaint categories
-* compliance flags
-* churn signals
-* product issues
-
-Classification operates at multiple levels:
-
-* turn
-* context window
-* full conversation
-
----
-
-### Semantic Rule Engine
-
-A fully explainable rule engine built on **AST (Abstract Syntax Trees)** enabling:
-
-* deterministic compliance rules
-* semantic predicates
-* contextual logic
-* explainable decision traces
-
-Example rule:
-
-```
-RULE cancellation_risk_high
-WHEN
-    speaker == "customer"
-    AND semantic.intent("cancelation") > 0.82
-    AND lexical.contains_any(["cancel", "terminate", "close account"])
-    AND context.turn_window(5).count(intent="frustration") >= 2
-THEN
-    tag("high_churn_risk")
-    score(0.95)
-```
-
----
-
-### Intent Discovery
-
-The platform supports **offline discovery of new intents and topics** using clustering over embeddings combined with LLM-assisted label generation.
-
-This allows the system to evolve its taxonomy without manual rule creation.
-
----
-
-# Core Components
-
-## Ingestion Layer
-
-Handles data ingestion from multiple sources:
-
-* call center recordings
-* chat transcripts
-* email tickets
-* CRM metadata
-* operational systems
-
-Supports batch and streaming ingestion.
-
----
-
-## Speech Processing
-
-If audio is provided, the system performs:
-
-* Automatic Speech Recognition (ASR)
-* Speaker diarization
-* Turn segmentation
-
-Output is normalized conversation text.
-
----
-
-## Context Builder
-
-Constructs contextual units:
-
-| Unit                    | Description                         |
-| ----------------------- | ----------------------------------- |
-| Turn                    | Individual utterance                |
-| Context Window          | Sliding window of turns             |
-| Conversation            | Entire interaction                  |
-| Conversation + Metadata | Conversation enriched with CRM data |
-
----
-
-## Embedding Layer
-
-Generates semantic representations for:
-
-* turns
-* context windows
-* conversations
-
-Embeddings are versioned and stored for reproducibility.
-
----
-
-# Embedding Strategy
-
-Different embeddings are used depending on the task.
-
-| Task           | Recommended Models          |
-| -------------- | --------------------------- |
-| Retrieval      | E5, BGE                     |
-| Classification | BGE / task-specific encoder |
-| Discovery      | E5 / BGE                    |
-| Semantic Rules | lightweight embedding model |
-
-Pooling strategies:
-
-* mean pooling
-* attention pooling (recommended for long conversations)
-
----
-
-# Hybrid Retrieval
-
-Hybrid search improves recall and accuracy.
-
-Pipeline:
-
-```
-BM25 top-N
-+
-Vector search top-N
-↓
-Merge
-↓
-Score fusion
-↓
-Optional reranking
-```
-
-Benefits:
-
-* robust lexical matching
-* semantic generalization
-* improved ranking quality
-
----
-
-# Semantic Rule Engine
-
-Rules are written in a DSL and compiled into AST for safe execution.
-
-Supported predicate categories:
-
-### Lexical
-
-* contains
-* contains_any
-* regex
-* phrase_match
-
-### Semantic
-
-* embedding_similarity
-* intent_score
-* topic_score
-
-### Structural
-
-* speaker
-* turn_index
-* channel
-* duration
-
-### Contextual
-
-* repeated_in_window
-* occurs_after
-* transition_patterns
-
-All rule executions produce **traceable evidence**.
-
----
-
-# Scaling Strategy
-
-The system is designed for **millions of conversations per month**.
-
-Key strategies:
-
-### Cascaded Inference
-
-```
-Cheap filters
-↓
-Lexical search
-↓
-Vector retrieval
-↓
-Classifier
-↓
-Rule engine
-↓
-Optional LLM
-```
-
-### Precomputation
-
-* embeddings cached
-* context windows stored
-* features reused
-
-### Sharding
-
-Indexes can be horizontally scaled using:
-
-* vector DB clusters
-* search clusters
-* distributed feature stores
-
----
-
-# Installation
-
-Example setup:
+## Quick Start
 
 ```bash
-git clone https://github.com/company/semantic-conversation-engine
-cd semantic-conversation-engine
+# Install
+pip install -e ".[dev]"
 
-pip install -r requirements.txt
+# Run pipeline on a transcript
+sce run transcript.txt --channel voice --format labeled
+
+# Run with DSL rules
+sce run transcript.txt --rule 'keyword("billing")' --rule 'keyword("cancel")'
+
+# Run benchmark comparing configurations
+sce benchmark transcript.txt --output benchmark_output/
+
+# Export config template
+sce config --export config.json
+
+# Show version
+sce version
 ```
 
-Environment variables:
+## Architecture
+
+Multi-stage NLP pipeline with cascaded inference (cheap filters first, expensive models only when needed):
 
 ```
-VECTOR_DB_URL=
-SEARCH_ENGINE_URL=
-MODEL_REGISTRY_URL=
-FEATURE_STORE_URL=
+TranscriptInput
+    ↓
+Stage 1: Turn Segmentation + Normalization
+    ↓
+Stage 2: Context Window Builder (sliding window of N turns)
+    ↓
+Stage 3: Embedding Generation (turn, window, conversation)
+    ↓
+Stage 4: Index Building (Vector Index + Lexical Index)
+    ↓
+Stage 5: Classification (multi-label, multi-level)
+    ↓
+Stage 6: Semantic Rule Engine (DSL → AST → evaluation with evidence)
+    ↓
+Stage 7: Analytics Event Collection
+    ↓
+SystemPipelineResult (with PipelineRunManifest)
 ```
 
----
+Each stage is optional — the pipeline degrades gracefully when components are not provided. Per-stage timing, warnings, and artifact lineage are built in.
 
-# Usage
+## Pipeline Stages
 
-Example classification request:
+| Stage | Module | Purpose |
+|-------|--------|---------|
+| Segmentation | `segmentation/` | Parse raw text into attributed turns (speaker, text, offsets) |
+| Context | `context/` | Build sliding windows of N adjacent turns |
+| Embeddings | `embeddings/` | Generate versioned dense vectors (model + version + pooling) |
+| Retrieval | `retrieval/` | Hybrid search: BM25 + ANN + score fusion + optional reranking |
+| Classification | `classification/` | Multi-label supervised classification with evidence |
+| Rules | `rules/` | DSL compiled to AST; lexical + semantic + structural + contextual predicates |
+| Analytics | `analytics/` | Event collection, aggregation, and reporting |
 
-```python
-from engine import classify
+## CLI Commands
 
-result = classify(
-    text="I want to cancel my subscription",
-    channel="voice",
-    speaker="customer"
-)
+```bash
+# Run pipeline on a transcript file
+sce run <file> [--channel voice|chat|email] [--format labeled|plain]
+                [--config config.json] [--output output/]
+                [--rule 'keyword("term")'] [--no-embeddings] [--no-rules]
+                [--conversation-id conv_123]
 
-print(result)
+# Run benchmark comparing pipeline configurations
+sce benchmark <file> [--config config.json] [--output output/]
+
+# Export or validate configuration
+sce config [--export template.json] [--validate config.json]
+
+# Show version
+sce version
 ```
 
-Output:
+### Output Structure
+
+Each pipeline run creates a structured output directory:
 
 ```
+output/
+└── run_a1b2c3d4e5f6/
+    ├── manifest.json    # Execution identity, component versions, config fingerprint
+    └── summary.json     # Run statistics (turns, windows, embeddings, timing)
+```
+
+## Configuration
+
+Pipeline configuration uses JSON files with Pydantic validation:
+
+```json
 {
-  "intent": "cancellation",
-  "confidence": 0.91,
-  "evidence": ["cancel my subscription"]
+  "segmentation": {
+    "normalize_unicode": true,
+    "min_turn_chars": 1,
+    "speaker_label_pattern": "^(CUSTOMER|AGENT|SYSTEM|UNKNOWN)\\s*:"
+  },
+  "context": {
+    "window_size": 5,
+    "stride": 2,
+    "include_partial_tail": true
+  },
+  "embedding": {
+    "model": {
+      "model_name": "intfloat/e5-base-v2",
+      "model_version": "1.0"
+    },
+    "dimensions": 384
+  },
+  "rules": {
+    "evaluation_mode": "all",
+    "evidence_policy": "always"
+  },
+  "output_dir": "output"
 }
 ```
 
----
+## Transcript Format
 
-# APIs
+**Labeled format** (default):
+```
+CUSTOMER: I have a billing issue with my credit card.
+AGENT: I can help you with that. What is the issue?
+CUSTOMER: I was charged twice for the same order.
+AGENT: Let me look into that for you right away.
+```
 
-Key APIs:
+**Plain format** (no speaker labels):
+```
+I have a billing issue with my credit card.
+I can help you with that. What is the issue?
+```
 
-| Endpoint            | Description                   |
-| ------------------- | ----------------------------- |
-| `/ingest`           | ingest conversation data      |
-| `/classify`         | classify text or conversation |
-| `/search`           | hybrid search                 |
-| `/rules/evaluate`   | run rule engine               |
-| `/taxonomy/suggest` | discover new intents          |
-| `/feedback`         | human review feedback         |
+## Rule Engine DSL
 
----
+Rules combine four signal families into auditable, traceable evaluations:
 
-# Evaluation & Metrics
+```python
+from semantic_conversation_engine.rules.compiler import SimpleRuleCompiler
 
-### Classification
+compiler = SimpleRuleCompiler()
 
-* F1 Score
-* Precision / Recall
-* Calibration Error
+# Lexical predicates
+rule = compiler.compile('keyword("billing")', "billing_rule", "billing_issue")
 
-### Retrieval
+# Regex predicates
+rule = compiler.compile('regex("cancel|terminate")', "cancel_rule", "cancel_intent")
 
-* Recall@K
-* MRR
-* nDCG
+# Combined with boolean logic
+rule = compiler.compile(
+    'keyword("billing") AND keyword("charge")',
+    "billing_charge",
+    "double_charge"
+)
+```
 
-### Clustering
+## Programmatic Usage
 
-* NMI
-* ARI
+```python
+from semantic_conversation_engine.pipeline.config import PipelineConfig
+from semantic_conversation_engine.pipeline.runner import PipelineRunner
 
-### Operational
+# Configure and run
+config = PipelineConfig.from_json("config.json")
+runner = PipelineRunner(config=config)
 
-* latency p95
-* throughput
-* cost per 1000 conversations
+summary = runner.run_file(
+    "transcript.txt",
+    channel="voice",
+    rules_text=['keyword("billing")'],
+)
 
----
+print(f"Run ID: {summary.run_id}")
+print(f"Turns: {summary.turns_count}")
+print(f"Windows: {summary.windows_count}")
 
-# Roadmap
+# Persist outputs
+PipelineRunner.save_outputs(summary, "output/")
+```
 
-### Phase 1
+### Direct Pipeline Usage
 
-* ingestion pipeline
-* baseline embeddings
-* BM25 search
-* basic classification
+```python
+from semantic_conversation_engine.pipeline.system_pipeline import SystemPipeline
+from semantic_conversation_engine.pipeline.pipeline import TextProcessingPipeline
+from semantic_conversation_engine.segmentation.segmenter import TurnSegmenter
+from semantic_conversation_engine.context.builder import SlidingWindowBuilder
+from semantic_conversation_engine.context.config import ContextWindowConfig
 
-### Phase 2
+pipeline = SystemPipeline(
+    text_pipeline=TextProcessingPipeline(
+        segmenter=TurnSegmenter(),
+        context_builder=SlidingWindowBuilder(),
+    ),
+)
 
-* hybrid retrieval
-* semantic rules
-* explainability layer
+result = pipeline.run(
+    transcript_input,
+    context_config=ContextWindowConfig(window_size=3, stride=2),
+)
 
-### Phase 3
+print(f"Manifest: {result.manifest.run_id}")
+print(f"Turns: {len(result.pipeline_result.turns)}")
+print(f"Windows: {len(result.pipeline_result.windows)}")
+```
 
-* intent discovery
-* LLM assisted labeling
-* active learning loop
+## Benchmarking
 
-### Phase 4
+Compare pipeline configurations with the built-in benchmark runner:
 
-* large-scale analytics
-* automated taxonomy evolution
+```python
+from semantic_conversation_engine.pipeline.benchmark import SystemBenchmarkRunner
 
----
+runner = SystemBenchmarkRunner()
+report = runner.compare({
+    "full": lambda: full_pipeline.run(transcript, ...),
+    "text_only": lambda: text_pipeline.run(transcript, ...),
+})
 
-# Contributing
+report.save_json("benchmark.json")
+report.save_csv("benchmark.csv")
+```
 
-Contributions are welcome.
+Reports include per-stage latency, skip rates, artifact counts, and aggregated metrics.
 
-Recommended workflow:
+## Development
 
-1. create feature branch
-2. add tests
-3. run evaluation suite
-4. submit pull request
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
 
----
+# Quality gates (run ALL before submitting)
+ruff format --check .
+ruff check .
+mypy src/ tests/
+pytest tests/unit/ -x
+pytest tests/ -x            # includes integration tests
 
-# License
+# Run a single test
+pytest tests/unit/test_foo.py -x -v -k "test_name"
+```
+
+### Package Structure
+
+```
+src/semantic_conversation_engine/
+├── models/           # Shared pydantic data types (frozen, strict)
+├── ingestion/        # Data ingestion from multiple sources
+├── segmentation/     # Turn segmentation and normalization
+├── context/          # Context window builder (sliding window)
+├── embeddings/       # Multi-level embedding generation
+├── retrieval/        # Hybrid search: BM25 + ANN + score fusion
+├── classification/   # Multi-label, multi-level classification
+├── rules/            # Semantic rule engine: DSL → AST → executor
+├── analytics/        # Event collection, aggregation, reporting
+├── pipeline/         # System orchestration, benchmark, CLI
+└── exceptions.py     # Domain exception hierarchy
+```
+
+### Key Design Principles
+
+- **Embeddings represent, classifiers decide** — never treat cosine similarity as classification
+- **Always benchmark against BM25 baseline** before investing in semantic approaches
+- **Every prediction carries evidence** — label, score, confidence, threshold, model version
+- **Cascaded inference** — cheap filters first, expensive models only when needed
+- **LLMs offline only** — lightweight models for online inference
+
+## License
 
 MIT License
-
----

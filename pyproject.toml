@@ -10,10 +10,14 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
+    "click>=8.0,<9.0",
     "numpy>=1.24,<3.0",
     "pydantic>=2.0,<3.0",
     "structlog>=23.0,<25.0",
 ]
+
+[project.scripts]
+sce = "semantic_conversation_engine.pipeline.cli:main"
 
 [project.optional-dependencies]
 dev = [
