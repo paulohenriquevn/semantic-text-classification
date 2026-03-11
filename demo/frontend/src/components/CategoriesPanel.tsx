@@ -35,7 +35,7 @@ import { SearchLoadingCompact } from "@/components/SearchLoading";
 import { HighlightedText } from "@/components/HighlightedText";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import { ModeTab } from "@/components/ModeTab";
-import { CONDITION_GROUPS, CONDITION_PLACEHOLDERS, defaultsForType } from "@/lib/condition-config";
+import { CONDITION_GROUPS, CONDITION_PLACEHOLDERS, CONDITION_DESCRIPTIONS, CONDITION_FAMILY, FAMILY_COLORS, QUICK_ADD_PRESETS, defaultsForType } from "@/lib/condition-config";
 import { generateDSL, toRuleName } from "@/lib/dsl-generator";
 import type { BuilderCondition, ConditionType } from "@/types/dsl";
 
@@ -685,10 +685,12 @@ function ConditionBuilder({
   conditions: BuilderCondition[];
   onChange: (c: BuilderCondition[]) => void;
 }) {
-  const addCondition = () => {
+  const addCondition = (preset?: Partial<BuilderCondition> & { type: ConditionType }) => {
+    const base = preset || { type: "keywords_any" as ConditionType };
+    const defaults = defaultsForType(base.type);
     onChange([
       ...conditions,
-      { id: nextId(), type: "keywords_any", value: "", connector: "AND" },
+      { id: nextId(), connector: "AND", value: "", ...defaults, ...base },
     ]);
   };
 
@@ -709,10 +711,13 @@ function ConditionBuilder({
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-2">
-        Conditions
+        Condições da regra
       </label>
       <div className="space-y-2">
-        {conditions.map((cond, idx) => (
+        {conditions.map((cond, idx) => {
+          const family = CONDITION_FAMILY[cond.type];
+          const familyColor = FAMILY_COLORS[family];
+          return (
           <div key={cond.id}>
             {/* Connector between conditions */}
             {idx > 0 && (
@@ -728,16 +733,19 @@ function ConditionBuilder({
                   className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200
                              rounded px-2 py-0.5 focus:outline-none cursor-pointer"
                 >
-                  <option value="AND">AND</option>
-                  <option value="OR">OR</option>
+                  <option value="AND">E (AND)</option>
+                  <option value="OR">OU (OR)</option>
                 </select>
                 <div className="h-px flex-1 bg-gray-200" />
               </div>
             )}
 
-            {/* Condition row */}
-            <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-2">
+            {/* Condition row — color-coded by family */}
+            <div className={`rounded-lg px-3 py-2 space-y-2 border ${familyColor.bg}`}>
               <div className="flex items-center gap-2">
+                {/* Family color dot */}
+                <span className={`w-2 h-2 rounded-full shrink-0 ${familyColor.dot}`} title={familyColor.label} />
+
                 {/* Type selector with optgroups */}
                 <select
                   value={cond.type}
@@ -746,7 +754,7 @@ function ConditionBuilder({
                   }
                   className="text-xs font-medium text-gray-700 bg-white border border-gray-200
                              rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500
-                             cursor-pointer min-w-[160px]"
+                             cursor-pointer min-w-[180px]"
                 >
                   {CONDITION_GROUPS.map((group) => (
                     <optgroup key={group.label} label={group.label}>
@@ -776,9 +784,15 @@ function ConditionBuilder({
                 </button>
               </div>
 
+              {/* Inline description */}
+              <p className="text-[11px] text-gray-400 pl-4 leading-tight">
+                {CONDITION_DESCRIPTIONS[cond.type]}
+              </p>
+
               {/* Extra fields for semantic/contextual types */}
               {(cond.type === "intent_score" || cond.type === "similarity") && (
-                <div className="flex items-center gap-2 pl-[168px]">
+                <div className="flex items-center gap-2 pl-4">
+                  <span className="text-xs text-gray-500">Limiar:</span>
                   <select
                     value={cond.operator || ">"}
                     onChange={(e) =>
@@ -804,24 +818,23 @@ function ConditionBuilder({
                     className="w-20 px-2 py-1 rounded border border-gray-200 text-xs font-mono bg-white
                                focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-400">threshold</span>
                 </div>
               )}
 
               {cond.type === "near" && (
-                <div className="flex items-center gap-2 pl-[168px] flex-wrap">
-                  <span className="text-xs text-gray-500">near</span>
+                <div className="flex items-center gap-2 pl-4 flex-wrap">
+                  <span className="text-xs text-gray-500">próxima de</span>
                   <input
                     type="text"
                     value={cond.nearWord || ""}
                     onChange={(e) =>
                       updateCondition(cond.id, { nearWord: e.target.value })
                     }
-                    placeholder="second word, e.g. conta"
+                    placeholder="segunda palavra, ex: conta"
                     className="flex-1 min-w-[120px] px-2 py-1 rounded border border-gray-200 text-xs bg-white
                                focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-500">within</span>
+                  <span className="text-xs text-gray-500">dentro de</span>
                   <input
                     type="number"
                     min="1"
@@ -833,13 +846,13 @@ function ConditionBuilder({
                     className="w-14 px-2 py-1 rounded border border-gray-200 text-xs font-mono bg-white
                                focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-400">words</span>
+                  <span className="text-xs text-gray-400">palavras</span>
                 </div>
               )}
 
               {cond.type === "window_count" && (
-                <div className="flex items-center gap-2 pl-[168px] flex-wrap">
-                  <span className="text-xs text-gray-500">window</span>
+                <div className="flex items-center gap-2 pl-4 flex-wrap">
+                  <span className="text-xs text-gray-500">janela de</span>
                   <input
                     type="number"
                     min="1"
@@ -875,21 +888,40 @@ function ConditionBuilder({
                     className="w-14 px-2 py-1 rounded border border-gray-200 text-xs font-mono bg-white
                                focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-400">occurrences</span>
+                  <span className="text-xs text-gray-400">ocorrências</span>
                 </div>
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
-      <button
-        onClick={addCondition}
-        className="flex items-center gap-1 mt-2 text-xs font-medium text-blue-600
-                   hover:text-blue-800 transition-colors"
-      >
-        <Plus className="h-3.5 w-3.5" /> Add condition
-      </button>
+      {/* Quick-add chips */}
+      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+        <span className="text-[11px] text-gray-400 mr-1">Adicionar:</span>
+        {QUICK_ADD_PRESETS.map((preset) => {
+          const familyColor = FAMILY_COLORS[preset.family];
+          return (
+            <button
+              key={preset.label}
+              onClick={() => addCondition(preset.condition)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium
+                         border transition-all hover:shadow-sm ${familyColor.bg} hover:opacity-80`}
+            >
+              <span>{preset.icon}</span>
+              <span>{preset.label}</span>
+            </button>
+          );
+        })}
+        <button
+          onClick={() => addCondition()}
+          className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium
+                     text-gray-500 bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-all"
+        >
+          <Plus className="h-3 w-3" /> Mais...
+        </button>
+      </div>
     </div>
   );
 }
@@ -916,8 +948,8 @@ function ConditionValueInput({
         className="flex-1 px-2 py-1.5 rounded-md border border-gray-200 text-sm bg-white
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <option value="customer">Customer</option>
-        <option value="agent">Agent</option>
+        <option value="customer">Cliente</option>
+        <option value="agent">Atendente</option>
       </select>
     );
   }
@@ -930,7 +962,7 @@ function ConditionValueInput({
         className="flex-1 px-2 py-1.5 rounded-md border border-gray-200 text-sm bg-white
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <option value="voice">Voice</option>
+        <option value="voice">Voz</option>
         <option value="chat">Chat</option>
         <option value="email">Email</option>
       </select>
