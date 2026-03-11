@@ -274,17 +274,287 @@ ds = load_dataset('RichardSakaguchiMS/brazilian-customer-service-conversations')
 
 ---
 
+### Step 9: Implementação do script de expansão sintética
+
+**Ação:** Criação de dois scripts para expansão e split do dataset.
+
+#### Step 9.1: Análise do formato existente
+
+- **Método:** Leitura de `demo/scripts/ingest_br_dataset.py` e `demo/data/conversations.jsonl`
+- **Schema JSONL:** `{conversation_id, text, domain, topic, asr_confidence, audio_duration_seconds, word_count, source_file, sentiment}`
+- **Formato de texto:** `[customer] ... \n[agent] ...` (turnos concatenados com `\n`)
+- **Metadados do dataset original:** 9 intents, 8 setores, 3 sentimentos, metadata.generated=true, metadata.generator="nvidia"
+
+#### Step 9.2: Extração de valores únicos do dataset
+
+```python
+from datasets import load_dataset
+ds = load_dataset('RichardSakaguchiMS/brazilian-customer-service-conversations')
+# Intents: cancelamento, compra, duvida_produto, duvida_servico, elogio, outros, reclamacao, saudacao, suporte_tecnico
+# Sentiments: negative, neutral, positive
+# Sectors: ecommerce, educacao, financeiro, imobiliario, restaurante, saude, tecnologia, telecom
+```
+
+#### Step 9.3: Implementação do script de expansão
+
+- **Script:** `experiments/scripts/expand_dataset.py`
+- **Linguagem:** Python 3.11+ com click, anthropic SDK
+- **Funcionalidades:**
+  - Plano de geração determinístico (seed=42) com distribuição controlada
+  - 5 personas com descrições detalhadas para guiar o LLM
+  - 9 intents com descrições contextuais
+  - 8 setores com contexto de negócio
+  - Turnos via distribuição log-normal (4-20, média ~8)
+  - Few-shot examples do dataset original (2 por conversa)
+  - Checkpoint/resume para interrupções
+  - Rate limiting configurável
+  - Modo `--dry-run` para visualizar o plano sem gerar
+- **Modelo padrão:** `claude-sonnet-4-20250514`
+- **Temperatura:** 0.9 (alta diversidade)
+
+#### Step 9.4: Implementação do script de splits
+
+- **Script:** `experiments/scripts/build_splits.py`
+- **Funcionalidades:**
+  - Combina dataset original + expandido
+  - Split estratificado preservando distribuição de intents
+  - Gera train.jsonl, val.jsonl, test.jsonl, all.jsonl
+  - Manifest com metadados de contagem e distribuição
+  - Seed fixo: 42
+
+#### Step 9.5: Validação com dry-run
+
+```bash
+python3 experiments/scripts/expand_dataset.py --dry-run
+```
+
+**Resultado do plano de geração:**
+- Total a gerar: 2.556 conversas (944 existentes → 3.500 alvo)
+- Distribuição de intents: reclamacao 511 (20.0%), duvida_produto 460 (18.0%), duvida_servico 435 (17.0%), suporte_tecnico 383 (15.0%), compra 256 (10.0%), cancelamento 204 (8.0%), saudacao 128 (5.0%), elogio 102 (4.0%), outros 77 (3.0%)
+- Distribuição de turnos: 4t=281, 6t=647, 8t=670, 10t=457, 12t=245, 14t=129, 16t=64, 18t=32, 20t=31
+- Distribuição de personas: ~20% cada (uniforme, como planejado)
+- Distribuição de setores: ~12-14% cada (uniforme, como planejado)
+
+**Output:**
+- `experiments/scripts/expand_dataset.py` — Script de geração sintética (350+ linhas)
+- `experiments/scripts/build_splits.py` — Script de combinação e split (150+ linhas)
+
+---
+
 ## Inventário de Artefatos — Sessão 2
 
 | # | Artefato | Caminho | Natureza |
 |---|----------|---------|----------|
 | 5 | Decisão de expansão | `docs/dissertacao/research-log.md` (Sessão 2) | Decisão metodológica |
+| 6 | Script de expansão | `experiments/scripts/expand_dataset.py` | Implementação |
+| 7 | Script de splits | `experiments/scripts/build_splits.py` | Implementação |
+
+### Step 10: Geração do corpus primário expandido
+
+**Ação:** Execução do script de expansão com a API Anthropic (Claude Sonnet).
+
+#### Step 10.1: Teste de qualidade (5 conversas)
+
+- **Comando:** `python3 experiments/scripts/expand_dataset.py --output experiments/data/test_sample.jsonl --target-total 949`
+- **Resultado:** 5/5 conversas geradas com sucesso, 0 falhas, tempo: 1.7 min
+- **Validação de qualidade:**
+  - Persona "idoso": linguagem formal, "minha filha", "por gentileza", "o senhor" ✓
+  - Persona "jovem": "mano", "pfv", "msm", "pq", gírias ✓
+  - Persona "irritado": MAIÚSCULAS, cobranças diretas, tom agressivo ✓
+  - Turnos alvo = turnos reais em todas as 5 conversas ✓
+  - Detalhes concretos de setor (R$ 89,90, 200 Mbps, nomes de produtos) ✓
+
+#### Step 10.2: Geração completa
+
+- **Comando:** `python3 experiments/scripts/expand_dataset.py --output experiments/data/expanded.jsonl --target-total 3500 --batch-delay 0.5`
+- **Modelo:** claude-sonnet-4-20250514
+- **Temperatura:** 0.9
+- **Alvo:** 2.556 novas conversas
+- **Estimativa de tempo:** ~2-3 horas
+- **Estimativa de custo:** ~$15-25 USD
+- **Status:** EM EXECUÇÃO (background)
+
+**Output esperado:** `experiments/data/expanded.jsonl`
+
+---
+
+### Step 10.3: Validação de dificuldade do dataset original (Phase 0.5)
+
+**Ação:** Medir a dificuldade intrínseca da task de classificação ANTES da expansão, para ter baseline.
+
+- **Script:** `experiments/scripts/validate_dataset.py`
+- **Comando:** `python3 experiments/scripts/validate_dataset.py --input demo/data/conversations.jsonl`
+
+**Resultados:**
+
+| Check | Resultado | Interpretação |
+|-------|-----------|---------------|
+| Majority baseline | 11.4% accuracy (9 classes, ~11% cada) | Classes quase uniformes — imbalance ratio 1.2 |
+| Random baseline | 11.1% accuracy | Muito próximo de majority → classes equilibradas |
+| Lexical exclusivity | Mean 1.68 | GOOD: baixa exclusividade → task genuinamente difícil |
+| Cross-intent overlap | 100% no top-20 | GOOD: palavras mais comuns (ajudar, beleza, posso) aparecem em TODAS as 9 classes |
+| Risco identificado | Classes too balanced | Uniforme artificial — call centers reais são desbalanceados |
+
+**Achados-chave por intent:**
+- **cancelamento** (exclusividade 2.87): mais discriminativo — "cancelar" é quase exclusivo
+- **elogio** (2.50): "obrigado", "bom" discriminam parcialmente
+- **suporte_técnico** (2.16): "erro", "tentar", "consigo" são sinais
+- **duvida_servico** (0.99): MAIS DIFÍCIL — sem palavras discriminativas exclusivas
+
+**Significância para a pesquisa:** O dataset original tem dificuldade genuína (overlap lexical alto), exceto por cancelamento/elogio que têm sinais lexicais fortes. A expansão deve preservar essa característica — se o corpus expandido tiver exclusividade > 3.0, o LLM gerador criou sinais artificiais.
+
+**Output:** `experiments/data/validation_report.json`
+
+---
+
+### Step 10.4: Ajustes metodológicos no script de expansão
+
+**Ação:** Adição de rastreamento de few-shot IDs para auditoria de leakage.
+
+- **Campo adicionado:** `metadata.few_shot_ids` — lista de `conversation_id` das conversas originais usadas como exemplo
+- **Propósito:** Permitir que o split estratificado evite colocar uma conversa original no test set quando suas derivadas estão no train set
+
+**Ação:** Atualização do `build_splits.py` para produzir output complementar ao pipeline TalkEx.
+
+- **Output 1:** `demo/data/conversations.jsonl` — corpus unificado para `build_index.py`
+- **Output 2:** `demo/data/splits/{train,val,test}.jsonl` — splits para classificação
+- **Input original preservado:** `demo/data/conversations_original.jsonl`
+
+---
+
+## Inventário de Artefatos — Sessão 2
+
+| # | Artefato | Caminho | Natureza |
+|---|----------|---------|----------|
+| 5 | Decisão de expansão | `docs/dissertacao/research-log.md` (Sessão 2) | Decisão metodológica |
+| 6 | Script de expansão | `experiments/scripts/expand_dataset.py` | Implementação |
+| 7 | Script de splits | `experiments/scripts/build_splits.py` | Implementação |
+| 8 | Script de validação | `experiments/scripts/validate_dataset.py` | Implementação |
+| 9 | Relatório de validação (original) | `experiments/data/validation_report.json` | Dados |
+
+### Step 10.5: Investigação do Consumidor.gov.br (descartado)
+
+**Ação:** Examinar dicionário de dados e viabilidade do Consumidor.gov.br como corpus de validação externa.
+
+- **Método:** WebFetch do dicionário de dados (PDF), análise das colunas do CSV
+- **Achado:** O CSV contém 30 colunas, **nenhuma com texto livre**. Os campos mais próximos são categóricos: Área (L1), Assunto (L2), Grupo Problema (L3), Problema (L4).
+- **Problema adicional:** Plataforma exclusivamente de reclamações — impossível mapear elogio, saudação, dúvida.
+- **Decisão:** Consumidor.gov.br **descartado** como corpus de validação.
+- **Alternativas avaliadas:** B2W-Reviews01 (só ratings), Reclame Aqui (legalmente cinza, só reclamações). Nenhuma viável.
+- **Impacto:** Estratégia revisada — robustez via Phase 6.1 (ablation no original) em vez de validação externa.
+- **Documentação:** Decisão e raciocínio completo em `research-log.md` (Sessão 2, seção "Decisão: Consumidor.gov.br descartado").
+
+---
+
+---
+
+## Sessão 3 — 2026-03-11: Revisão de literatura e preparação de dados
+
+### Step 11: Revisão de literatura — Cascaded inference e paradigmas híbridos
+
+**Ação:** Busca sistemática de trabalhos acadêmicos sobre inferência cascateada, early exit, hybrid retrieval e regras + ML.
+
+**Método:** Web search com queries: "cascaded inference NLP", "multi-stage classification cost-quality tradeoff", "early exit transformer", "hybrid retrieval BM25 dense", "rule systems machine learning NLP".
+
+**Resultados:**
+- **22 trabalhos encontrados** em 7 categorias (ver `research-log.md`, Sessão 3 para lista completa)
+- **Trabalhos-chave para H4:** Varshney & Baral (2022) — 88.93% redução de custo; FrugalML (2020) — 90% redução; DeeBERT (2020) — ~40% redução
+- **Para H1:** DPR (Karpukhin et al., 2020), RRF (Ma et al., 2021), Lin et al. (2023) survey
+- **Para H3:** SystemT (Chiticariu et al., 2010), Snorkel (Ratner et al., 2017), Safranchik et al. (2020)
+
+**Achado central — Lacuna confirmada:**
+Nenhum dos 22 trabalhos combina os 3 paradigmas (retrieval híbrido + classificação multi-nível + regras determinísticas) sobre dados conversacionais. A contribuição do TalkEx é genuína.
+
+**Implicação para H4:** Target de ≥40% redução de custo é conservador (literatura mostra 40-90%). Precaução: nosso cenário é mais simples (9 classes, domínio único) — ser honesto na discussão.
+
+**Output:** Documentação completa em `research-log.md` (Sessão 3).
+
+---
+
+### Step 11.1: Correção da geração — intent-sentiment coherence
+
+**Issue descoberta:** Análise dos 144 registros gerados revelou 9% de combinações incoerentes (elogio+negative, reclamação+positive, saudação+negative). O LLM prioriza o sentimento sobre o intent, produzindo texto de reclamação rotulado como "elogio".
+
+**Causa raiz:** Distribuição de sentimento era global (40% negative, 30% neutral, 30% positive), aplicada uniformemente a todos os intents. Sem restrição de que "elogio" deve ser positive/neutral e "reclamação" deve ser negative/neutral.
+
+**Correção aplicada:**
+1. Adicionado `INTENT_SENTIMENT_CONSTRAINTS` — distribuição de sentimento por intent:
+   - `elogio`: 75% positive, 25% neutral (nunca negative)
+   - `reclamacao`: 65% negative, 35% neutral (nunca positive)
+   - `saudacao`: 40% positive, 60% neutral (nunca negative)
+   - Demais intents: distribuições realistas com todos os sentimentos permitidos
+2. Adicionado `few_shot_ids` no metadata (tracking para auditoria de leakage)
+3. Processo anterior (PID 219622, 144/2.556 registros) terminado e dados apagados
+4. Nova geração iniciada com script corrigido — seed=42, mesma sequência determinística mas com sentimentos coerentes
+
+**Verificação:** Primeiro registro confirmado: `conv_synth_03327`, intent=elogio, sentiment=positive, few_shot_ids presente.
+
+**Artefato auxiliar:** `experiments/scripts/patch_few_shot_ids.py` — script de replay determinístico preparado (não mais necessário, mas mantido como fallback).
+
+**Custo da correção:** ~$0.50-1.00 em API (144 registros descartados). Decisão correta: 229 registros mislabeled (~9%) comprometeriam a classificação.
+
+---
+
+### Step 11.2: Revisão de literatura — NLP em contact centers
+
+**Ação:** Busca por "call center conversation classification NLP", "contact center intent detection", "Portuguese customer service NLP".
+
+**Resultados:**
+- **13 papers encontrados** em 3 tiers de relevância
+- **Paper-chave:** Shah et al. (2023) — revisão sistemática de 125 papers sobre NLP em contact centers (Springer). Confirma fragmentação do campo.
+- **Único paper PT-BR:** BERTau (Finardi et al., 2021) — BERT treinado em conversas do Itau Unibanco. Limitado a FAQ retrieval, sentimento e NER.
+- **Multi-turn:** MINT-CL (2024, CIKM 2025) — contrastive learning para classificação multi-turn de intents.
+- **Call center imbalanced:** MDPI (2025) — KoBERT + EDA para classificação com desbalanceamento em call center coreano.
+- **Gap mantido:** Nenhum paper combina os 3 paradigmas em dados conversacionais.
+
+**Output:** Documentação completa em `research-log.md` (Busca 2).
+
+---
+
+### Step 11.3: Revisão de literatura — DSL e regras para NLP
+
+**Ação:** Busca por "domain-specific language NLP rules", "declarative rule systems text classification", "rule-based + ML hybrid NLP", "weak supervision rules NLP".
+
+**Resultados:**
+- **15 trabalhos/sistemas encontrados** em 4 categorias (regras puras, weak supervision, híbridos, neuro-simbólico)
+- **Sistemas de regras DSL:** SystemT/AQL (IBM, 2010), UIMA Ruta (2016), GATE/JAPE (2000+), spaCy Matcher
+- **Paper seminal:** Chiticariu et al. (2013) — "Rule-Based IE is Dead! Long Live Rule-Based IE Systems!" (EMNLP) — regras dominam indústria
+- **Weak supervision:** Snorkel (2017), Snorkel DryBell (Google, 2019), skweak (2021), WRENCH benchmark (2021)
+- **Híbrido ML+regras:** Villena-Roman (2011) — kNN + regras como pós-processamento (mais próximo precedente)
+- **Sistema mais próximo do TalkEx:** UIMA Ruta — DSL + introspecção, mas sem predicados semânticos
+
+**Achado crucial:** AST-based rule evaluation para NLP é pouco representado. Weak supervision (Snorkel) usa regras para gerar labels, não para inferência auditável em tempo real. O TalkEx combina ambos os usos.
+
+**Output:** Documentação completa em `research-log.md` (Busca 3).
+
+---
+
+### Step 11.4: Síntese da revisão de literatura
+
+**Gap confirmado em 3 buscas independentes (Buscas 1, 2, 3):**
+
+Tabela expandida com 14 trabalhos × 5 dimensões: nenhum cobre todas as 5 dimensões que o TalkEx integra (hybrid retrieval + multi-level classification + deterministic rules + conversational data + PT-BR).
+
+**10 papers prioritários identificados para Cap. 3**, mapeados a seções específicas. Ver `research-log.md` (tabela "Papers prioritários para Cap. 3").
+
+**Formulação da novidade:**
+> "Nenhum trabalho existente combina retrieval lexical (BM25), embeddings semânticos e regras determinísticas auditáveis numa arquitetura integrada operando sobre representações multi-nível de conversas multi-turn."
+
+---
+
+## Inventário de Artefatos — Sessão 3
+
+| # | Artefato | Caminho | Natureza |
+|---|----------|---------|----------|
+| 10 | Script de patch (fallback) | `experiments/scripts/patch_few_shot_ids.py` | Implementação |
+| 11 | Revisão de literatura (22+13+15 papers) | `docs/dissertacao/research-log.md` (Sessão 3) | Pesquisa |
+
+---
 
 ## Próximos Steps Previstos
 
-- Step 9: Implementação do script de expansão sintética (geração de conversas com LLM)
-- Step 10: Geração do corpus primário expandido (~3.500 conversas)
-- Step 11: Análise exploratória do corpus expandido
-- Step 12: Download e preparação do corpus Consumidor.gov.br
-- Step 13: Mapeamento de categorias Consumidor.gov.br → 9 intents
-- Step 14: Piloto do Exp. H1 com corpus expandido (viabilidade)
+- Step 12: Aguardar geração completa (~3-4h) → verificar falhas e qualidade
+- Step 13: Validação de dificuldade do corpus expandido (comparar com original)
+- Step 14: Combinação e split do corpus final (build_splits.py)
+- Step 15: Rebuild indexes via TalkEx pipeline (build_index.py)
+- Step 16: Piloto do Exp. H1 com corpus expandido (viabilidade)

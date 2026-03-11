@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { HighlightedText } from "@/components/HighlightedText";
 import type { SearchHit } from "@/types/api";
 
 interface ResultCardProps {
@@ -27,7 +28,7 @@ export function ResultCard({ hit, onClick }: ResultCardProps) {
             </span>
           </div>
           <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-line">
-            <HighlightedText text={hit.text} fragment={hit.matched_text} />
+            <HighlightedText text={hit.text} fragments={hit.matched_text ? [hit.matched_text] : []} />
           </p>
         </div>
 
@@ -68,34 +69,3 @@ function ScoreBadge({
   );
 }
 
-function HighlightedText({
-  text,
-  fragment,
-}: {
-  text: string;
-  fragment: string | null;
-}) {
-  if (!fragment) return <>{text}</>;
-
-  const escaped = fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`(${escaped})`, "gi");
-  const parts = text.split(pattern);
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const isMatch = part.toLowerCase() === fragment.toLowerCase();
-        return isMatch ? (
-          <mark
-            key={i}
-            className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5"
-          >
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        );
-      })}
-    </>
-  );
-}

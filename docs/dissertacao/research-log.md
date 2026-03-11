@@ -368,15 +368,93 @@ A verificação com Consumidor.gov.br é um passo na direção da segunda afirma
 
 ### Resolvidas nesta sessão
 
-1. ~~**Dataset:** Qual estratégia de expansão usar?~~ → **Estratégia 4** — Expansão sintética controlada + validação em dados reais (Consumidor.gov.br)
-2. ~~**Escopo de afirmações:** Prova de conceito ou estudo empírico?~~ → **Contribuição metodológica com verificação de transferência**
+1. ~~**Dataset:** Qual estratégia de expansão usar?~~ → **Estratégia 4 revisada** — Expansão sintética controlada. Validação externa com Consumidor.gov.br **descartada** (ver abaixo).
+2. ~~**Escopo de afirmações:** Prova de conceito ou estudo empírico?~~ → **Contribuição metodológica** com robustez via ablation no dataset original (Phase 7.1).
 
 ### Ainda abertas
 
-1. **Código existente vs isolado:** Usar módulos do TalkEx diretamente nos experimentos ou reimplementar de forma controlada?
+1. ~~**Código existente vs isolado:**~~ → **Resolvida.** O TalkEx É o artefato técnico.
 2. **Programa e orientador:** Há definição? Impacta normas, formato, expectativas da banca.
-3. **Modelo gerador:** Claude vs GPT-4 vs outro para expansão sintética? Custo, qualidade, licença?
-4. **Mapeamento Consumidor.gov.br → 9 intents:** É viável? As categorias oficiais (segmento/assunto/problema) mapeiam para intents de conversa?
+3. ~~**Modelo gerador:**~~ → **Resolvida.** Claude Sonnet via API Anthropic.
+4. ~~**Mapeamento Consumidor.gov.br → 9 intents:**~~ → **Resolvida: inviável.** O dataset não contém texto livre — apenas campos categóricos (Área, Assunto, Grupo Problema, Problema). Além disso, é exclusivamente de reclamações, impossibilitando intents como elogio, saudação, dúvida. Descartado como corpus de validação.
+
+### Decisão: Consumidor.gov.br descartado — impacto na estratégia
+
+**Descoberta (2026-03-11):** Ao examinar o dicionário de dados do Consumidor.gov.br, descobri que o CSV não contém a narrativa do consumidor — apenas categorias pré-definidas em 4 níveis (Área → Assunto → Grupo Problema → Problema). Não há texto livre para classificar.
+
+Isso invalida o corpus secundário da Estratégia 4. Busquei alternativas:
+
+- **B2W-Reviews01** (130k reviews, CC BY-NC-SA): tem texto livre, mas só star ratings, não intents. Validação parcial (sentimento).
+- **Reclame Aqui** (7k telecom): tem texto e 14 categorias, mas legalmente cinza e só reclamações.
+- **Nenhum dataset público PT-BR** tem conversas multi-turn com intents de atendimento.
+
+**Decisão revisada:** Abandonar o corpus secundário. A robustez vem do **Phase 7.1** — repetir H1-H4 no dataset original (944 conversas, não expandidas) para verificar se a expansão mudou as conclusões. Se as conclusões se mantêm com 944, a expansão não viciou. Se divergem, a dissertação reporta ambos os resultados.
+
+**Impacto no posicionamento:** A dissertação é uma **contribuição metodológica** (a arquitetura funciona, os componentes se complementam de forma mensurável). Validação com dados reais de call center é declarada como **trabalho futuro**, dependente de parceria com operador de contact center.
+
+**Reflexão:** É melhor ter uma dissertação honesta sobre suas limitações do que uma que finge ter validação externa que não tem. A banca avalia rigor, não abrangência.
+
+### Riscos metodológicos identificados (revisão crítica)
+
+Ao preparar a geração, identifiquei 4 riscos que podem invalidar os resultados:
+
+1. **Contaminação few-shot (data leakage).** Conversas originais são usadas como exemplos para gerar as expandidas. Se uma original cai no test set e sua derivada no train set, o classificador pode estar trapaceando. **Mitigação:** rastreamento de `few_shot_ids` no metadata + auditoria no split.
+
+2. **Dificuldade artificial.** O LLM recebe "gere conversa de cancelamento" e coloca "cancelar" no texto. Se os sinais lexicais forem artificialmente exclusivos, BM25 trivializa a task e todos os resultados são inflados. **Mitigação:** validação de dificuldade (Phase 0.5) comparando exclusividade lexical antes e depois da expansão.
+
+3. **Conversas sintéticas "limpas demais".** Cada turno reforça o intent sem ruído, small talk ou mudança de assunto. Isso reduz artificialmente o valor do context window (H2). **Mitigação:** ablation no dataset original (944) para verificar se as conclusões mudam (Phase 7.1).
+
+4. **Cascata inflada.** Dados fáceis = tudo resolve no estágio 1-2 → economia de custo artificial. **Mitigação:** medir % resolvido por estágio e comparar com expectativa de call center real.
+
+**Validação do dataset original (Phase 0.5):**
+
+A análise do dataset de 944 conversas mostrou dificuldade **genuína**:
+- Exclusividade lexical média: 1.68 (baixa — bom)
+- Overlap top-20: 100% (todas as palavras mais comuns aparecem em 9/9 intents)
+- Cancelamento é o mais fácil (exclusividade 2.87 — "cancelar" é discriminativo)
+- duvida_servico é o mais difícil (exclusividade 0.99 — sem palavras exclusivas)
+- Classes uniformes (imbalance ratio 1.2) — irrealista para call center
+
+Se após a expansão a exclusividade subir significativamente (>3.0), o gerador criou sinais artificiais e os resultados serão questionáveis.
+
+### Fluxo experimental corrigido
+
+```
+Phase 0 — Preparação de Dados
+  0.1: Preservar original como conversations_original.jsonl
+  0.2: Gerar expandido (~2.556 conversas) → expanded.jsonl
+  0.3: Combinar → conversations.jsonl (corpus unificado ~3.500)
+  0.4: Stratified split (train 70% / val 15% / test 15%, seed 42)
+  0.5: Validação de dificuldade (exclusividade lexical, embedding separation, leakage audit)
+  0.6: Comparar dificuldade original vs expandido (se divergir → expansão viciou)
+
+Phase 1 — Indexing via TalkEx pipeline
+  1.1: Segmentation → Context windows → Embeddings (múltiplos modelos)
+  1.2: BM25 + Qdrant indexes
+
+Phase 2 — H1: Retrieval Híbrido
+  2.1: 7 sistemas × métricas (Recall@K, MRR, nDCG@K, MAP@K)
+  2.2: Variação de α, K, k₁, b
+
+Phase 3 — H2: Representação Multi-Nível
+  3.1: 9 representações × 3 classificadores sobre splits
+  3.2: Ablation: window_size, pooling strategy
+
+Phase 4 — H3: Regras + ML
+  4.1: Regras definidas ANTES de ver test set
+  4.2: 6 configurações comparadas
+  4.3: Análise qualitativa de discordância
+
+Phase 5 — H4: Cascata
+  5.1: Pipeline uniforme vs cascateado
+  5.2: Curva de Pareto: custo vs qualidade
+
+Phase 6 — Robustez & Ablation
+  6.1: H1-H4 repetidos no original (944) — se conclusões mudam, expansão viciou
+  6.2: Ablation de componentes (-BM25, -ANN, -Rules, -Window)
+  6.3: Bootstrap CI 95% para comparações centrais
+  6.4: Análise de sensibilidade a hiperparâmetros (α, thresholds, window_size)
+```
 
 ### Para a revisão de literatura (Cap. 3)
 
@@ -387,6 +465,264 @@ A verificação com Consumidor.gov.br é um passo na direção da segunda afirma
 
 ---
 
+### 2026-03-11 — Sessão 3: Revisão de literatura — Cascaded inference e paradigmas híbridos
+
+#### Busca 1: Cascaded / Multi-stage Inference em NLP
+
+Busca sistemática por "cascaded inference NLP", "multi-stage classification", "early exit transformer", "cost-quality tradeoff NLP". **22 trabalhos encontrados** em 7 categorias:
+
+**Categoria 1 — Early Exit / Adaptive Computation:**
+- **DeeBERT (Xin et al., 2020):** Saída antecipada em camadas intermediárias do BERT. Redução de ~40% no tempo de inferência com degradação mínima. Referência fundamental.
+- **FastBERT (Liu et al., 2020):** Self-distillation com classificadores em cada camada. Speed-up de 1-12x com 0.1-1% de perda em F1.
+- **PABEE (Zhou et al., 2020):** Patience-based early exit — espera N camadas concordarem antes de sair. Mais estável que DeeBERT.
+- **BranchyNet (Teerapittayanon et al., 2016):** Precursor de early-exit em DNNs — branches laterais em diferentes profundidades.
+
+**Categoria 2 — Cascaded Classification (cheap → expensive):**
+- **Varshney & Baral (2022):** Cascade de modelos do menor ao maior. **88.93% de redução de custo** com <2% perda de acurácia. Resultado mais relevante para H4.
+- **FrugalML (Chen et al., 2020):** Aprendizado de quando escalar para modelos mais caros. **90% de redução de custo** em APIs de ML.
+- **Viola & Jones (2001):** Cascade de classificadores para detecção de faces — referência clássica para o paradigma cascateado.
+
+**Categoria 3 — Model Routing / Mixture-of-Experts:**
+- **Switch Transformer (Fedus et al., 2021):** Roteamento para subconjuntos de parâmetros. Conceito relacionado (roteamento por complexidade).
+- **Routing Transformer (Roy et al., 2021):** Atenção com roteamento — escala linearmente.
+
+**Categoria 4 — Cascaded NLU em Diálogo:**
+- **Joint NLU models (Zhang & Wang, 2023):** Intent detection + slot filling em cascata. Mostra que ordem de inferência importa.
+- **TOD-BERT (Wu et al., 2020):** Pré-treinamento em diálogos task-oriented. Referência para representações conversacionais.
+
+**Categoria 5 — Hybrid Retrieval (BM25 + dense):**
+- **Karpukhin et al. (DPR, 2020):** Dense Passage Retrieval. BM25 como baseline forte, híbrido supera ambos.
+- **Ma et al. (2021):** Reciprocal Rank Fusion entre BM25 e dense. Método usado no TalkEx.
+- **Lin et al. (2023):** Survey de retrieval neural — documenta que BM25 continua competitivo.
+
+**Categoria 6 — Rule Systems + ML:**
+- **Chiticariu et al. (SystemT, 2010):** Sistema declarativo de regras para IE na IBM. Precedente industrial para DSL + ML.
+- **Ratner et al. (Snorkel, 2017):** Labeling functions (regras) para weak supervision. Combina regras com modelos.
+- **Safranchik et al. (2020):** Regras + modelos para classificação de sequências. Mais próximo do nosso caso.
+
+**Categoria 7 — Cost-Quality Tradeoff:**
+- **Schwartz et al. (2020):** "Green AI" — argumento para eficiência computacional como métrica. Suporte conceitual para H4.
+- **Strubell et al. (2019):** Custo ambiental de NLP — ~626.000 lbs CO₂ para treinar um transformer. Motivação para cascata.
+
+#### Análise da lacuna (confirmada)
+
+**Nenhum dos 22 trabalhos combina os 3 paradigmas** (retrieval híbrido + classificação multi-nível + regras determinísticas) sobre dados conversacionais multi-turn. Especificamente:
+
+| Trabalho | Hybrid Retrieval | Multi-level Classification | Deterministic Rules | Conversational Data |
+|----------|:---:|:---:|:---:|:---:|
+| Varshney & Baral (2022) | ✗ | ✓ (cascade) | ✗ | ✗ |
+| FrugalML (2020) | ✗ | ✓ (cascade) | ✗ | ✗ |
+| Rayo et al. (2025) | ✓ | ✗ | ✗ | ✗ |
+| Snorkel (2017) | ✗ | ✗ | ✓ | ✗ |
+| TOD-BERT (2020) | ✗ | ✗ | ✗ | ✓ |
+| **TalkEx (proposto)** | **✓** | **✓** | **✓** | **✓** |
+
+#### Implicações para H4
+
+O target de ≥40% de redução de custo com <2% degradação de F1 é **conservador** à luz da literatura:
+- Varshney & Baral: 88.93% de redução
+- FrugalML: 90% de redução
+- DeeBERT: ~40% de redução (nosso mínimo)
+
+Isso é bom para a dissertação — facilita demonstrar H4, mas devemos ser honestos sobre a simplicidade do nosso cenário (9 classes, domínio único) vs os cenários dos papers (centenas de classes, múltiplos domínios).
+
+#### Questões em aberto pós-busca
+
+- [x] ~~Buscar trabalhos sobre **conversation intelligence para call centers**~~ → Busca 2 (abaixo)
+- [x] ~~Buscar trabalhos sobre **DSL/regras para NLP** além de SystemT e Snorkel~~ → Busca 3 (abaixo)
+- [x] ~~Quantificar a lacuna: existe algum trabalho que combine os 3 paradigmas?~~ → **Confirmado: não existe**
+
+---
+
+#### Busca 2: NLP em Contact Centers e Conversas de Atendimento
+
+Busca por "call center conversation classification NLP", "contact center intent detection", "customer service dialogue topic classification", "multi-turn conversation intent recognition", "Portuguese customer service NLP".
+
+**Papers Tier 1 — Diretamente relevantes:**
+
+1. **Shah et al. (2023)** — "A review of natural language processing in contact centre automation"
+   - Venue: Pattern Analysis and Applications, Springer (vol. 26, pp. 823-846)
+   - Revisão sistemática de 125 papers (2003-2023) sobre NLP em contact centers
+   - Cobre vetorização (TF-IDF, LSI, embeddings), classificação (NN, SVM, GA), e integração ASR
+   - **Achado crucial:** Nenhum paper na revisão combina retrieval híbrido + representação multi-nível + regras determinísticas
+   - Confirma que o domínio é ativo mas fragmentado — cada paper resolve uma parte do problema
+
+2. **BERTau (Finardi et al., 2021)** — "BERTau: Itau BERT for digital customer service"
+   - Venue: arXiv:2101.12015
+   - BERT treinado do zero em 5GB de conversas PT-BR do Itau Unibanco
+   - Resultados: +22% MRR em FAQ retrieval, +2.1% F1 em sentimento, +4.4% F1 em NER
+   - **ÚNICO paper encontrado sobre NLP em atendimento ao cliente PT-BR**
+   - Não endereça classificação multi-label, hybrid retrieval ou regras
+
+3. **MINT-CL (2024)** — "From Intents to Conversations: Generating Intent-Driven Dialogues with Contrastive Learning for Multi-Turn Classification"
+   - Venue: arXiv:2411.14252, CIKM 2025
+   - Chain-of-Intent (HMM + LLM) para geração de diálogos + classificação multi-turn via contrastive learning
+   - Modela dinâmicas de intent ao longo dos turnos — apoia H2 (representação multi-nível)
+   - Sem retrieval híbrido, sem regras
+
+4. **MDPI (2025)** — "Improving Text Classification of Imbalanced Call Center Conversations Through Data Cleansing, Augmentation, and NER Metadata"
+   - Venue: MDPI Electronics, 14(11), 2259
+   - KoBERT + EDA (Easy Data Augmentation) + NER metadata para classificação em call center com desbalanceamento
+   - Dataset: conversas coreanas, 6 categorias (2%-26% distribuição)
+   - Relevante para nosso cenário de desbalanceamento, mas abordagem single-paradigm
+
+5. **Dial-In LLM (Hong et al., 2024)** — "Human-Aligned Dialogue Intent Clustering with LLM-in-the-loop"
+   - Venue: arXiv:2412.09049, EMNLP 2025
+   - LLM-in-the-loop para clustering de intents em diálogos de atendimento (100k+ conversas chinesas)
+   - 95%+ de alinhamento com julgamento humano
+   - Suporta nosso conceito de pipeline offline para intent discovery
+
+**Papers Tier 2 — Componentes específicos:**
+
+6. **QiBERT (2024)** — SBERT embeddings para classificação de conversas online em português (europeu)
+   - Venue: arXiv:2409.05530
+   - >0.95 acurácia com SBERT como features → apoia axioma "embeddings representam, classificadores decidem"
+
+7. **Embedding Generation for PT-BR (2022)** — Comparação BoW → BERT → fine-tuned transformers para classificação PT-BR
+   - Venue: arXiv:2212.00587, Springer Neural Computing and Applications
+   - Fine-tuned transformers > LSTM > CNN > BoW para PT-BR
+
+8. **Speaker-Turn Aware Hierarchical Model (2025)** — Embeddings hierárquicos com consciência de turno/falante
+   - Venue: Expert Systems with Applications
+   - Diretamente apoia H2 — turn-level + conversation-level importa
+
+**Observação sobre PT-BR:** A escassez de trabalhos em NLP para atendimento ao cliente em PT-BR é uma lacuna do campo. BERTau (2021) é essencialmente o único paper, e é restrito a FAQ retrieval, sentimento e NER. Nenhum paper trata classificação de intents multi-turn em PT-BR.
+
+---
+
+#### Busca 3: DSL e Sistemas de Regras para NLP
+
+Busca por "domain-specific language NLP rules", "declarative rule systems text classification", "rule-based + ML hybrid NLP", "AST-based text analysis", "weak supervision rules NLP".
+
+**Categoria A — Sistemas de Regras Puros (DSL/Declarativos):**
+
+1. **SystemT / AQL (Chiticariu et al., IBM, 2010-2018)**
+   - Linguagem declarativa SQL-like (AQL) compilada em planos algébricos com otimizador de custo
+   - Referência para regras como "o que extrair", não "como extrair"
+   - Papers: ACL 2010, ACL 2011 Demo, NAACL 2018
+   - Precedente direto para o TalkEx DSL, mas sem predicados semânticos
+
+2. **Chiticariu et al. (2013)** — "Rule-Based Information Extraction is Dead! Long Live Rule-Based Information Extraction Systems!"
+   - Venue: EMNLP 2013
+   - **Paper seminal:** Documenta o descompasso entre academia (regras "mortas") e indústria (regras dominam)
+   - Argumento central: transparência e auditabilidade são por que regras dominam na indústria
+   - Essencial para Cap. 3 da dissertação
+
+3. **UIMA Ruta (Kluegl et al., 2016)** — "Rapid development of rule-based information extraction applications"
+   - Venue: Natural Language Engineering
+   - DSL imperativa com scripting, introspecção de execução, indução automática de regras
+   - **Sistema mais próximo** do motor de regras do TalkEx
+   - Diferença: UIMA Ruta não tem predicados semânticos (intent_score, embedding_similarity)
+
+4. **GATE/JAPE (Cunningham et al., 2000-presente)** — Java Annotation Patterns Engine
+   - Transdutor de estados finitos sobre anotações, regras com LHS (padrão) e RHS (ações)
+   - Cascata de fases — similar ao nosso pipeline de avaliação de regras
+   - Amplamente usado em pesquisa e indústria
+
+5. **spaCy Matcher/EntityRuler** — Matching declarativo token-a-token
+   - Padrões em formato list-of-dict, combina regras com NER estatístico no mesmo pipeline
+   - Referência industrial para combinação regras + ML
+
+**Categoria B — Weak Supervision (Regras como Labeling Functions):**
+
+6. **Snorkel (Ratner et al., 2016-2018)** — Data Programming + modelo generativo para estimar acurácia de LFs
+   - NeurIPS 2016, VLDB 2018
+   - Users escrevem funções (heurísticas/regras) → modelo generativo agrega → treina classificador
+   - Deployed: Google (DryBell), Apple, Intel
+
+7. **Snorkel DryBell (Bach et al., 2019)** — Snorkel em escala industrial no Google
+   - Venue: SIGMOD 2019
+   - Classifiers treinados com weak supervision = qualidade comparável a milhares de labels manuais
+
+8. **skweak (Lison et al., 2021)** — Framework para NER com weak supervision
+   - Venue: ACL 2021 System Demos
+   - Linked HMMs para agregar labels ruidosos
+
+9. **WRENCH (Zhang et al., 2021)** — Benchmark padronizado para weak supervision
+   - Venue: NeurIPS Datasets & Benchmarks
+   - Inclui LFs pré-definidas para múltiplas tarefas de classificação
+
+10. **Language Models in the Loop (Smith et al., 2022)** — LLM prompts como labeling functions no Snorkel
+    - Venue: arXiv:2205.02318
+    - Prompts substituem regras manuais — 19.5% redução de erro vs zero-shot
+
+**Categoria C — Sistemas Híbridos Rule+ML:**
+
+11. **Villena-Roman et al. (2011)** — "Hybrid Approach Combining ML and Rule-Based Expert System for Text Categorization"
+    - Venue: AAAI FLAIRS-24
+    - kNN + regras como pós-processamento (listas de termos positivos/negativos)
+    - **Mais próximo precedente para ML + regras**, mas pré-transformer, sem embeddings, sem dados conversacionais
+
+12. **Hybrid Rule+ML for PII Detection (2025)** — Regras (regex, gazetteers) + ML + NER para PII em documentos financeiros
+    - Venue: Nature Scientific Reports
+    - Projetado para compliance regulatória — audit trail é requisito central
+
+13. **Real-Time Compliance Monitoring (2024-2025)** — Regras + ML para monitoramento de compliance bancário
+    - NLP para detectar padrões suspeitos + regras adaptativas
+    - Foco: "operational transparency, auditability, regulatory responsiveness"
+
+**Categoria D — Neuro-Simbólico:**
+
+14. **Neuro-Symbolic AI Survey (2025)** — Revisão sistemática de 167 papers (2020-2024)
+    - 63% foco em Learning/Inference, 44% em Knowledge Representation
+    - Maioria em knowledge graphs, não em classificação de texto
+    - TalkEx é um sistema neuro-simbólico aplicado a conversas — dimensão de gap adicional
+
+15. **Liusie et al. (2024)** — "Synergizing ML & Symbolic Methods: Survey on Hybrid Approaches to NLP"
+    - arXiv:2401.11972v2
+    - Estratégias: simbólico como input features, restrições simbólicas em output neural, treinamento conjunto
+    - O DSL/AST do TalkEx é o componente simbólico, embeddings são o neural
+
+**Achados-chave da Busca 3:**
+
+1. **AST-based rule evaluation para NLP** é pouco representado na literatura. AST é bem estudado para análise de código (Semgrep, ast-grep) mas aplicar avaliação de AST compilado a regras NLP (como o TalkEx faz) é relativamente novo. SystemT é o precedente acadêmico mais próximo.
+
+2. **Weak supervision ≠ regras de inferência**: Snorkel et al. usam regras para **gerar labels** (treinamento), não para **inferência auditável** em tempo real com trilha de evidência. TalkEx usa regras para ambos.
+
+3. **UIMA Ruta é o sistema mais próximo** do motor de regras do TalkEx em termos de DSL + introspecção, mas não tem predicados semânticos (similarity, intent_score).
+
+---
+
+#### Síntese das 3 buscas — Tabela de gap expandida
+
+| Trabalho | Hybrid Retrieval | Multi-level Class. | Deterministic Rules | Conversational | PT-BR |
+|----------|:---:|:---:|:---:|:---:|:---:|
+| Varshney & Baral (2022) | ✗ | ✓ (cascade) | ✗ | ✗ | ✗ |
+| FrugalML (2020) | ✗ | ✓ (cascade) | ✗ | ✗ | ✗ |
+| Rayo et al. (2025) | ✓ | ✗ | ✗ | ✗ | ✗ |
+| SystemT (2010) | ✗ | ✗ | ✓ (DSL) | ✗ | ✗ |
+| Snorkel (2017) | ✗ | ✗ | ✓ (LFs) | ✗ | ✗ |
+| UIMA Ruta (2016) | ✗ | ✗ | ✓ (DSL) | ✗ | ✗ |
+| Villena-Roman (2011) | ✗ | ✗ | ✓ (expert) | ✗ | ✗ |
+| Shah review (2023) | partial | ✗ | partial | ✓ (review) | ✗ |
+| BERTau (2021) | ✗ | ✗ | ✗ | ✓ | **✓** |
+| MINT-CL (2024) | ✗ | ✓ (turns) | ✗ | ✓ | ✗ |
+| Dial-In LLM (2024) | ✗ | partial | ✗ | ✓ | ✗ |
+| MDPI Call Center (2025) | ✗ | ✗ | ✗ | ✓ | ✗ |
+| QiBERT (2024) | ✗ | ✗ | ✗ | ✓ | ✓ (EU) |
+| **TalkEx (proposto)** | **✓** | **✓** | **✓** | **✓** | **✓** |
+
+**Conclusão:** O gap é real e multi-dimensional. Nenhum trabalho existente combina os 5 aspectos que o TalkEx integra. A formulação mais forte da novidade:
+
+> "Nenhum trabalho existente combina retrieval lexical (BM25), embeddings semânticos e regras determinísticas auditáveis numa arquitetura integrada operando sobre representações multi-nível de conversas multi-turn."
+
+#### Papers prioritários para Cap. 3 da dissertação
+
+| Paper | Por que incluir | Seção do Cap. 3 |
+|-------|----------------|-----------------|
+| Shah et al. (2023) | Revisão do domínio, confirma fragmentação | 3.1 Contact center NLP |
+| BERTau (2021) | Único paper PT-BR customer service | 3.1 + 3.5 Limitações |
+| Chiticariu et al. (2013) | Argumento academia vs indústria em regras | 3.3 Rule systems |
+| UIMA Ruta (2016) | Sistema mais próximo ao TalkEx DSL | 3.3 Rule systems |
+| Snorkel (2017) + DryBell (2019) | Weak supervision como paradigma complementar | 3.3 Rule systems |
+| Villena-Roman (2011) | Precedente ML + regras | 3.4 Hybrid approaches |
+| MINT-CL (2024) | Multi-turn intent classification | 3.2 Conversation classification |
+| Neuro-Symbolic Survey (2025) | Posicionamento teórico | 3.4 Hybrid approaches |
+| Varshney & Baral (2022) | Referência para H4 cascaded | 3.5 Cascaded inference |
+| Cross-Encoder BM25 (2025) | Ponte teórica lexical↔semântico | 3.2 Retrieval |
+
+---
+
 ## Artefatos Produzidos
 
 | # | Artefato | Caminho | Natureza |
@@ -394,3 +730,8 @@ A verificação com Consumidor.gov.br é um passo na direção da segunda afirma
 | 1 | Estrutura de capítulos | `docs/dissertacao/estrutura-capitulos.md` | Planejamento |
 | 2 | Desenho experimental | `docs/dissertacao/desenho-experimental.md` | Metodologia |
 | 3 | Caderno de pesquisa | `docs/dissertacao/research-log.md` | Processo |
+| 4 | Protocolo de execução | `docs/dissertacao/steps-log.md` | Reprodutibilidade |
+| 5 | Script de expansão | `experiments/scripts/expand_dataset.py` | Implementação |
+| 6 | Script de splits | `experiments/scripts/build_splits.py` | Implementação |
+| 7 | Script de validação | `experiments/scripts/validate_dataset.py` | Implementação |
+| 8 | Relatório de validação (original) | `experiments/data/validation_report.json` | Dados |

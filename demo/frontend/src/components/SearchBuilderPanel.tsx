@@ -11,227 +11,21 @@ import {
 import { useMemo, useState } from "react";
 import { previewDSL } from "@/lib/api";
 import { extractHighlightFragments } from "@/lib/evidence";
-import type { PredicateEvidence, PreviewDSLResponse, PreviewMatch } from "@/types/api";
+import type { PreviewDSLResponse, PreviewMatch } from "@/types/api";
+import { HighlightedText } from "@/components/HighlightedText";
+import { EvidenceBadge } from "@/components/EvidenceBadge";
+import { ModeTab } from "@/components/ModeTab";
 import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 import { SearchLoadingCompact } from "@/components/SearchLoading";
+import { CONDITION_GROUPS, CONDITION_PLACEHOLDERS, defaultsForType } from "@/lib/condition-config";
+import { generateDSL } from "@/lib/dsl-generator";
+import type { BuilderCondition, ConditionType } from "@/types/dsl";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type SearchMode = "examples" | "builder" | "dsl";
-
-type ConditionType =
-  | "keyword"
-  | "keywords_any"
-  | "contains_all"
-  | "word"
-  | "stem"
-  | "not_contains"
-  | "excludes_any"
-  | "near"
-  | "starts_with"
-  | "ends_with"
-  | "regex"
-  | "speaker"
-  | "channel"
-  | "intent_score"
-  | "similarity"
-  | "window_count";
-
-interface BuilderCondition {
-  id: string;
-  type: ConditionType;
-  value: string;
-  connector: "AND" | "OR";
-  threshold?: string;
-  operator?: string;
-  windowSize?: string;
-  countValue?: string;
-  /** Second word for near() proximity search */
-  nearWord?: string;
-  /** Max distance between words for near() */
-  nearDistance?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Condition groups — Semantic first for search context
-// ---------------------------------------------------------------------------
-
-const CONDITION_GROUPS: { label: string; options: { value: ConditionType; label: string }[] }[] = [
-  {
-    label: "Semantic",
-    options: [
-      { value: "intent_score", label: "Intent score" },
-      { value: "similarity", label: "Semantic similarity" },
-    ],
-  },
-  {
-    label: "Lexical — Basic",
-    options: [
-      { value: "keyword", label: "Contains (substring)" },
-      { value: "word", label: "Exact word (boundary)" },
-      { value: "stem", label: "Word prefix (stem)" },
-      { value: "regex", label: "Regex pattern" },
-    ],
-  },
-  {
-    label: "Lexical — Lists",
-    options: [
-      { value: "keywords_any", label: "Contains any of" },
-      { value: "contains_all", label: "Contains all of" },
-      { value: "excludes_any", label: "Excludes all of" },
-    ],
-  },
-  {
-    label: "Lexical — Advanced",
-    options: [
-      { value: "not_contains", label: "Does not contain" },
-      { value: "near", label: "Words near each other" },
-      { value: "starts_with", label: "Starts with" },
-      { value: "ends_with", label: "Ends with" },
-    ],
-  },
-  {
-    label: "Structural",
-    options: [
-      { value: "speaker", label: "Speaker is" },
-      { value: "channel", label: "Channel is" },
-    ],
-  },
-  {
-    label: "Contextual",
-    options: [
-      { value: "window_count", label: "Turn window count" },
-    ],
-  },
-];
-
-const CONDITION_PLACEHOLDERS: Record<ConditionType, string> = {
-  keyword: "e.g. billing",
-  word: "e.g. cancelar (whole word only)",
-  stem: "e.g. cancel (matches cancelar, cancelamento...)",
-  keywords_any: "e.g. cancel, terminate, close",
-  contains_all: "e.g. cancelar, conta (all must match)",
-  not_contains: "e.g. teste (must NOT be present)",
-  excludes_any: "e.g. teste, debug (none must match)",
-  near: "First word, e.g. cancelar",
-  starts_with: "e.g. FAT- (text starts with this)",
-  ends_with: "e.g. .pdf (text ends with this)",
-  regex: "e.g. cancel(ar|amento)",
-  speaker: "",
-  channel: "",
-  intent_score: "e.g. cancellation",
-  similarity: "e.g. I want to cancel my service",
-  window_count: "e.g. dissatisfaction",
-};
-
-function defaultsForType(type: ConditionType): Partial<BuilderCondition> {
-  switch (type) {
-    case "speaker":
-      return { value: "customer" };
-    case "channel":
-      return { value: "voice" };
-    case "intent_score":
-      return { value: "", threshold: "0.50", operator: ">" };
-    case "similarity":
-      return { value: "", threshold: "0.50", operator: ">" };
-    case "window_count":
-      return { value: "", windowSize: "5", countValue: "2", operator: ">=" };
-    case "near":
-      return { value: "", nearWord: "", nearDistance: "3" };
-    default:
-      return { value: "" };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// DSL generator — generates a RULE block for the preview endpoint
-// ---------------------------------------------------------------------------
-
-function generateSearchDSL(conditions: BuilderCondition[]): string {
-  if (conditions.length === 0) return "";
-
-  const predicates = conditions.map((c) => {
-    const val = c.value.trim();
-    const op = c.operator || ">";
-    const th = c.threshold || "0.80";
-
-    switch (c.type) {
-      case "keyword":
-        return val ? `keyword("${val}")` : "";
-      case "word":
-        return val ? `lexical.word("${val}")` : "";
-      case "stem":
-        return val ? `lexical.stem("${val}")` : "";
-      case "keywords_any": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.contains_any([${words}])`;
-      }
-      case "contains_all": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.contains_all([${words}])`;
-      }
-      case "not_contains":
-        return val ? `lexical.not_contains("${val}")` : "";
-      case "excludes_any": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.excludes_any([${words}])`;
-      }
-      case "near": {
-        if (!val) return "";
-        const w2 = c.nearWord?.trim() || "";
-        const dist = c.nearDistance || "3";
-        return w2 ? `lexical.near("${val}", "${w2}", ${dist})` : "";
-      }
-      case "starts_with":
-        return val ? `lexical.starts_with("${val}")` : "";
-      case "ends_with":
-        return val ? `lexical.ends_with("${val}")` : "";
-      case "regex":
-        return val ? `regex("${val}")` : "";
-      case "speaker":
-        return val ? `speaker == "${val}"` : "";
-      case "channel":
-        return val ? `channel == "${val}"` : "";
-      case "intent_score":
-        return val ? `semantic.intent("${val}") ${op} ${th}` : "";
-      case "similarity":
-        return val ? `semantic.similarity("${val}") ${op} ${th}` : "";
-      case "window_count": {
-        if (!val) return "";
-        const ws = c.windowSize || "5";
-        const cv = c.countValue || "2";
-        return `context.turn_window(${ws}).count(intent="${val}") ${op} ${cv}`;
-      }
-    }
-  });
-
-  const validPredicates = predicates.filter(Boolean);
-  if (validPredicates.length === 0) return "";
-
-  let whenClause = `    ${validPredicates[0]}`;
-  for (let i = 1; i < validPredicates.length; i++) {
-    whenClause += `\n    ${conditions[i].connector} ${validPredicates[i]}`;
-  }
-
-  return `RULE search_query\nWHEN\n${whenClause}\nTHEN\n    tag("search_result")`;
-}
 
 // ---------------------------------------------------------------------------
 // Example search templates
@@ -368,7 +162,7 @@ export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelPro
   ]);
 
   const generatedDsl = useMemo(
-    () => generateSearchDSL(conditions),
+    () => generateDSL(conditions),
     [conditions],
   );
 
@@ -574,13 +368,6 @@ function SearchResults({
 // Search match card — shows window text with evidence
 // ---------------------------------------------------------------------------
 
-const PREDICATE_BADGE: Record<string, { label: string; color: string }> = {
-  lexical: { label: "Lexical", color: "bg-blue-100 text-blue-700" },
-  semantic: { label: "Semantic", color: "bg-purple-100 text-purple-700" },
-  structural: { label: "Structural", color: "bg-teal-100 text-teal-700" },
-  contextual: { label: "Contextual", color: "bg-amber-100 text-amber-700" },
-};
-
 function SearchMatchCard({
   match,
   rank,
@@ -630,93 +417,6 @@ function SearchMatchCard({
         </div>
       )}
     </div>
-  );
-}
-
-function EvidenceBadge({ evidence: ev }: { evidence: PredicateEvidence }) {
-  const badge = PREDICATE_BADGE[ev.predicate_type] ?? {
-    label: ev.predicate_type,
-    color: "bg-gray-100 text-gray-600",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.color}`}
-      title={`${ev.field_name} ${ev.operator} — score: ${ev.score.toFixed(2)}, threshold: ${ev.threshold.toFixed(2)}`}
-    >
-      {badge.label}: {ev.field_name}
-      {ev.matched_text && (
-        <span className="font-normal opacity-75">
-          &quot;{ev.matched_text}&quot;
-        </span>
-      )}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Text highlighter
-// ---------------------------------------------------------------------------
-
-function HighlightedText({
-  text,
-  fragments,
-}: {
-  text: string;
-  fragments: string[];
-}) {
-  if (fragments.length === 0) return <>{text}</>;
-
-  const sorted = [...fragments].sort((a, b) => b.length - a.length);
-  const escaped = sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
-  const parts = text.split(pattern);
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const isMatch = fragments.some(
-          (f) => f.toLowerCase() === part.toLowerCase(),
-        );
-        return isMatch ? (
-          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        );
-      })}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Mode tab
-// ---------------------------------------------------------------------------
-
-function ModeTab({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-        active
-          ? "bg-blue-50 text-blue-700"
-          : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 

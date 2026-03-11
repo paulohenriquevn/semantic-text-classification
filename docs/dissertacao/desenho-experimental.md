@@ -17,30 +17,32 @@ H4: Cascata reduz custo ≥40% com degradação F1 < 2%
 
 ### 1.1 Fontes de Dados
 
-O experimento utiliza dois corpora complementares:
+O experimento utiliza um corpus sintético expandido com controle de variabilidade, e valida robustez via ablation no dataset original.
 
-#### Corpus Primário — Conversas sintéticas expandidas (PT-BR)
+#### Corpus — Conversas sintéticas expandidas (PT-BR)
 - **Base:** `RichardSakaguchiMS/brazilian-customer-service-conversations` (944 conversas, Apache 2.0)
-- **Expansão:** Geração sintética controlada via LLM (batch mode, offline)
+- **Expansão:** Geração sintética controlada via LLM (Claude Sonnet, batch mode, offline)
 - **Alvo:** ~3.500 conversas multi-turn
 - **Correções sobre o dataset original:**
   - Turnos variáveis: 4-20 (distribuição log-normal, média 8, stdev 4) — original: 90% = 8 turnos
   - Distribuição de classes realista: desbalanceada — original: ~11% por classe (uniforme)
   - Variabilidade lexical: 5 personas (formal, informal, irritado, idoso, jovem/gírias) — original: estilo uniforme
-  - Sentimentos realistas: 40% negativo, 30% neutro, 30% positivo — original: 33%/33%/33%
+  - Sentimentos por intent: distribuição condicionada ao intent (reclamação→65% neg/35% neu, elogio→75% pos/25% neu, etc.) — original: 33%/33%/33% sem restrições
 - **Vantagens:** Controle de variáveis para ablation studies, reprodutibilidade, acesso aberto
 - **Limitação:** Dados sintéticos — afirmações limitadas ao escopo metodológico
 - **Uso:** Experimentos H1-H4 (todos)
 
-#### Corpus Secundário — Reclamações reais (validação externa)
-- **Fonte:** Consumidor.gov.br (Portal de Dados Abertos do Governo Federal)
-- **Formato:** Texto único (CSV) — reclamações de consumidores com labels oficiais (segmento, assunto, problema)
-- **Amostra:** ~2.000 reclamações estratificadas, mapeadas para as 9 intents
-- **Vantagens:** Linguagem real de consumidores brasileiros, labels oficiais, grande volume disponível
-- **Limitação:** Sem estrutura multi-turn — avaliação apenas em modo Conv-only (embedding do texto completo)
-- **Uso:** Validação de transferência de classificadores (H2 parcial, H3 parcial)
+#### Validação de robustez — Dataset original (944 conversas)
+- Todos os experimentos H1-H4 são repetidos no dataset original de 944 conversas (não expandido)
+- Se as conclusões se mantêm, a expansão não introduziu artefatos
+- Se divergem, a dissertação reporta ambos os resultados e discute causas
 
-**Justificativa da escolha:** Não existe dataset público de conversas multi-turn de call center em PT-BR além do RichardSakaguchiMS. A estratégia de dois corpora permite controle experimental (sintético) + verificação de transferência (real). Ver `research-log.md` (Sessão 2) para raciocínio completo.
+#### Sobre validação externa com dados reais
+- **Consumidor.gov.br foi investigado e descartado:** CSV não contém texto livre (apenas campos categóricos: Área, Assunto, Grupo Problema, Problema). Plataforma exclusivamente de reclamações — impossível mapear intents como elogio, saudação, dúvida.
+- **Nenhum dataset público PT-BR** combina conversas multi-turn + intents de atendimento + texto livre.
+- **Trabalho futuro:** Validação com dados reais requer parceria com operador de contact center.
+
+**Justificativa:** A inexistência de datasets conversacionais abertos em PT-BR é uma lacuna do campo, não da dissertação. O rigor vem do controle experimental (expansão controlada) + teste de robustez (ablation no original) + transparência sobre limitações. Ver `research-log.md` (Sessão 2) para raciocínio completo.
 
 ### 1.2 Especificação do Corpus Primário
 
@@ -68,7 +70,23 @@ O experimento utiliza dois corpora complementares:
 | elogio | 4% | ~140 |
 | outros | 3% | ~105 |
 
-### 1.3 Pré-processamento
+### 1.3 Validação de Dificuldade do Dataset (Phase 0.5)
+
+Antes dos experimentos, validar que o dataset tem dificuldade genuína:
+
+| Verificação | Métrica | Critério de aprovação |
+|-------------|---------|----------------------|
+| **Baseline de maioria** | Acurácia da classe mais frequente | < 25% (desbalanceado mas não trivial) |
+| **Exclusividade lexical** | Score médio de exclusividade por intent | 1.0 < score < 3.0 (nem impossível nem trivial) |
+| **Overlap lexical** | % de intents com cross-intent word overlap | > 50% (vocabulário compartilhado) |
+| **Separação de embeddings** | Razão inter/intra-classe (cosine) | < 2.0 (não trivialmente separável) |
+| **Leakage few-shot** | Contaminação entre train/test via few_shot_ids | 0% no test set |
+| **Original vs expandido** | Divergência de distribuição turn count / word count | Sem desvio estatisticamente significativo |
+
+**Resultados baseline (original, 944 convs):** Exclusividade 1.68, overlap 100%, imbalance ratio 1.2.
+**Script:** `experiments/scripts/validate_dataset.py`
+
+### 1.5 Pré-processamento
 
 1. **Normalização textual**: `normalize_for_matching()` — lowercase + strip_accents
 2. **Segmentação de turnos**: já estruturado no dataset ou via heurística de alternância de falantes
@@ -76,7 +94,7 @@ O experimento utiliza dois corpora complementares:
 4. **Geração de embeddings**: múltiplos modelos, cache persistido
 5. **Indexação**: BM25 (rank-bm25) + ANN (FAISS)
 
-### 1.4 Splits e Reprodutibilidade
+### 1.6 Splits e Reprodutibilidade
 
 - **Seed fixo** para todos os splits e shuffles (42)
 - **Holdout temporal** quando timestamps disponíveis (treino = mais antigos, teste = mais recentes)

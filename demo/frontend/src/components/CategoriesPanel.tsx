@@ -32,6 +32,12 @@ import type {
 } from "@/types/api";
 import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 import { SearchLoadingCompact } from "@/components/SearchLoading";
+import { HighlightedText } from "@/components/HighlightedText";
+import { EvidenceBadge } from "@/components/EvidenceBadge";
+import { ModeTab } from "@/components/ModeTab";
+import { CONDITION_GROUPS, CONDITION_PLACEHOLDERS, defaultsForType } from "@/lib/condition-config";
+import { generateDSL, toRuleName } from "@/lib/dsl-generator";
+import type { BuilderCondition, ConditionType } from "@/types/dsl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,43 +48,6 @@ interface CategoriesPanelProps {
 }
 
 type CreatorMode = "templates" | "builder" | "dsl";
-
-type ConditionType =
-  | "keyword"
-  | "keywords_any"
-  | "contains_all"
-  | "word"
-  | "stem"
-  | "not_contains"
-  | "excludes_any"
-  | "near"
-  | "starts_with"
-  | "ends_with"
-  | "regex"
-  | "speaker"
-  | "channel"
-  | "intent_score"
-  | "similarity"
-  | "window_count";
-
-interface BuilderCondition {
-  id: string;
-  type: ConditionType;
-  value: string;
-  connector: "AND" | "OR";
-  /** Threshold for semantic conditions (e.g. 0.82) */
-  threshold?: string;
-  /** Comparison operator for semantic/contextual (>, >=, <, <=) */
-  operator?: string;
-  /** Window size for context.turn_window(N) */
-  windowSize?: string;
-  /** Count threshold for window_count (e.g. >= 2) */
-  countValue?: string;
-  /** Second word for near() proximity search */
-  nearWord?: string;
-  /** Max distance between words for near() */
-  nearDistance?: string;
-}
 
 // ---------------------------------------------------------------------------
 // Templates
@@ -205,199 +174,6 @@ THEN
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Condition type labels
-// ---------------------------------------------------------------------------
-
-/** Grouped condition options for <optgroup> rendering */
-const CONDITION_GROUPS: { label: string; options: { value: ConditionType; label: string }[] }[] = [
-  {
-    label: "Lexical — Basic",
-    options: [
-      { value: "keyword", label: "Contains (substring)" },
-      { value: "word", label: "Exact word (boundary)" },
-      { value: "stem", label: "Word prefix (stem)" },
-      { value: "regex", label: "Regex pattern" },
-    ],
-  },
-  {
-    label: "Lexical — Lists",
-    options: [
-      { value: "keywords_any", label: "Contains any of" },
-      { value: "contains_all", label: "Contains all of" },
-      { value: "excludes_any", label: "Excludes all of" },
-    ],
-  },
-  {
-    label: "Lexical — Advanced",
-    options: [
-      { value: "not_contains", label: "Does not contain" },
-      { value: "near", label: "Words near each other" },
-      { value: "starts_with", label: "Starts with" },
-      { value: "ends_with", label: "Ends with" },
-    ],
-  },
-  {
-    label: "Semantic",
-    options: [
-      { value: "intent_score", label: "Intent score" },
-      { value: "similarity", label: "Semantic similarity" },
-    ],
-  },
-  {
-    label: "Structural",
-    options: [
-      { value: "speaker", label: "Speaker is" },
-      { value: "channel", label: "Channel is" },
-    ],
-  },
-  {
-    label: "Contextual",
-    options: [
-      { value: "window_count", label: "Turn window count" },
-    ],
-  },
-];
-
-const CONDITION_PLACEHOLDERS: Record<ConditionType, string> = {
-  keyword: "e.g. billing",
-  word: "e.g. cancelar (whole word only)",
-  stem: "e.g. cancel (matches cancelar, cancelamento...)",
-  keywords_any: "e.g. cancel, terminate, close",
-  contains_all: "e.g. cancelar, conta (all must match)",
-  not_contains: "e.g. teste (must NOT be present)",
-  excludes_any: "e.g. teste, debug (none must match)",
-  near: "First word, e.g. cancelar",
-  starts_with: "e.g. FAT- (text starts with this)",
-  ends_with: "e.g. .pdf (text ends with this)",
-  regex: "e.g. cancel(ar|amento)",
-  speaker: "",
-  channel: "",
-  intent_score: "e.g. cancellation",
-  similarity: "e.g. I want to cancel my service",
-  window_count: "e.g. dissatisfaction",
-};
-
-/** Default values for new conditions by type */
-function defaultsForType(type: ConditionType): Partial<BuilderCondition> {
-  switch (type) {
-    case "speaker":
-      return { value: "customer" };
-    case "channel":
-      return { value: "voice" };
-    case "intent_score":
-      return { value: "", threshold: "0.50", operator: ">" };
-    case "similarity":
-      return { value: "", threshold: "0.50", operator: ">" };
-    case "window_count":
-      return { value: "", windowSize: "5", countValue: "2", operator: ">=" };
-    case "near":
-      return { value: "", nearWord: "", nearDistance: "3" };
-    default:
-      return { value: "" };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// DSL generator
-// ---------------------------------------------------------------------------
-
-function generateDSL(
-  name: string,
-  conditions: BuilderCondition[],
-  priority: string,
-): string {
-  if (!name.trim() || conditions.length === 0) return "";
-
-  const ruleName = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "");
-
-  const predicates = conditions.map((c) => {
-    const val = c.value.trim();
-    const op = c.operator || ">";
-    const th = c.threshold || "0.80";
-
-    switch (c.type) {
-      case "keyword":
-        return val ? `keyword("${val}")` : "";
-      case "word":
-        return val ? `lexical.word("${val}")` : "";
-      case "stem":
-        return val ? `lexical.stem("${val}")` : "";
-      case "keywords_any": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.contains_any([${words}])`;
-      }
-      case "contains_all": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.contains_all([${words}])`;
-      }
-      case "not_contains":
-        return val ? `lexical.not_contains("${val}")` : "";
-      case "excludes_any": {
-        if (!val) return "";
-        const words = val
-          .split(",")
-          .map((w) => `"${w.trim()}"`)
-          .filter((w) => w !== '""')
-          .join(", ");
-        return `lexical.excludes_any([${words}])`;
-      }
-      case "near": {
-        if (!val) return "";
-        const w2 = c.nearWord?.trim() || "";
-        const dist = c.nearDistance || "3";
-        return w2 ? `lexical.near("${val}", "${w2}", ${dist})` : "";
-      }
-      case "starts_with":
-        return val ? `lexical.starts_with("${val}")` : "";
-      case "ends_with":
-        return val ? `lexical.ends_with("${val}")` : "";
-      case "regex":
-        return val ? `regex("${val}")` : "";
-      case "speaker":
-        return val ? `speaker == "${val}"` : "";
-      case "channel":
-        return val ? `channel == "${val}"` : "";
-      case "intent_score":
-        return val ? `semantic.intent("${val}") ${op} ${th}` : "";
-      case "similarity":
-        return val ? `semantic.similarity("${val}") ${op} ${th}` : "";
-      case "window_count": {
-        if (!val) return "";
-        const ws = c.windowSize || "5";
-        const cv = c.countValue || "2";
-        return `context.turn_window(${ws}).count(intent="${val}") ${op} ${cv}`;
-      }
-    }
-  });
-
-  const validPredicates = predicates.filter(Boolean);
-  if (validPredicates.length === 0) return "";
-
-  let whenClause = `    ${validPredicates[0]}`;
-  for (let i = 1; i < validPredicates.length; i++) {
-    whenClause += `\n    ${conditions[i].connector} ${validPredicates[i]}`;
-  }
-
-  const thenParts = [`tag("${ruleName}")`];
-  if (priority && priority !== "none") thenParts.push(`priority("${priority}")`);
-
-  return `RULE ${ruleName}\nWHEN\n${whenClause}\nTHEN\n    ${thenParts.join(" ")}`;
-}
 
 function nextId(): string {
   return Math.random().toString(36).slice(2, 8);
@@ -531,7 +307,10 @@ function CreateCategoryPanel({
 
   // Auto-generate DSL from builder
   const generatedDsl = useMemo(
-    () => generateDSL(name, conditions, priority),
+    () => {
+      if (!name.trim()) return "";
+      return generateDSL(conditions, { ruleName: toRuleName(name), priority });
+    },
     [name, conditions, priority],
   );
 
@@ -795,14 +574,6 @@ function PreviewResultsPanel({ result }: { result: PreviewDSLResponse }) {
 // Preview match card — shows window text with highlighted matches + evidence
 // ---------------------------------------------------------------------------
 
-/** Predicate type label + color mapping */
-const PREDICATE_BADGE: Record<string, { label: string; color: string }> = {
-  lexical: { label: "Lexical", color: "bg-blue-100 text-blue-700" },
-  semantic: { label: "Semantic", color: "bg-purple-100 text-purple-700" },
-  structural: { label: "Structural", color: "bg-teal-100 text-teal-700" },
-  contextual: { label: "Contextual", color: "bg-amber-100 text-amber-700" },
-};
-
 function PreviewMatchCard({ match }: { match: PreviewMatch }) {
   // Collect all matched text fragments for highlighting
   const fragments = extractHighlightFragments(match.evidence);
@@ -829,101 +600,12 @@ function PreviewMatchCard({ match }: { match: PreviewMatch }) {
       {/* Per-predicate evidence badges */}
       {match.evidence.length > 0 && (
         <div className="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1.5">
-          {match.evidence.map((ev, i) => {
-            const badge = PREDICATE_BADGE[ev.predicate_type] ?? {
-              label: ev.predicate_type,
-              color: "bg-gray-100 text-gray-600",
-            };
-            return (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.color}`}
-                title={`${ev.field_name} ${ev.operator} — score: ${ev.score.toFixed(2)}, threshold: ${ev.threshold.toFixed(2)}`}
-              >
-                {badge.label}: {ev.field_name}
-                {ev.matched_text && (
-                  <span className="font-normal opacity-75">
-                    &quot;{ev.matched_text}&quot;
-                  </span>
-                )}
-              </span>
-            );
-          })}
+          {match.evidence.map((ev, i) => (
+            <EvidenceBadge key={i} evidence={ev} />
+          ))}
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Text highlighter — marks matched fragments within the full text
-// ---------------------------------------------------------------------------
-
-function HighlightedText({
-  text,
-  fragments,
-}: {
-  text: string;
-  fragments: string[];
-}) {
-  if (fragments.length === 0) return <>{text}</>;
-
-  // Build a regex matching any fragment (case-insensitive, longest first to
-  // avoid partial overlap)
-  const sorted = [...fragments].sort((a, b) => b.length - a.length);
-  const escaped = sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
-
-  const parts = text.split(pattern);
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const isMatch = fragments.some(
-          (f) => f.toLowerCase() === part.toLowerCase(),
-        );
-        return isMatch ? (
-          <mark
-            key={i}
-            className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5"
-          >
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        );
-      })}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Mode tab button
-// ---------------------------------------------------------------------------
-
-function ModeTab({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-        active
-          ? "bg-blue-50 text-blue-700"
-          : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 

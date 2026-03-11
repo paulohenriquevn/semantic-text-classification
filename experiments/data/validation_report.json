@@ -1,0 +1,433 @@
+{
+  "input": "demo/data/conversations.jsonl",
+  "total_records": 944,
+  "majority_baseline": {
+    "n_classes": 9,
+    "total_records": 944,
+    "majority_class": "reclamacao",
+    "majority_count": 108,
+    "majority_accuracy": 0.1144,
+    "random_accuracy": 0.1111,
+    "majority_macro_f1": 0.0228,
+    "class_distribution": {
+      "reclamacao": 108,
+      "duvida_produto": 108,
+      "saudacao": 108,
+      "suporte_tecnico": 108,
+      "duvida_servico": 108,
+      "compra": 107,
+      "cancelamento": 106,
+      "elogio": 98,
+      "outros": 93
+    },
+    "imbalance_ratio": 1.16
+  },
+  "lexical_signals": {
+    "mean_exclusivity_score": 1.68,
+    "overlap_ratio_top20": 1.0,
+    "exclusivity_per_intent": {
+      "cancelamento": 2.87,
+      "compra": 1.36,
+      "duvida_produto": 1.65,
+      "duvida_servico": 0.99,
+      "elogio": 2.5,
+      "outros": 1.11,
+      "reclamacao": 1.34,
+      "saudacao": 1.17,
+      "suporte_tecnico": 2.16
+    },
+    "top_discriminative_words": {
+      "cancelamento": [
+        [
+          "cancelar",
+          8.56
+        ],
+        [
+          "cancelamento",
+          9.41
+        ],
+        [
+          "ajudar",
+          1.28
+        ],
+        [
+          "posso",
+          1.37
+        ],
+        [
+          "beleza",
+          0.99
+        ],
+        [
+          "alguma",
+          1.19
+        ],
+        [
+          "pedido",
+          1.71
+        ],
+        [
+          "bom",
+          1.1
+        ],
+        [
+          "mail",
+          2.1
+        ],
+        [
+          "show",
+          1.02
+        ]
+      ],
+      "compra": [
+        [
+          "ajudar",
+          0.85
+        ],
+        [
+          "beleza",
+          0.96
+        ],
+        [
+          "plano",
+          1.99
+        ],
+        [
+          "mas",
+          1.15
+        ],
+        [
+          "posso",
+          1.02
+        ],
+        [
+          "show",
+          0.94
+        ],
+        [
+          "alguma",
+          0.96
+        ],
+        [
+          "bom",
+          0.87
+        ],
+        [
+          "fazer",
+          1.49
+        ],
+        [
+          "compra",
+          3.42
+        ]
+      ],
+      "duvida_produto": [
+        [
+          "beleza",
+          0.94
+        ],
+        [
+          "plano",
+          2.19
+        ],
+        [
+          "bom",
+          0.99
+        ],
+        [
+          "ajudar",
+          0.69
+        ],
+        [
+          "alguma",
+          0.97
+        ],
+        [
+          "mas",
+          1.1
+        ],
+        [
+          "posso",
+          0.94
+        ],
+        [
+          "show",
+          0.85
+        ],
+        [
+          "tiver",
+          1.0
+        ],
+        [
+          "preco",
+          6.81
+        ]
+      ],
+      "duvida_servico": [
+        [
+          "beleza",
+          0.87
+        ],
+        [
+          "ajudar",
+          0.71
+        ],
+        [
+          "pedido",
+          1.47
+        ],
+        [
+          "mas",
+          1.11
+        ],
+        [
+          "alguma",
+          0.93
+        ],
+        [
+          "bom",
+          0.84
+        ],
+        [
+          "show",
+          0.85
+        ],
+        [
+          "tiver",
+          1.15
+        ],
+        [
+          "obrigado",
+          0.84
+        ],
+        [
+          "contato",
+          1.13
+        ]
+      ],
+      "elogio": [
+        [
+          "obrigado",
+          1.68
+        ],
+        [
+          "bom",
+          1.31
+        ],
+        [
+          "beleza",
+          1.03
+        ],
+        [
+          "alguma",
+          1.1
+        ],
+        [
+          "ajudar",
+          0.74
+        ],
+        [
+          "show",
+          1.04
+        ],
+        [
+          "elogio",
+          9.21
+        ],
+        [
+          "atendimento",
+          5.88
+        ],
+        [
+          "contato",
+          1.28
+        ],
+        [
+          "pelo",
+          1.72
+        ]
+      ],
+      "outros": [
+        [
+          "ajudar",
+          1.12
+        ],
+        [
+          "beleza",
+          0.98
+        ],
+        [
+          "alguma",
+          1.18
+        ],
+        [
+          "bom",
+          1.0
+        ],
+        [
+          "posso",
+          1.08
+        ],
+        [
+          "obrigado",
+          1.08
+        ],
+        [
+          "show",
+          0.98
+        ],
+        [
+          "contato",
+          1.25
+        ],
+        [
+          "tiver",
+          1.08
+        ],
+        [
+          "entrar",
+          1.34
+        ]
+      ],
+      "reclamacao": [
+        [
+          "problema",
+          2.21
+        ],
+        [
+          "ajudar",
+          1.25
+        ],
+        [
+          "resolver",
+          1.7
+        ],
+        [
+          "beleza",
+          0.99
+        ],
+        [
+          "verificar",
+          1.53
+        ],
+        [
+          "obrigado",
+          1.18
+        ],
+        [
+          "show",
+          1.03
+        ],
+        [
+          "bom",
+          0.98
+        ],
+        [
+          "pedido",
+          1.43
+        ],
+        [
+          "mas",
+          1.13
+        ]
+      ],
+      "saudacao": [
+        [
+          "beleza",
+          1.24
+        ],
+        [
+          "ajudar",
+          1.0
+        ],
+        [
+          "show",
+          1.4
+        ],
+        [
+          "posso",
+          1.35
+        ],
+        [
+          "alguma",
+          1.23
+        ],
+        [
+          "obrigado",
+          1.3
+        ],
+        [
+          "bom",
+          1.03
+        ],
+        [
+          "problema",
+          0.96
+        ],
+        [
+          "tiver",
+          1.12
+        ],
+        [
+          "verificar",
+          1.03
+        ]
+      ],
+      "suporte_tecnico": [
+        [
+          "problema",
+          2.73
+        ],
+        [
+          "ajudar",
+          1.45
+        ],
+        [
+          "resolver",
+          2.48
+        ],
+        [
+          "erro",
+          4.16
+        ],
+        [
+          "tentar",
+          4.87
+        ],
+        [
+          "beleza",
+          1.07
+        ],
+        [
+          "mas",
+          1.38
+        ],
+        [
+          "verificar",
+          1.45
+        ],
+        [
+          "posso",
+          1.07
+        ],
+        [
+          "bom",
+          0.96
+        ]
+      ]
+    },
+    "interpretation": "GOOD: Low exclusivity + high overlap → task is genuinely challenging"
+  },
+  "leakage_audit": {
+    "original_count": 944,
+    "expanded_count": 0,
+    "originals_used_as_few_shot": 0,
+    "max_usage_count": 0,
+    "mean_usage_count": 0,
+    "most_used_originals": [],
+    "recommendation": "During split creation, ensure that if an original conversation is in the test set, all expanded conversations derived from it (via few-shot) are NOT in the training set. The 0 most-reused originals are highest contamination risk."
+  },
+  "original_vs_expanded": {
+    "note": "No expanded conversations found — only original dataset."
+  }
+}

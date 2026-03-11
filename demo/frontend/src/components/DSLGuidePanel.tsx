@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { previewDSL } from "@/lib/api";
+import { EvidenceBadge } from "@/components/EvidenceBadge";
+import { HighlightedText } from "@/components/HighlightedText";
 import { extractHighlightFragments } from "@/lib/evidence";
-import type { PredicateEvidence, PreviewDSLResponse } from "@/types/api";
+import type { PreviewDSLResponse } from "@/types/api";
 
 // ---------------------------------------------------------------------------
 // Collapsible section
@@ -113,38 +115,6 @@ function Predicate({
       <p className="text-xs text-gray-600 leading-relaxed">{description}</p>
       {example && <CodeBlock code={example} />}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Evidence badge (matches SearchBuilderPanel pattern)
-// ---------------------------------------------------------------------------
-
-const PREDICATE_BADGE: Record<string, { label: string; color: string }> = {
-  lexical: { label: "Lexical", color: "bg-blue-100 text-blue-700" },
-  semantic: { label: "Semantic", color: "bg-purple-100 text-purple-700" },
-  structural: { label: "Structural", color: "bg-teal-100 text-teal-700" },
-  contextual: { label: "Contextual", color: "bg-amber-100 text-amber-700" },
-};
-
-function EvidenceBadge({ evidence: ev }: { evidence: PredicateEvidence }) {
-  const badge = PREDICATE_BADGE[ev.predicate_type] ?? {
-    label: ev.predicate_type,
-    color: "bg-gray-100 text-gray-600",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.color}`}
-      title={`${ev.field_name} ${ev.operator} -- score: ${ev.score.toFixed(2)}, threshold: ${ev.threshold.toFixed(2)}`}
-    >
-      {badge.label}: {ev.field_name}
-      {ev.matched_text && (
-        <span className="font-normal opacity-75">
-          &quot;{ev.matched_text}&quot;
-        </span>
-      )}
-    </span>
   );
 }
 
@@ -305,42 +275,6 @@ function RunnableExample({
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Text highlighter (matches SearchBuilderPanel pattern)
-// ---------------------------------------------------------------------------
-
-function HighlightedText({
-  text,
-  fragments,
-}: {
-  text: string;
-  fragments: string[];
-}) {
-  if (fragments.length === 0) return <>{text}</>;
-
-  const sorted = [...fragments].sort((a, b) => b.length - a.length);
-  const escaped = sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
-  const parts = text.split(pattern);
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const isMatch = fragments.some(
-          (f) => f.toLowerCase() === part.toLowerCase(),
-        );
-        return isMatch ? (
-          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        );
-      })}
-    </>
   );
 }
 
