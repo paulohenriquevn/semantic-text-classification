@@ -12,9 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Experiment plotting script (`plot_results.py`) generating Recall@K curves, F1 heatmaps, critical-class comparisons, and Pareto cost-quality charts (no-ticket)
 - Index build script (`build_index.py`) for BM25 + vector index construction from conversation splits (no-ticket)
 - Statistical testing framework (`experiments/stats/statistical_tests.py`) with Wilcoxon signed-rank, Friedman-Nemenyi, and Bootstrap CI (no-ticket)
-- Preliminary experiment results for H1-H4 with 1,192 conversations: H1 Hybrid-RRF MRR=0.800 (p<0.001 vs BM25), H2 lexical+emb LightGBM F1=0.652 (+213% vs lexical-only), H3 ML+Rules-feature F1=0.669 (+6.1% vs ML-only), H4 cascade at t=0.50 saves 24.8% cost with 3.2pp F1 trade-off (no-ticket)
+- Final experiment results for H1-H4 with 2,257 conversations (1,179 original + 1,078 expanded): H1 Hybrid-RRF MRR=0.826 (+3% vs BM25 0.802), H2 lexical+emb LightGBM F1=0.715 (+131% vs lexical-only 0.309), H3 ML+Rules-feature F1=0.714 (cancelamento F1=1.000), H4 cascade t=0.90 resolves 2.7% at stage 1 with negligible F1 loss (0.739 vs 0.741) (no-ticket)
+- Dataset consolidation pipeline: deduplication of expanded conversations, schema unification, stratified train/val/test splits (70/15/15%, seed=42) (no-ticket)
+- Comparative analysis document (`docs/dissertacao/analise-comparativa.md`) cross-referencing TalkEx vs BERTaú, Harris (2025), and Rayo (COLING 2025) with actual data from papers (no-ticket)
+- Ablation studies: 7-configuration component analysis showing embeddings as critical component (F1 drop of 35pp when removed), structural features as noise (+0.8pp when removed), and rule features as precision enhancers for critical classes (cancelamento F1 1.000→0.951 without rules) (no-ticket)
 - MLP classifier unit tests (`test_classification_mlp.py`) (no-ticket)
-- Dissertation chapter drafts for chapters 1-5 (introduction, fundamentação, trabalhos relacionados, arquitetura, metodologia) (no-ticket)
+- Dissertation chapter drafts for chapters 1-7: introduction, fundamentação, trabalhos relacionados, arquitetura, metodologia, resultados e análise, conclusão (no-ticket)
 
 ### Changed
 - Package renamed from `semantic_conversation_engine` to `talkex` — shorter, product-ready branding (RFC-005, no-ticket)

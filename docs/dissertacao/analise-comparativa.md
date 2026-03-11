@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | **Domínio** | Atendimento ao cliente (PT-BR, multi-setor) | Atendimento financeiro (PT-BR, Itaú) | Documentos médicos (EN, 7 classes) | Textos regulatórios (EN, ObliQA) |
 | **Abordagem** | Híbrida (BM25 + ANN + regras + cascata) | BERT treinado do zero | Comparação lexical vs semântico | Híbrida (BM25 + SBERT fine-tuned) |
-| **Dataset** | 180 conversas (preliminar) | 14.5 GB de dados AVI (~22.5M palavras) | 1.472 documentos | 27.869 perguntas |
+| **Dataset** | 2.257 conversas (1.179 original + 1.078 expandidas) | 14.5 GB de dados AVI (~22.5M palavras) | 1.472 documentos | 27.869 perguntas |
 | **Língua** | PT-BR | PT-BR | EN | EN |
 | **Publicação** | Dissertação (em andamento) | arXiv 2101.12015v3 | arXiv 2505.11582v2 | COLING 2025, arXiv 2502.16767v1 |
 
@@ -38,9 +38,9 @@
 
 | Sistema | MRR@10 | Contexto |
 |---|---|---|
-| **TalkEx Hybrid-RRF** | **0.800** | 180 conversas, 9 intents, busca por intent |
-| **TalkEx BM25-only** | **0.713** | Mesmo dataset |
-| **TalkEx ANN-only** | **0.680** | Mesmo dataset |
+| **TalkEx Hybrid-RRF** | **0.826** | 2.257 conversas, 9 intents, busca por intent |
+| **TalkEx BM25-only** | **0.802** | Mesmo dataset |
+| **TalkEx ANN-only** | **0.799** | Mesmo dataset |
 | **BERTaú** (pairwise) | **0.552** | 1.427 perguntas FAQ Itaú, 2.118 respostas |
 | **BERTaú BM25+** | **0.345** | Mesmo dataset |
 | **BERTaú DPR** | **0.526** | Mesmo dataset |
@@ -59,7 +59,7 @@
 
 | Sistema | BM25 baseline | Híbrido | Ganho relativo |
 |---|---|---|---|
-| **TalkEx** | MRR 0.713 | MRR 0.800 | **+12.2%** |
+| **TalkEx** | MRR 0.802 | MRR 0.826 | **+3.0%** |
 | **BERTaú** | MRR 0.345 | MRR 0.552 | **+60.0%** (requer treinar BERT do zero) |
 | **Rayo** | Recall@10 0.761 | Recall@10 0.833 | **+9.5%** (requer fine-tuning em GPU) |
 
@@ -75,12 +75,13 @@ Harris (2025) reporta que BM25 produziu **maior acurácia preditiva** que métod
 
 | Sistema | Macro-F1 | Método | Classes | Dataset |
 |---|---|---|---|---|
-| **TalkEx lexical+emb_LightGBM (H2)** | **0.665** | Embeddings pré-treinados + features lexicais + LightGBM | 9 intents | 180 conversas |
-| **TalkEx ML+Rules-feature (H3)** | **0.663** | ML + regras determinísticas como features | 9 intents | 180 conversas |
-| **TalkEx ML-only (H3)** | **0.661** | LightGBM com embeddings | 9 intents | 180 conversas |
-| **TalkEx lexical+emb_LogReg (H2)** | **0.587** | Embeddings + LogReg | 9 intents | 180 conversas |
-| **TalkEx lexical-only LightGBM (H2)** | **0.208** | Só features lexicais (TF-IDF) | 9 intents | 180 conversas |
-| **TalkEx Rules-only (H3)** | **0.144** | Apenas regras determinísticas | 9 intents | 180 conversas |
+| **TalkEx lexical+emb_LightGBM (H2)** | **0.715** | Embeddings pré-treinados + features lexicais + LightGBM | 9 intents | 2.257 conversas |
+| **TalkEx ML+Rules-feature (H3)** | **0.714** | ML + regras determinísticas como features | 9 intents | 2.257 conversas |
+| **TalkEx ML-only (H3)** | **0.709** | LightGBM com embeddings | 9 intents | 2.257 conversas |
+| **TalkEx lexical+emb_MLP (H2)** | **0.537** | Embeddings + MLP (128,64) | 9 intents | 2.257 conversas |
+| **TalkEx lexical+emb_LogReg (H2)** | **0.559** | Embeddings + LogReg | 9 intents | 2.257 conversas |
+| **TalkEx lexical-only LightGBM (H2)** | **0.309** | Só features lexicais (TF-IDF) | 9 intents | 2.257 conversas |
+| **TalkEx Rules-only (H3)** | **0.130** | Apenas regras determinísticas | 9 intents | 2.257 conversas |
 
 > BERTaú não reportou macro-F1 de classificação de intents — focou em FAQ retrieval (MRR) e sentiment analysis. Harris reporta acurácia, não F1. Rayo focou em retrieval + RAG.
 
@@ -92,12 +93,12 @@ Nenhum dos três papers comparados implementa inferência em cascata. Este é um
 
 | Threshold | % Resolvido no Estágio 1 (leve) | % Estágio 2 (pesado) | F1 | Δ F1 vs uniforme |
 |---|---|---|---|---|
-| Uniforme (baseline) | 0.0% | 100.0% | 0.660 | — |
-| t=0.50 | 46.7% | 53.3% | 0.671 | **+0.011** |
-| t=0.60 | 31.7% | 68.3% | 0.672 | **+0.012** |
-| t=0.70 | 22.2% | 77.8% | 0.665 | +0.005 |
-| t=0.80 | 11.7% | 88.3% | 0.665 | +0.005 |
-| t=0.90 | 2.8% | 97.2% | 0.660 | 0.000 |
+| Uniforme (baseline) | 0.0% | 100.0% | 0.741 | — |
+| t=0.50 | 47.6% | 52.4% | 0.678 | -0.063 |
+| t=0.60 | 32.0% | 68.0% | 0.714 | -0.028 |
+| t=0.70 | 19.5% | 80.5% | 0.705 | -0.036 |
+| t=0.80 | 9.5% | 90.5% | 0.718 | -0.023 |
+| t=0.90 | 2.7% | 97.3% | 0.739 | **-0.003** |
 
 ---
 
@@ -125,23 +126,24 @@ Nenhum dos três papers comparados implementa inferência em cascata. Este é um
 
 ### 7.2 Cinco argumentos com dados reais
 
-1. **Híbrido > isolado** — Confirmado nos três trabalhos: TalkEx (+12.2% MRR), BERTaú (+60% MRR, mas partindo de BM25+ fraco), Rayo (+9.5% Recall@10). Padrão consistente.
+1. **Híbrido > isolado** — Confirmado nos três trabalhos: TalkEx (+3.0% MRR, Hybrid-RRF 0.826 vs BM25 0.802), BERTaú (+60% MRR, mas partindo de BM25+ fraco), Rayo (+9.5% Recall@10). Padrão consistente, embora no TalkEx a diferença não seja estatisticamente significativa (Wilcoxon p=0.103).
 
-2. **Treinamento de LM não é pré-requisito** — TalkEx atinge F1=0.665 com embeddings pré-treinados e classificadores leves treinados em segundos em CPU. BERTaú treina do zero com 14.5 GB e GPU para MRR=0.552.
+2. **Treinamento de LM não é pré-requisito** — TalkEx atinge F1=0.715 com embeddings pré-treinados e classificadores leves treinados em ~6 segundos em CPU. BERTaú treina do zero com 14.5 GB e GPU para MRR=0.552.
 
-3. **BM25 continua relevante** — Harris (2025) demonstra que BM25 supera métodos neurais em dados estruturados. TalkEx preserva BM25 como componente do híbrido (MRR 0.713 solo) em vez de descartá-lo.
+3. **BM25 é surpreendentemente forte** — Harris (2025) demonstra que BM25 supera métodos neurais em dados estruturados. No TalkEx, BM25 (MRR 0.802) se equipara ao ANN (MRR 0.799), confirmando que lexical é forte em dados conversacionais com marcadores explícitos.
 
-4. **Regras adicionam auditabilidade sem custo de F1** — Nenhum dos outros trabalhos oferece regras determinísticas com evidência rastreável. TalkEx ML+Rules-feature (F1=0.663) mantém qualidade próxima ao ML-only (F1=0.661) adicionando auditabilidade.
+4. **Regras adicionam auditabilidade com ganho de F1** — TalkEx ML+Rules-feature (F1=0.714) supera ML-only (F1=0.709), com cancelamento atingindo F1=1.000 (precision=1.0, recall=1.0). Nenhum dos outros trabalhos oferece regras determinísticas com evidência rastreável.
 
-5. **Cascata é contribuição original** — Nenhum dos trabalhos comparados implementa inferência em cascata. TalkEx resolve ~47% das amostras com classificador leve **com ganho de F1** (+0.011).
+5. **Cascata é contribuição original** — Nenhum dos trabalhos comparados implementa inferência em cascata. TalkEx com t=0.90 resolve 2.7% no estágio leve com perda desprezível de F1 (0.739 vs 0.741, delta=-0.003).
 
 ### 7.3 Limitações honestas
 
-- **Dataset pequeno** — 180 conversas (preliminar) vs 14.5 GB do BERTaú, 27.869 perguntas do Rayo, 1.472 documentos do Harris. Resultados são preliminares e serão revalidados com dataset expandido (~2.500 conversas).
+- **Dataset sintético** — 2.257 conversas geradas via LLM, não dados reais de produção. Resultados podem não generalizar para cenários reais com ruído de ASR e linguagem informal.
 - **Métricas não diretamente comparáveis** — Datasets, tarefas e definições de relevância são diferentes entre os trabalhos.
-- **MLP colapsou** (F1=0.039) após normalização L2 dos embeddings — necessita StandardScaler para features mistas.
+- **Diferença híbrido vs BM25 não significativa** — Wilcoxon p=0.103 no H1, CI inclui zero. Com dataset maior a diferença pode se tornar significativa, mas o resultado atual sugere que BM25 é muito forte nesse domínio.
 - **BERTaú opera em domínio mais restrito** (financeiro Itaú) com possível vantagem de especialização que embeddings genéricos multilinguais não capturam.
 - **Ausência de fine-tuning** — TalkEx deliberadamente não faz fine-tuning, mas isso pode ser uma limitação em domínios muito especializados onde vocabulário proprietário é crítico (como demonstrado pela eficiência de tokens do BERTaú: 78 vs 130 do DPR).
+- **Cascata com custo negativo** — O custo computacional medido mostra overhead (não redução) porque embedding generation domina o custo e é compartilhado entre estágios. A cascata beneficia cenários onde os estágios usam modelos de custo genuinamente diferente.
 
 ---
 
@@ -150,4 +152,4 @@ Nenhum dos três papers comparados implementa inferência em cascata. Este é um
 - Finardi, G. M. et al. (2021). "BERTaú: Itaú BERT for digital customer service." arXiv:2101.12015v3.
 - Harris, C. (2025). "A Study on Medical Document Classification Using Lexical and Semantic Methods." arXiv:2505.11582v2.
 - Rayo, L. et al. (2025). "Optimizing Retrieval Strategies for Financial Regulatory Documents." COLING 2025, arXiv:2502.16767v1.
-- TalkEx experimental results: `experiments/results/H1-H4/summary.md` (preliminary, 180 conversations).
+- TalkEx experimental results: `experiments/results/H1-H4/summary.md` (2.257 conversations, train=1.581, test=338).

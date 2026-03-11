@@ -28,7 +28,7 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-SPLITS_DIR = Path("demo/data/splits")
+SPLITS_DIR = Path("experiments/data")
 RESULTS_DIR = Path("experiments/results")
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 EMBEDDING_VERSION = "1.0"
@@ -90,6 +90,7 @@ def _estimate_turn_count(record: dict) -> int:
     if turns:
         return len(turns)
     import re
+
     text = record.get("text", "")
     markers = len(re.findall(r"\[(customer|agent)\]", text, re.IGNORECASE))
     return max(markers, 1)
@@ -657,7 +658,10 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             )
             logger.info(
                 "  %s/%s: macro_f1=%.4f, micro_f1=%.4f",
-                feat_name, clf_name, metrics.get("macro_f1", 0), metrics.get("micro_f1", 0),
+                feat_name,
+                clf_name,
+                metrics.get("macro_f1", 0),
+                metrics.get("micro_f1", 0),
             )
 
     logger.info("H2 complete: %d variants evaluated", len(results))
@@ -951,7 +955,9 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     logger.info("Embeddings generated: %d dims (via talkex pipeline)", train_embs.shape[1])
 
     # --- Build features (lexical + structural + embeddings) and train ML classifier ---
-    def build_inputs(records: list[dict], texts: list[str], embeddings: np.ndarray) -> tuple[list[ClassificationInput], list[str]]:
+    def build_inputs(
+        records: list[dict], texts: list[str], embeddings: np.ndarray
+    ) -> tuple[list[ClassificationInput], list[str]]:
         inputs = []
         feature_names_ref: list[str] = []
         for i, text in enumerate(texts):
@@ -1024,7 +1030,23 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
                     predicate_type=PredicateType.LEXICAL,
                     field_name="text",
                     operator="contains_any",
-                    value=["reclamacao", "reclamar", "reclamando", "absurdo", "inadmissivel", "procon", "anatel", "reclame aqui", "ouvidoria", "insatisfeito", "insatisfeita", "revoltado", "revoltada", "indignado", "indignada"],
+                    value=[
+                        "reclamacao",
+                        "reclamar",
+                        "reclamando",
+                        "absurdo",
+                        "inadmissivel",
+                        "procon",
+                        "anatel",
+                        "reclame aqui",
+                        "ouvidoria",
+                        "insatisfeito",
+                        "insatisfeita",
+                        "revoltado",
+                        "revoltada",
+                        "indignado",
+                        "indignada",
+                    ],
                     cost_hint=1,
                 ),
             ]
@@ -1206,13 +1228,274 @@ def _compute_per_class_metrics(
 
 
 # ---------------------------------------------------------------------------
+# Ablation Studies
+# ---------------------------------------------------------------------------
+
+
+def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
+    """Run ablation studies: remove one component at a time from the full pipeline.
+
+    Baseline: LightGBM with lexical + structural + embedding + rule features
+    (best config from H2/H3).
+
+    Ablations:
+        -Embeddings: remove embedding features (lexical + structural + rules only)
+        -Lexical: remove lexical features (embeddings + structural + rules only)
+        -Rules: remove rule features (lexical + structural + embeddings only)
+        -Structural: remove structural features (lexical + embeddings + rules only)
+        -Emb-only: embedding features only (no lexical, no structural, no rules)
+    """
+    from talkex.classification.features import (
+        extract_lexical_features,
+        extract_structural_features,
+        merge_feature_sets,
+    )
+    from talkex.classification.labels import LabelSpace
+    from talkex.classification.lightgbm_classifier import LightGBMClassifier
+    from talkex.classification.models import ClassificationInput
+    from talkex.rules.ast import AndNode, PredicateNode
+    from talkex.rules.config import PredicateType, RuleEngineConfig
+    from talkex.rules.evaluator import SimpleRuleEvaluator
+    from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+    logger.info("=" * 60)
+    logger.info("Ablation Studies")
+    logger.info("=" * 60)
+
+    train_labels = extract_labels(train)
+    test_labels = extract_labels(test)
+    train_texts = extract_texts(train)
+    test_texts = extract_texts(test)
+    train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
+    test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
+    unique_labels = sorted(set(train_labels + test_labels))
+    label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
+
+    # --- Generate embeddings ---
+    logger.info("Generating embeddings via talkex pipeline...")
+    emb_gen = _make_embedding_generator()
+    train_embs = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
+    test_embs = generate_embeddings_via_talkex(test_texts, test_ids, emb_gen)
+    logger.info("Embeddings: %d dims", train_embs.shape[1])
+
+    # --- Extract feature components separately ---
+    def extract_components(
+        records: list[dict],
+        texts: list[str],
+        embeddings: np.ndarray,
+    ) -> dict[str, list[dict[str, float]]]:
+        """Extract each feature family separately."""
+        lexical_feats = []
+        structural_feats = []
+        embedding_feats = []
+
+        for i, text in enumerate(texts):
+            r = records[i]
+            lex = extract_lexical_features(text)
+            struct = extract_structural_features(
+                is_customer=True,
+                is_agent=True,
+                turn_count=_estimate_turn_count(r),
+                speaker_count=2,
+            )
+            emb_dict = {f"emb_{d}": float(embeddings[i][d]) for d in range(embeddings.shape[1])}
+
+            lexical_feats.append(lex.features if hasattr(lex, "features") else dict(lex))
+            structural_feats.append(struct.features if hasattr(struct, "features") else dict(struct))
+            embedding_feats.append(emb_dict)
+
+        return {
+            "lexical": lexical_feats,
+            "structural": structural_feats,
+            "embedding": embedding_feats,
+        }
+
+    train_components = extract_components(train, train_texts, train_embs)
+    test_components = extract_components(test, test_texts, test_embs)
+
+    # --- Rule features ---
+    cancel_rule = RuleDefinition(
+        rule_id="rule_cancel",
+        rule_name="cancelamento_keywords",
+        rule_version="1.0",
+        description="Detects cancellation intent",
+        ast=AndNode(
+            children=[
+                PredicateNode(
+                    predicate_type=PredicateType.LEXICAL,
+                    field_name="text",
+                    operator="contains_any",
+                    value=["cancelar", "cancelamento", "cancela", "desistir", "encerrar contrato", "rescindir"],
+                    cost_hint=1,
+                ),
+            ]
+        ),
+        tags=["critical", "cancelamento"],
+    )
+    complaint_rule = RuleDefinition(
+        rule_id="rule_complaint",
+        rule_name="reclamacao_keywords",
+        rule_version="1.0",
+        description="Detects complaint intent",
+        ast=AndNode(
+            children=[
+                PredicateNode(
+                    predicate_type=PredicateType.LEXICAL,
+                    field_name="text",
+                    operator="contains_any",
+                    value=[
+                        "reclamacao",
+                        "reclamar",
+                        "reclamando",
+                        "absurdo",
+                        "inadmissivel",
+                        "procon",
+                        "anatel",
+                        "reclame aqui",
+                        "ouvidoria",
+                        "insatisfeito",
+                        "insatisfeita",
+                        "revoltado",
+                        "revoltada",
+                        "indignado",
+                        "indignada",
+                    ],
+                    cost_hint=1,
+                ),
+            ]
+        ),
+        tags=["critical", "reclamacao"],
+    )
+    rules = [cancel_rule, complaint_rule]
+    evaluator = SimpleRuleEvaluator()
+    rule_config = RuleEngineConfig()
+
+    def compute_rule_features(records: list[dict], texts: list[str]) -> list[dict[str, float]]:
+        rule_feats = []
+        for i, text in enumerate(texts):
+            eval_input = RuleEvaluationInput(
+                source_id=_get_record_id(records[i], f"rec_{i}"),
+                source_type="conversation",
+                text=text,
+            )
+            rule_results = evaluator.evaluate(rules, eval_input, rule_config)
+            feats = {}
+            for rule in rules:
+                matched = any(rr.matched for rr in rule_results if rr.rule_id == rule.rule_id)
+                feats[f"rule_{rule.rule_id}"] = 1.0 if matched else 0.0
+            rule_feats.append(feats)
+        return rule_feats
+
+    logger.info("Computing rule features...")
+    train_rule_feats = compute_rule_features(train, train_texts)
+    test_rule_feats = compute_rule_features(test, test_texts)
+
+    # --- Define ablation configurations ---
+    # Each config: (name, which component families to include)
+    ablation_configs = [
+        ("full_pipeline", ["lexical", "structural", "embedding", "rules"]),
+        ("-Embeddings", ["lexical", "structural", "rules"]),
+        ("-Lexical", ["structural", "embedding", "rules"]),
+        ("-Rules", ["lexical", "structural", "embedding"]),
+        ("-Structural", ["lexical", "embedding", "rules"]),
+        ("Emb-only", ["embedding"]),
+        ("Lexical-only", ["lexical", "structural"]),
+    ]
+
+    def merge_components(
+        components: dict[str, list[dict[str, float]]],
+        rule_feats: list[dict[str, float]],
+        include: list[str],
+        n_samples: int,
+    ) -> tuple[list[dict[str, float]], list[str]]:
+        merged = []
+        for i in range(n_samples):
+            features: dict[str, float] = {}
+            if "lexical" in include:
+                features.update(components["lexical"][i])
+            if "structural" in include:
+                features.update(components["structural"][i])
+            if "embedding" in include:
+                features.update(components["embedding"][i])
+            if "rules" in include:
+                features.update(rule_feats[i])
+            merged.append(features)
+        names = list(merged[0].keys()) if merged else []
+        return merged, names
+
+    results: list[ExperimentResult] = []
+    lgbm_kwargs = {"n_estimators": 100, "num_leaves": 31, "verbosity": -1}
+
+    for config_name, include in ablation_configs:
+        logger.info("Running ablation: %s (features: %s)...", config_name, include)
+        t0 = time.perf_counter()
+
+        train_feats, feat_names = merge_components(train_components, train_rule_feats, include, len(train))
+        test_feats, _ = merge_components(test_components, test_rule_feats, include, len(test))
+
+        train_inputs = [
+            ClassificationInput(
+                source_id=_get_record_id(train[i], f"train_{i}"),
+                source_type="conversation",
+                text=train_texts[i],
+                features=train_feats[i],
+            )
+            for i in range(len(train))
+        ]
+        test_inputs = [
+            ClassificationInput(
+                source_id=_get_record_id(test[i], f"test_{i}"),
+                source_type="conversation",
+                text=test_texts[i],
+                features=test_feats[i],
+            )
+            for i in range(len(test))
+        ]
+
+        clf = LightGBMClassifier(
+            label_space=label_space,
+            feature_names=feat_names,
+            lgbm_kwargs=lgbm_kwargs,
+        )
+        clf.fit(train_inputs, train_labels)
+        clf_results = clf.classify(test_inputs)
+        preds = [r.top_label for r in clf_results]
+        dur = (time.perf_counter() - t0) * 1000
+
+        macro_f1 = _compute_macro_f1(preds, test_labels, unique_labels)
+        per_class = _compute_per_class_metrics(preds, test_labels, unique_labels)
+        metrics = {"macro_f1": macro_f1, "n_features": len(feat_names)}
+        metrics.update(per_class)
+
+        results.append(
+            ExperimentResult(
+                hypothesis="ablation",
+                variant_name=config_name,
+                metrics=metrics,
+                config={"type": "ablation", "include": include, "n_features": len(feat_names)},
+                duration_ms=dur,
+            )
+        )
+        logger.info("  %s: macro_f1=%.4f, n_features=%d", config_name, macro_f1, len(feat_names))
+
+    # Compute deltas from full pipeline
+    full_f1 = results[0].metrics["macro_f1"]
+    for r in results[1:]:
+        r.metrics["delta_f1"] = full_f1 - r.metrics["macro_f1"]
+        r.metrics["pct_drop"] = (full_f1 - r.metrics["macro_f1"]) / full_f1 * 100 if full_f1 > 0 else 0
+
+    logger.info("Ablation complete: %d configs evaluated", len(results))
+    return results
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 
 @click.command()
 @click.option("--hypothesis", required=True, type=click.Choice(["H1", "H2", "H3", "H4", "ablation", "all"]))
-@click.option("--splits-dir", default="demo/data/splits", help="Directory with train/val/test splits.")
+@click.option("--splits-dir", default="experiments/data", help="Directory with train/val/test splits.")
 @click.option("--output-dir", default="experiments/results", help="Base output directory.")
 def main(hypothesis: str, splits_dir: str, output_dir: str) -> None:
     """Run experiment(s) for a specific hypothesis."""
@@ -1220,7 +1503,7 @@ def main(hypothesis: str, splits_dir: str, output_dir: str) -> None:
     SPLITS_DIR = Path(splits_dir)
     RESULTS_DIR = Path(output_dir)
 
-    hypotheses = [hypothesis] if hypothesis != "all" else ["H1", "H2", "H3", "H4"]
+    hypotheses = [hypothesis] if hypothesis != "all" else ["H1", "H2", "H3", "H4", "ablation"]
 
     for h in hypotheses:
         logger.info("=" * 60)
@@ -1239,6 +1522,8 @@ def main(hypothesis: str, splits_dir: str, output_dir: str) -> None:
             results = run_h3(train, test)
         elif h == "H4":
             results = run_h4(train, test)
+        elif h == "ablation":
+            results = run_ablation(train, test)
         else:
             logger.warning("Hypothesis %s not yet implemented in orchestration script", h)
             continue

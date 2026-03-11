@@ -284,19 +284,96 @@ def plot_h3(data: dict, output_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Ablation plots
+# ---------------------------------------------------------------------------
+
+
+def plot_ablation(data: dict, output_dir: Path) -> None:
+    """Generate ablation study plots."""
+    variants = data["variants"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- Horizontal bar chart: F1 contribution of each component ---
+    full = next((v for v in variants if v["variant_name"] == "full_pipeline"), None)
+    ablations = [v for v in variants if v["variant_name"] != "full_pipeline"]
+
+    if full and ablations:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        names = [v["variant_name"] for v in ablations]
+        f1_values = [v["metrics"].get("macro_f1", 0) for v in ablations]
+        full_f1 = full["metrics"]["macro_f1"]
+        deltas = [full_f1 - f1 for f1 in f1_values]
+
+        colors = ["#e74c3c" if d > 0.01 else "#f39c12" if d > 0 else "#2ecc71" for d in deltas]
+        y_pos = np.arange(len(names))
+
+        bars = ax.barh(y_pos, deltas, color=colors)
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(names)
+        ax.set_xlabel("Queda de Macro-F1 (vs full pipeline)")
+        ax.set_title(f"Ablation: Contribuicao de Cada Componente (baseline F1={full_f1:.3f})")
+        ax.axvline(x=0, color="black", linewidth=0.8)
+
+        for bar, delta, f1 in zip(bars, deltas, f1_values, strict=True):
+            ax.text(
+                bar.get_width() + 0.002,
+                bar.get_y() + bar.get_height() / 2,
+                f"F1={f1:.3f} (delta={delta:+.3f})",
+                ha="left",
+                va="center",
+                fontsize=9,
+            )
+
+        fig.tight_layout()
+        fig.savefig(output_dir / "ablation_contribution.png")
+        plt.close(fig)
+        logger.info("Saved ablation_contribution.png")
+
+    # --- Grouped bar: F1 per class for full vs key ablations ---
+    key_variants = [v for v in variants if v["variant_name"] in ("full_pipeline", "-Embeddings", "-Rules", "Emb-only")]
+    if key_variants:
+        all_labels = set()
+        for v in key_variants:
+            for k in v["metrics"]:
+                if k.startswith("f1_"):
+                    all_labels.add(k[3:])
+        labels = sorted(all_labels)
+
+        fig, ax = plt.subplots(figsize=(14, 6))
+        x = np.arange(len(labels))
+        width = 0.8 / len(key_variants)
+
+        for i, v in enumerate(key_variants):
+            values = [v["metrics"].get(f"f1_{label}", 0) for label in labels]
+            offset = (i - len(key_variants) / 2 + 0.5) * width
+            ax.bar(x + offset, values, width, label=v["variant_name"])
+
+        ax.set_ylabel("F1")
+        ax.set_title("Ablation: F1 por Classe para Configuracoes-Chave")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=30, ha="right")
+        ax.set_ylim(0, 1.1)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(output_dir / "ablation_per_class.png")
+        plt.close(fig)
+        logger.info("Saved ablation_per_class.png")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 
 @click.command()
-@click.option("--hypothesis", required=True, type=click.Choice(["H1", "H2", "H3", "H4", "all"]))
+@click.option("--hypothesis", required=True, type=click.Choice(["H1", "H2", "H3", "H4", "ablation", "all"]))
 @click.option("--results-dir", default="experiments/results", help="Base results directory.")
 def main(hypothesis: str, results_dir: str) -> None:
     """Generate plots for experiment results."""
     global RESULTS_DIR
     RESULTS_DIR = Path(results_dir)
 
-    hypotheses = [hypothesis] if hypothesis != "all" else ["H1", "H2", "H3", "H4"]
+    hypotheses = [hypothesis] if hypothesis != "all" else ["H1", "H2", "H3", "H4", "ablation"]
 
     for h in hypotheses:
         try:
@@ -316,6 +393,8 @@ def main(hypothesis: str, results_dir: str) -> None:
             plot_h3(data, output_dir)
         elif h == "H4":
             plot_h4(data, output_dir)
+        elif h == "ablation":
+            plot_ablation(data, output_dir)
         else:
             logger.warning("Plot generation not yet implemented for %s", h)
 
