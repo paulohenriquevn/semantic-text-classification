@@ -27,7 +27,7 @@ export function ResultCard({ hit, onClick }: ResultCardProps) {
             </span>
           </div>
           <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-line">
-            {hit.text}
+            <HighlightedText text={hit.text} fragment={hit.matched_text} />
           </p>
         </div>
 
@@ -65,5 +65,37 @@ function ScoreBadge({
     <span className={`text-xs px-2 py-0.5 rounded font-mono ${colors[color]}`}>
       {label}: {value.toFixed(3)}
     </span>
+  );
+}
+
+function HighlightedText({
+  text,
+  fragment,
+}: {
+  text: string;
+  fragment: string | null;
+}) {
+  if (!fragment) return <>{text}</>;
+
+  const escaped = fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(${escaped})`, "gi");
+  const parts = text.split(pattern);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        const isMatch = part.toLowerCase() === fragment.toLowerCase();
+        return isMatch ? (
+          <mark
+            key={i}
+            className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        );
+      })}
+    </>
   );
 }

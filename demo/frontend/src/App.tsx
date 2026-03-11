@@ -7,6 +7,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { ResultCard } from "@/components/ResultCard";
 import { SearchBar } from "@/components/SearchBar";
 import { SearchBuilderPanel } from "@/components/SearchBuilderPanel";
+import { SearchLoading } from "@/components/SearchLoading";
 import { searchConversations } from "@/lib/api";
 import type { SearchFilters, SearchResponse } from "@/types/api";
 
@@ -18,6 +19,7 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [highlightFragments, setHighlightFragments] = useState<string[]>([]);
   const [searchMode, setSearchMode] = useState<SearchMode>("text");
 
   const searchMutation = useMutation({
@@ -30,8 +32,9 @@ export default function App() {
   });
 
   // Navigate to conversation view from any tab
-  const viewConversation = (conversationId: string) => {
+  const viewConversation = (conversationId: string, fragments?: string[]) => {
     setSelectedConversation(conversationId);
+    setHighlightFragments(fragments ?? []);
     setTab("search");
   };
 
@@ -70,7 +73,11 @@ export default function App() {
         {selectedConversation ? (
           <ConversationView
             conversationId={selectedConversation}
-            onBack={() => setSelectedConversation(null)}
+            highlightFragments={highlightFragments}
+            onBack={() => {
+              setSelectedConversation(null);
+              setHighlightFragments([]);
+            }}
           />
         ) : tab === "analytics" ? (
           <AnalyticsPanel />
@@ -102,15 +109,18 @@ export default function App() {
 
                 <FilterBar filters={filters} onChange={setFilters} />
 
+                {/* Loading state with counter */}
+                <SearchLoading isLoading={searchMutation.isPending} />
+
                 {/* Latency banner */}
-                {searchResult && (
+                {searchResult && !searchMutation.isPending && (
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>
-                      {searchResult.results.length} results from{" "}
-                      {searchResult.total_candidates} candidates
+                      {searchResult.results.length} resultados de{" "}
+                      {searchResult.total_candidates} candidatos
                     </span>
                     <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
-                      Search completed in {searchResult.latency_ms} ms
+                      Busca concluída em {searchResult.latency_ms} ms
                     </span>
                   </div>
                 )}
@@ -118,23 +128,26 @@ export default function App() {
                 {/* Error */}
                 {searchMutation.isError && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                    Search failed: {(searchMutation.error as Error).message}
+                    Busca falhou: {(searchMutation.error as Error).message}
                   </div>
                 )}
 
                 {/* Results */}
-                {searchResult && (
+                {searchResult && !searchMutation.isPending && (
                   <div className="space-y-3">
                     {searchResult.results.map((hit) => (
                       <ResultCard
                         key={hit.window_id}
                         hit={hit}
-                        onClick={setSelectedConversation}
+                        onClick={(convId) => {
+                          const fragments = hit.matched_text ? [hit.matched_text] : [];
+                          viewConversation(convId, fragments);
+                        }}
                       />
                     ))}
                     {searchResult.results.length === 0 && (
                       <div className="text-center py-10 text-gray-400">
-                        No results found. Try a different query.
+                        Nenhum resultado encontrado. Tente uma busca diferente.
                       </div>
                     )}
                   </div>
@@ -144,10 +157,10 @@ export default function App() {
                 {!searchResult && !searchMutation.isPending && (
                   <div className="text-center py-20 text-gray-400">
                     <p className="text-lg mb-2">
-                      Search thousands of call center conversations
+                      Busque em milhares de conversas de call center
                     </p>
                     <p className="text-sm">
-                      Try: "customer complaint", "refund request", "technical support"
+                      Use as ações rápidas acima ou digite sua busca em linguagem natural
                     </p>
                   </div>
                 )}

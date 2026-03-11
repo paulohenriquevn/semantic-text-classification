@@ -2,7 +2,10 @@
 
 Bridges the FastAPI layer with the TalkEx hybrid retrieval engine.
 Handles query embedding, BM25 + vector search, score fusion, and
-result enrichment with conversation metadata.
+result enrichment with conversation metadata and sentence highlighting.
+
+Performance: sentence highlighting uses a single batch embedding call
+for all top-K results, making it O(1) model calls regardless of K.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from dataclasses import dataclass
 
 from demo.backend.schemas.api_models import SearchFilters, SearchHit, SearchResponse
 from demo.backend.services.conversation_store import ConversationStore
+from demo.backend.services.text_highlighting import find_best_sentences_batch
 
 from talkex.retrieval.hybrid import SimpleHybridRetriever
 from talkex.retrieval.models import QueryType, RetrievalQuery
@@ -59,8 +63,8 @@ class SearchService:
 
         result = self.retriever.retrieve(retrieval_query)
 
-        # Enrich hits with metadata from store
-        hits: list[SearchHit] = []
+        # Collect hits and their texts for batch highlighting
+        pre_hits: list[tuple[dict, float | None, float | None, float, str]] = []
         for hit in result.hits:
             window_meta = self.store.get_window(hit.object_id)
             if window_meta is None:
@@ -73,22 +77,48 @@ class SearchService:
                 if filters.topic and window_meta.get("topic") != filters.topic:
                     continue
 
-            hits.append(
-                SearchHit(
-                    window_id=hit.object_id,
-                    conversation_id=window_meta.get("conversation_id", ""),
-                    text=window_meta.get("window_text", ""),
-                    lexical_score=hit.lexical_score,
-                    semantic_score=hit.semantic_score,
-                    score=hit.score,
-                    rank=len(hits) + 1,
-                    domain=window_meta.get("domain", ""),
-                    topic=window_meta.get("topic", ""),
+            pre_hits.append(
+                (
+                    window_meta,
+                    hit.lexical_score,
+                    hit.semantic_score,
+                    hit.score,
+                    hit.object_id,
                 )
             )
 
-            if len(hits) >= top_k:
+            if len(pre_hits) >= top_k:
                 break
+
+        # Batch highlight: embed query once, embed all sentences in one call
+        texts = [meta.get("window_text", "") for meta, *_ in pre_hits]
+        matched_texts: list[str | None] = [None] * len(texts)
+
+        gen = self.retriever.embedding_generator
+        if gen is not None and texts:
+            # Reuse the retriever's embedding generator to embed the query
+            # (the retriever already embedded it for ANN search, but that
+            # vector isn't exposed — this is the only extra embedding call)
+            query_vector = self.retriever._embed_query(query_text)
+            matched_texts = find_best_sentences_batch(texts, query_vector, gen)
+
+        # Build final hits
+        hits: list[SearchHit] = []
+        for i, (meta, lex_score, sem_score, score, obj_id) in enumerate(pre_hits):
+            hits.append(
+                SearchHit(
+                    window_id=obj_id,
+                    conversation_id=meta.get("conversation_id", ""),
+                    text=texts[i],
+                    lexical_score=lex_score,
+                    semantic_score=sem_score,
+                    score=score,
+                    rank=i + 1,
+                    domain=meta.get("domain", ""),
+                    topic=meta.get("topic", ""),
+                    matched_text=matched_texts[i],
+                )
+            )
 
         elapsed_ms = (time.monotonic() - start) * 1000
 

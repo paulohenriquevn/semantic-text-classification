@@ -22,6 +22,7 @@ export interface SearchHit {
   rank: number;
   domain: string;
   topic: string;
+  matched_text: string | null;
 }
 
 export interface SearchResponse {

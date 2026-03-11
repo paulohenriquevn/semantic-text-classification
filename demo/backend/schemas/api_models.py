@@ -41,6 +41,7 @@ class SearchHit(BaseModel):
     rank: int
     domain: str = ""
     topic: str = ""
+    matched_text: str | None = None
 
 
 class SearchResponse(BaseModel):

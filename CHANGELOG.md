@@ -34,7 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Embedding model atualizado para `paraphrase-multilingual-MiniLM-L12-v2` — suporte nativo a PT-BR e 50+ idiomas, scores de similaridade calibrados para o dataset (no-ticket)
 - Predicado `semantic.intent()` agora funciona no demo — computa embeddings e similaridade igual ao `semantic.similarity()`, populando `features["intent_score"]` corretamente (no-ticket)
 - Aba "Examples" no Search DSL Builder com 8 pesquisas prontas cobrindo cancelamento, reclamação, cobrança, suporte técnico, elogios, prazo de entrega, busca lexical e busca híbrida — clique carrega no DSL Editor (no-ticket)
-- Destaque de trechos em resultados semânticos: para matches de `semantic.similarity()` e `semantic.intent()`, o sistema identifica a sentença mais relevante dentro da janela de contexto via embedding por sentença e destaca visualmente no texto do resultado (no-ticket)
+- Destaque de trechos em resultados semânticos: para matches de `semantic.similarity()` e `semantic.intent()`, o sistema identifica a sentença mais relevante dentro da janela de contexto via embedding por sentença e destaca visualmente no texto do resultado — funciona tanto no DSL Builder quanto na busca Natural Language (no-ticket)
+- Ações rápidas na busca Natural Language: 10 botões de pesquisa rápida (Cancelamento, Reclamação, Suporte técnico, Cobrança indevida, Compra, Elogio, Dúvida produto, Prazo entrega, Reembolso, Agendamento) que preenchem e executam a busca automaticamente — queries em PT-BR calibradas para o dataset de call center (no-ticket)
+- Loading animado com contador de tempo: indicador visual com barra de progresso, timer em tempo real, e etapas descritivas ("Processando embeddings...", "Buscando nos índices...") — disponível em Natural Language (versão completa), DSL Builder e Categories (versão compacta) (no-ticket)
 
 ### Fixed
 - `semantic.similarity()` agora respeita o operador de comparação da DSL (`<`, `<=`, `>`, `>=`) — antes hardcodava `similarity_above` (>=) ignorando o operador escrito pelo usuário (no-ticket)

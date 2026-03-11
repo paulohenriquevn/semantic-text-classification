@@ -17,7 +17,6 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-import numpy as np
 from demo.backend.services.conversation_store import ConversationStore
 
 from talkex.rules.ast import AndNode, ASTNode, NotNode, OrNode, PredicateNode
@@ -277,65 +276,11 @@ def _extract_semantic_refs(node: ASTNode) -> list[tuple[str, str]]:
     return []
 
 
-def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
-    """Compute cosine similarity between two vectors."""
-    dot = float(np.dot(a, b))
-    norm_a = float(np.linalg.norm(a))
-    norm_b = float(np.linalg.norm(b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
-
-
 def _find_best_sentence(text: str, query_vector: list[float], embedding_generator: object) -> str | None:
-    """Find the sentence in text most similar to the query vector.
+    """Delegate to shared text highlighting utility."""
+    from demo.backend.services.text_highlighting import find_best_sentence
 
-    Splits the text into sentences, embeds each one, and returns the
-    sentence with the highest cosine similarity to the query. This gives
-    an approximate highlight for semantic matches.
-
-    Returns None if text is too short to split meaningfully.
-    """
-    import re
-
-    from talkex.embeddings.inputs import EmbeddingBatch, EmbeddingInput
-    from talkex.models.enums import ObjectType
-    from talkex.models.types import EmbeddingId
-
-    # Split into sentences on newlines (turn boundaries) and punctuation
-    sentences = [s.strip() for s in re.split(r"\n|(?<=[.!?])\s+", text) if s.strip()]
-    # Remove speaker tags like [UNKNOWN], [customer], [agent]
-    clean = [re.sub(r"\[[\w]+\]\s*", "", s).strip() for s in sentences]
-    clean_pairs = [(orig, c) for orig, c in zip(sentences, clean, strict=True) if len(c) > 5]
-
-    if len(clean_pairs) <= 1:
-        return None
-
-    # Embed all sentences
-    items = [
-        EmbeddingInput(
-            embedding_id=EmbeddingId(f"emb_sent_{i}"),
-            object_type=ObjectType.CONTEXT_WINDOW,
-            object_id=f"sent_{i}",
-            text=c,
-        )
-        for i, (_orig, c) in enumerate(clean_pairs)
-    ]
-    batch = EmbeddingBatch(items=items)
-    records = embedding_generator.generate(batch)
-    if not records:
-        return None
-
-    query_arr = np.array(query_vector)
-    best_score = -1.0
-    best_text = None
-    for rec, (orig, _c) in zip(records, clean_pairs, strict=False):
-        sim = _cosine_similarity(query_arr, np.array(rec.vector))
-        if sim > best_score:
-            best_score = sim
-            best_text = orig
-
-    return best_text
+    return find_best_sentence(text, query_vector, embedding_generator)
 
 
 class CategoryService:

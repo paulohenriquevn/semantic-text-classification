@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { previewDSL } from "@/lib/api";
 import type { PredicateEvidence, PreviewDSLResponse, PreviewMatch } from "@/types/api";
 import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
+import { SearchLoadingCompact } from "@/components/SearchLoading";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -255,7 +256,7 @@ function nextId(): string {
 // ---------------------------------------------------------------------------
 
 interface SearchBuilderPanelProps {
-  onViewConversation: (conversationId: string) => void;
+  onViewConversation: (conversationId: string, fragments?: string[]) => void;
 }
 
 export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelProps) {
@@ -380,15 +381,18 @@ export function SearchBuilderPanel({ onViewConversation }: SearchBuilderPanelPro
         </div>
       </div>
 
+      {/* Loading */}
+      <SearchLoadingCompact isLoading={searchMutation.isPending} label="Executando busca DSL..." />
+
       {/* Error */}
-      {searchMutation.isError && (
+      {searchMutation.isError && !searchMutation.isPending && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          Search failed: {(searchMutation.error as Error).message}
+          Busca falhou: {(searchMutation.error as Error).message}
         </div>
       )}
 
       {/* Results */}
-      {searchResult && (
+      {searchResult && !searchMutation.isPending && (
         <SearchResults result={searchResult} onViewConversation={onViewConversation} />
       )}
     </div>
@@ -404,7 +408,7 @@ function SearchResults({
   onViewConversation,
 }: {
   result: PreviewDSLResponse;
-  onViewConversation: (conversationId: string) => void;
+  onViewConversation: (conversationId: string, fragments?: string[]) => void;
 }) {
   if (!result.valid) {
     return (
@@ -486,7 +490,7 @@ function SearchMatchCard({
 }: {
   match: PreviewMatch;
   rank: number;
-  onViewConversation: (conversationId: string) => void;
+  onViewConversation: (conversationId: string, fragments?: string[]) => void;
 }) {
   const fragments = match.evidence
     .map((ev) => ev.matched_text)
@@ -501,7 +505,7 @@ function SearchMatchCard({
             #{rank}
           </span>
           <button
-            onClick={() => onViewConversation(match.conversation_id)}
+            onClick={() => onViewConversation(match.conversation_id, fragments)}
             className="text-xs text-blue-600 hover:underline font-mono"
           >
             {match.conversation_id.length > 20

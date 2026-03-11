@@ -1,17 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Clock, Mic, MessageSquare } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { getConversation } from "@/lib/api";
 
 interface ConversationViewProps {
   conversationId: string;
+  highlightFragments?: string[];
   onBack: () => void;
 }
 
-export function ConversationView({ conversationId, onBack }: ConversationViewProps) {
+export function ConversationView({
+  conversationId,
+  highlightFragments = [],
+  onBack,
+}: ConversationViewProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["conversation", conversationId],
     queryFn: () => getConversation(conversationId),
   });
+
+  // Strip speaker tags like [UNKNOWN], [customer], [agent] from fragments
+  // so they match against turn raw_text which doesn't have these tags
+  const cleanFragments = highlightFragments.map((f) =>
+    f.replace(/\[[\w]+\]\s*/g, "").trim(),
+  ).filter((f) => f.length > 3);
+
+  // Scroll to first highlighted turn after render
+  const firstHighlightRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (firstHighlightRef.current) {
+      firstHighlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -32,13 +52,16 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
     );
   }
 
+  // Check which turns contain any highlight fragment
+  let firstHighlightFound = false;
+
   return (
     <div className="space-y-4">
       <button
         onClick={onBack}
         className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to results
+        <ArrowLeft className="h-4 w-4" /> Voltar aos resultados
       </button>
 
       {/* Metadata header */}
@@ -61,25 +84,99 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
         </div>
       </div>
 
+      {/* Highlight legend */}
+      {cleanFragments.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="bg-yellow-200 text-yellow-900 px-1.5 py-0.5 rounded text-[10px] font-medium">
+            Trecho encontrado
+          </span>
+          <span>Trechos que correspondem à sua busca estão destacados abaixo</span>
+        </div>
+      )}
+
       {/* Turns */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm divide-y">
-        {data.turns.map((turn) => (
-          <div key={turn.turn_id} className="p-3">
-            <span
-              className={`inline-block text-xs font-medium px-2 py-0.5 rounded mb-1 ${
-                turn.speaker === "customer"
-                  ? "bg-blue-100 text-blue-700"
-                  : turn.speaker === "agent"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-600"
+        {data.turns.map((turn) => {
+          const hasHighlight =
+            cleanFragments.length > 0 &&
+            cleanFragments.some((f) =>
+              turn.raw_text.toLowerCase().includes(f.toLowerCase()),
+            );
+
+          // Assign ref to first highlighted turn for auto-scroll
+          let ref: React.Ref<HTMLDivElement> | undefined;
+          if (hasHighlight && !firstHighlightFound) {
+            ref = firstHighlightRef;
+            firstHighlightFound = true;
+          }
+
+          return (
+            <div
+              key={turn.turn_id}
+              ref={ref}
+              className={`p-3 transition-colors ${
+                hasHighlight
+                  ? "bg-yellow-50 border-l-4 border-yellow-400"
+                  : ""
               }`}
             >
-              {turn.speaker}
-            </span>
-            <p className="text-sm text-gray-700 whitespace-pre-line">{turn.raw_text}</p>
-          </div>
-        ))}
+              <span
+                className={`inline-block text-xs font-medium px-2 py-0.5 rounded mb-1 ${
+                  turn.speaker === "customer"
+                    ? "bg-blue-100 text-blue-700"
+                    : turn.speaker === "agent"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {turn.speaker}
+              </span>
+              <p className="text-sm text-gray-700 whitespace-pre-line select-text cursor-text">
+                <HighlightedText text={turn.raw_text} fragments={cleanFragments} />
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Text highlighter — reused pattern from ResultCard/SearchBuilderPanel
+// ---------------------------------------------------------------------------
+
+function HighlightedText({
+  text,
+  fragments,
+}: {
+  text: string;
+  fragments: string[];
+}) {
+  if (fragments.length === 0) return <>{text}</>;
+
+  const sorted = [...fragments].sort((a, b) => b.length - a.length);
+  const escaped = sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = text.split(pattern);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        const isMatch = fragments.some(
+          (f) => f.toLowerCase() === part.toLowerCase(),
+        );
+        return isMatch ? (
+          <mark
+            key={i}
+            className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        );
+      })}
+    </>
   );
 }

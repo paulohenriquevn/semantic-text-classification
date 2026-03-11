@@ -30,6 +30,7 @@ import type {
   PreviewMatch,
 } from "@/types/api";
 import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
+import { SearchLoadingCompact } from "@/components/SearchLoading";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -555,8 +556,11 @@ function CreateCategoryPanel({
           </div>
         )}
 
+        {/* Preview loading */}
+        <SearchLoadingCompact isLoading={previewMutation.isPending} label="Avaliando regra no corpus..." />
+
         {/* Preview results */}
-        {previewResult && (
+        {previewResult && !previewMutation.isPending && (
           <PreviewResultsPanel result={previewResult} />
         )}
 
