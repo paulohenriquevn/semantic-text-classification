@@ -1,0 +1,125 @@
+{
+  "hypothesis": "H4",
+  "timestamp": "2026-03-11T10:07:38",
+  "n_variants": 6,
+  "variants": [
+    {
+      "hypothesis": "H4",
+      "variant_name": "uniform",
+      "metrics": {
+        "macro_f1": 0.6600153535956573,
+        "cost_ms": 22.458748499047942,
+        "pct_stage1": 0,
+        "pct_stage2": 100,
+        "light_cost_per_sample_ms": 0.06820063054975536,
+        "full_cost_per_sample_ms": 0.12477082499471079
+      },
+      "config": {
+        "type": "uniform",
+        "classifier": "lightgbm-200t"
+      },
+      "duration_ms": 22.458748499047942,
+      "per_query_scores": null
+    },
+    {
+      "hypothesis": "H4",
+      "variant_name": "cascade_t0.50",
+      "metrics": {
+        "macro_f1": 0.6709833384428068,
+        "cost_ms": 24.2541126984482,
+        "pct_stage1": 46.666666666666664,
+        "pct_stage2": 53.333333333333336,
+        "cost_reduction_pct": -7.994052738407786,
+        "f1_delta": -0.010967984847149448
+      },
+      "config": {
+        "type": "cascade",
+        "threshold": 0.5,
+        "light": "logreg",
+        "full": "lightgbm-200t"
+      },
+      "duration_ms": 24.2541126984482,
+      "per_query_scores": null
+    },
+    {
+      "hypothesis": "H4",
+      "variant_name": "cascade_t0.60",
+      "metrics": {
+        "macro_f1": 0.6724164491184975,
+        "cost_ms": 27.62292497330539,
+        "pct_stage1": 31.666666666666664,
+        "pct_stage2": 68.33333333333334,
+        "cost_reduction_pct": -22.994052738407778,
+        "f1_delta": -0.012401095522840189
+      },
+      "config": {
+        "type": "cascade",
+        "threshold": 0.6,
+        "light": "logreg",
+        "full": "lightgbm-200t"
+      },
+      "duration_ms": 27.62292497330539,
+      "per_query_scores": null
+    },
+    {
+      "hypothesis": "H4",
+      "variant_name": "cascade_t0.70",
+      "metrics": {
+        "macro_f1": 0.6647531579141746,
+        "cost_ms": 29.744028998215477,
+        "pct_stage1": 22.22222222222222,
+        "pct_stage2": 77.77777777777777,
+        "cost_reduction_pct": -32.43849718285223,
+        "f1_delta": -0.004737804318517225
+      },
+      "config": {
+        "type": "cascade",
+        "threshold": 0.7,
+        "light": "logreg",
+        "full": "lightgbm-200t"
+      },
+      "duration_ms": 29.744028998215477,
+      "per_query_scores": null
+    },
+    {
+      "hypothesis": "H4",
+      "variant_name": "cascade_t0.80",
+      "metrics": {
+        "macro_f1": 0.6647531579141746,
+        "cost_ms": 32.114674673114976,
+        "pct_stage1": 11.666666666666666,
+        "pct_stage2": 88.33333333333333,
+        "cost_reduction_pct": -42.99405273840775,
+        "f1_delta": -0.004737804318517225
+      },
+      "config": {
+        "type": "cascade",
+        "threshold": 0.8,
+        "light": "logreg",
+        "full": "lightgbm-200t"
+      },
+      "duration_ms": 32.114674673114976,
+      "per_query_scores": null
+    },
+    {
+      "hypothesis": "H4",
+      "variant_name": "cascade_t0.90",
+      "metrics": {
+        "macro_f1": 0.6600153535956573,
+        "cost_ms": 34.11100787303035,
+        "pct_stage1": 2.7777777777777777,
+        "pct_stage2": 97.22222222222223,
+        "cost_reduction_pct": -51.882941627296674,
+        "f1_delta": 0.0
+      },
+      "config": {
+        "type": "cascade",
+        "threshold": 0.9,
+        "light": "logreg",
+        "full": "lightgbm-200t"
+      },
+      "duration_ms": 34.11100787303035,
+      "per_query_scores": null
+    }
+  ]
+}

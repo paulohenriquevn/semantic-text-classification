@@ -17,8 +17,14 @@ from talkex.classification.features import (
     merge_feature_sets,
 )
 from talkex.classification.labels import LabelSpace
+from talkex.classification.lightgbm_classifier import (
+    LightGBMClassifier,
+)
 from talkex.classification.logistic import (
     LogisticRegressionClassifier,
+)
+from talkex.classification.mlp_classifier import (
+    MLPClassifier,
 )
 from talkex.classification.models import (
     ClassificationInput,
@@ -49,7 +55,9 @@ __all__ = [
     "FeatureSet",
     "LabelScore",
     "LabelSpace",
+    "LightGBMClassifier",
     "LogisticRegressionClassifier",
+    "MLPClassifier",
     "extract_lexical_features",
     "extract_structural_features",
     "load_similarity_classifier",

@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Experiment orchestration script (`run_experiment.py`) for hypotheses H1-H4: hybrid retrieval, multi-level classification, rules+ML complementarity, and cascaded inference (no-ticket)
+- Experiment plotting script (`plot_results.py`) generating Recall@K curves, F1 heatmaps, critical-class comparisons, and Pareto cost-quality charts (no-ticket)
+- Index build script (`build_index.py`) for BM25 + vector index construction from conversation splits (no-ticket)
+- Statistical testing framework (`experiments/stats/statistical_tests.py`) with Wilcoxon signed-rank, Friedman-Nemenyi, and Bootstrap CI (no-ticket)
+- Preliminary experiment results for H1-H4 with 1,192 conversations: H1 Hybrid-RRF MRR=0.800 (p<0.001 vs BM25), H2 lexical+emb LightGBM F1=0.652 (+213% vs lexical-only), H3 ML+Rules-feature F1=0.669 (+6.1% vs ML-only), H4 cascade at t=0.50 saves 24.8% cost with 3.2pp F1 trade-off (no-ticket)
+- MLP classifier unit tests (`test_classification_mlp.py`) (no-ticket)
+- Dissertation chapter drafts for chapters 1-5 (introduction, fundamentação, trabalhos relacionados, arquitetura, metodologia) (no-ticket)
+
 ### Changed
 - Package renamed from `semantic_conversation_engine` to `talkex` — shorter, product-ready branding (RFC-005, no-ticket)
 - CLI entrypoint renamed from `sce` to `talkex` (no-ticket)
 - PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)
 - Demo frontend: ~400 linhas de código duplicado extraídas em 7 módulos compartilhados — `HighlightedText`, `EvidenceBadge`, `ModeTab` (componentes), `dsl.ts` (tipos), `condition-config.ts` (configuração de condições), `dsl-generator.ts` (geração de DSL), `evidence.ts` (parsing de evidências) — eliminando duplicação entre SearchBuilderPanel, CategoriesPanel, DSLGuidePanel, ResultCard e ConversationView (no-ticket)
+- Demo frontend: UX do Visual Builder melhorada — labels e placeholders traduzidos para PT-BR, condições color-coded por família (semântico=roxo, lexical=azul, estrutural=teal, contextual=âmbar), descrição inline explicando cada tipo de condição, quick-add chips para adicionar condições com 1 clique (Similaridade, Contém palavra, Lista, Prefixo, Não contém, Falante), conectores traduzidos ("E (AND)" / "OU (OR)") (no-ticket)
 
 ### Added
 - Extended Rule Engine DSL with `RULE...WHEN...THEN` block syntax, dotted namespace predicates (`semantic.intent()`, `lexical.contains_any()`, `context.turn_window().count()`), infix comparison operators (`speaker == "customer"`, `semantic.intent("x") > 0.82`), list arguments, keyword arguments, and THEN action blocks (`tag()`, `score()`, `priority()`) — fully backward compatible with existing inline function-call syntax (no-ticket)
@@ -38,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Destaque de trechos em resultados semânticos: para matches de `semantic.similarity()` e `semantic.intent()`, o sistema identifica a sentença mais relevante dentro da janela de contexto via embedding por sentença e destaca visualmente no texto do resultado — funciona tanto no DSL Builder quanto na busca Natural Language (no-ticket)
 - Ações rápidas na busca Natural Language: 10 botões de pesquisa rápida (Cancelamento, Reclamação, Suporte técnico, Cobrança indevida, Compra, Elogio, Dúvida produto, Prazo entrega, Reembolso, Agendamento) que preenchem e executam a busca automaticamente — queries em PT-BR calibradas para o dataset de call center (no-ticket)
 - Loading animado com contador de tempo: indicador visual com barra de progresso, timer em tempo real, e etapas descritivas ("Processando embeddings...", "Buscando nos índices...") — disponível em Natural Language (versão completa), DSL Builder e Categories (versão compacta) (no-ticket)
+- `LightGBMClassifier`: gradient boosting classifier wrapping LightGBM for heterogeneous features (embeddings + lexical + structural) — implements Classifier protocol, compatible with ClassificationBenchmarkRunner (no-ticket)
+- `MLPClassifier`: multi-layer perceptron classifier wrapping sklearn MLPClassifier for dense feature vectors — 2-layer architecture (128, 64) as neural baseline, implements Classifier protocol (no-ticket)
+- Statistical testing framework (`experiments/stats/statistical_tests.py`): Wilcoxon signed-rank test, Friedman + Nemenyi post-hoc, bootstrap confidence intervals — structured TestResult/FriedmanResult/BootstrapCIResult output for hypothesis validation (no-ticket)
+- Experiment orchestration script (`experiments/scripts/run_experiment.py`): runs H1 (retrieval with BM25, ANN, Hybrid-RRF, Hybrid-LINEAR variants), H2 (classification with LogReg, LightGBM, MLP), H3 (rules complement ML with ML-only, Rules-only, ML+Rules-override, ML+Rules-feature variants), H4 (cascaded inference) experiments with automatic statistical analysis, markdown summary tables, and JSON result serialization (no-ticket)
+- Visualization generator (`experiments/scripts/plot_results.py`): Recall@K curves, MRR bars (H1), Macro-F1 bars and per-class heatmaps (H2), critical-class precision/recall grouped bars (H3), Pareto curves and stage distribution stacked bars (H4) — matplotlib + seaborn, publication-ready at 150 DPI (no-ticket)
+- Dissertation chapters 1-5 drafted in `docs/dissertacao/capitulos/`: Introdução (22KB), Fundamentação Teórica (59KB), Trabalhos Relacionados (52KB), Arquitetura Proposta (65KB), Desenho Experimental e Metodologia (54KB) — PT-BR academic prose with proper diacritics (no-ticket)
 - Experiment tooling: `expand_dataset.py` (synthetic conversation generation via Claude API with controlled variability — 5 personas, 8 sectors, log-normal turn distribution, deterministic seed), `build_splits.py` (stratified train/val/test splits preserving intent distribution), `validate_dataset.py` (Phase 0.5 dataset difficulty validation — lexical exclusivity, embedding separation, few-shot leakage audit), `patch_few_shot_ids.py` (deterministic RNG replay to reconstruct few-shot provenance) (no-ticket)
 - Dissertation documentation: research log, steps protocol, experimental design, chapter structure in `docs/dissertacao/` — systematic tracking of all methodological decisions and literature review findings (no-ticket)
 - Normalização de acentos/diacríticos em predicados lexicais e busca BM25: `contains("nao")` agora corresponde a "não" no texto, e vice-versa — funciona em `contains`, `contains_any`, `contains_all`, e predicados contextuais (`repeated_in_window`, `occurs_after`) (no-ticket)
