@@ -101,7 +101,7 @@ def _estimate_turn_count(record: dict) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _make_embedding_generator() -> "SentenceTransformerGenerator":
+def _make_embedding_generator():  # -> SentenceTransformerGenerator
     """Create a SentenceTransformerGenerator using the talkex pipeline.
 
     Returns a single reusable generator instance with proper model config.
@@ -120,7 +120,7 @@ def _make_embedding_generator() -> "SentenceTransformerGenerator":
 def generate_embeddings_via_talkex(
     texts: list[str],
     record_ids: list[str],
-    generator: "SentenceTransformerGenerator",
+    generator,  # SentenceTransformerGenerator
 ) -> np.ndarray:
     """Generate embeddings using the talkex SentenceTransformerGenerator.
 
@@ -726,7 +726,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             )
         return inputs, feature_names_ref
 
-    train_lex_inputs, lex_feature_names = build_lex_inputs(train, train_texts)
+    train_lex_inputs, _lex_feature_names = build_lex_inputs(train, train_texts)
     test_lex_inputs, _ = build_lex_inputs(test, test_texts_h4)
 
     # Generate embeddings via talkex pipeline
@@ -1248,7 +1248,6 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     from talkex.classification.features import (
         extract_lexical_features,
         extract_structural_features,
-        merge_feature_sets,
     )
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
