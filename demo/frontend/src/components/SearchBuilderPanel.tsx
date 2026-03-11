@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { previewDSL } from "@/lib/api";
+import { extractHighlightFragments } from "@/lib/evidence";
 import type { PredicateEvidence, PreviewDSLResponse, PreviewMatch } from "@/types/api";
 import { QueryEvaluationPanel } from "@/components/QueryEvaluationPanel";
 import { SearchLoadingCompact } from "@/components/SearchLoading";
@@ -589,9 +590,7 @@ function SearchMatchCard({
   rank: number;
   onViewConversation: (conversationId: string, fragments?: string[]) => void;
 }) {
-  const fragments = match.evidence
-    .map((ev) => ev.matched_text)
-    .filter((t): t is string => t !== null && t.length > 0);
+  const fragments = extractHighlightFragments(match.evidence);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">

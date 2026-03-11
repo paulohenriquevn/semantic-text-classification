@@ -23,6 +23,7 @@ import {
   listCategories,
   previewDSL,
 } from "@/lib/api";
+import { extractHighlightFragments } from "@/lib/evidence";
 import type {
   CategoryDetailResponse,
   CategoryResponse,
@@ -804,9 +805,7 @@ const PREDICATE_BADGE: Record<string, { label: string; color: string }> = {
 
 function PreviewMatchCard({ match }: { match: PreviewMatch }) {
   // Collect all matched text fragments for highlighting
-  const fragments = match.evidence
-    .map((ev) => ev.matched_text)
-    .filter((t): t is string => t !== null && t.length > 0);
+  const fragments = extractHighlightFragments(match.evidence);
 
   return (
     <div className="bg-white rounded-lg border border-green-100 overflow-hidden">

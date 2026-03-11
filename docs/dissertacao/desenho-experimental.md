@@ -17,39 +17,56 @@ H4: Cascata reduz custo ≥40% com degradação F1 < 2%
 
 ### 1.1 Fontes de Dados
 
-O experimento requer conversas de atendimento com anotações de intenção/motivo de contato. Três estratégias possíveis (não excludentes):
+O experimento utiliza dois corpora complementares:
 
-#### Opção A — Dataset público de call center (HuggingFace)
-- Dataset já ingerido (commit `9c3386d`)
-- Vantagem: reprodutibilidade, acesso aberto
-- Desvantagem: pode não ser em PT-BR, anotações podem ser limitadas
-- Usar como: dataset primário se as anotações forem suficientes
+#### Corpus Primário — Conversas sintéticas expandidas (PT-BR)
+- **Base:** `RichardSakaguchiMS/brazilian-customer-service-conversations` (944 conversas, Apache 2.0)
+- **Expansão:** Geração sintética controlada via LLM (batch mode, offline)
+- **Alvo:** ~3.500 conversas multi-turn
+- **Correções sobre o dataset original:**
+  - Turnos variáveis: 4-20 (distribuição log-normal, média 8, stdev 4) — original: 90% = 8 turnos
+  - Distribuição de classes realista: desbalanceada — original: ~11% por classe (uniforme)
+  - Variabilidade lexical: 5 personas (formal, informal, irritado, idoso, jovem/gírias) — original: estilo uniforme
+  - Sentimentos realistas: 40% negativo, 30% neutro, 30% positivo — original: 33%/33%/33%
+- **Vantagens:** Controle de variáveis para ablation studies, reprodutibilidade, acesso aberto
+- **Limitação:** Dados sintéticos — afirmações limitadas ao escopo metodológico
+- **Uso:** Experimentos H1-H4 (todos)
 
-#### Opção B — Dataset construído com curadoria manual + LLM offline
-- Coletar conversas de fontes públicas (fóruns de reclamação, Reclame Aqui, etc.)
-- Simular estrutura conversacional: turnos cliente/agente
-- Anotar com taxonomia definida: LLM gera labels (Huang & He), humano revisa
-- Vantagem: controle total sobre anotações e domínio PT-BR
-- Desvantagem: viés da construção
+#### Corpus Secundário — Reclamações reais (validação externa)
+- **Fonte:** Consumidor.gov.br (Portal de Dados Abertos do Governo Federal)
+- **Formato:** Texto único (CSV) — reclamações de consumidores com labels oficiais (segmento, assunto, problema)
+- **Amostra:** ~2.000 reclamações estratificadas, mapeadas para as 9 intents
+- **Vantagens:** Linguagem real de consumidores brasileiros, labels oficiais, grande volume disponível
+- **Limitação:** Sem estrutura multi-turn — avaliação apenas em modo Conv-only (embedding do texto completo)
+- **Uso:** Validação de transferência de classificadores (H2 parcial, H3 parcial)
 
-#### Opção C — Dataset sintético calibrado
-- Gerar conversas sintéticas com LLM seguindo templates de call center
-- Calibrar distribuição de classes, comprimento, complexidade
-- Vantagem: volume controlado, sem restrição de privacidade
-- Desvantagem: pode não refletir ruído real
+**Justificativa da escolha:** Não existe dataset público de conversas multi-turn de call center em PT-BR além do RichardSakaguchiMS. A estratégia de dois corpora permite controle experimental (sintético) + verificação de transferência (real). Ver `research-log.md` (Sessão 2) para raciocínio completo.
 
-**Recomendação:** Opção A como base + Opção B para enriquecimento em PT-BR. Se nenhum dataset público atender, Opção C como fallback com disclosure explícito na dissertação (limitação).
+### 1.2 Especificação do Corpus Primário
 
-### 1.2 Requisitos do Dataset
+| Dimensão | Valor |
+|----------|-------|
+| Total de conversas | ~3.500 |
+| Turnos por conversa | 4-20 (log-normal, média 8, stdev 4) |
+| Classes/intents | 9 (mantidas do dataset original) |
+| Idioma | PT-BR (informal, com diacríticos e gírias) |
+| Anotação | Intent + sentimento + setor por conversa |
+| Splits | Train 70% (~2.450) / Val 15% (~525) / Test 15% (~525) |
+| Seed | 42 |
 
-| Dimensão | Requisito Mínimo | Ideal |
-|----------|-----------------|-------|
-| Conversas | 1.000+ | 5.000+ |
-| Turnos por conversa | 4-30 (média 10+) | Variável |
-| Classes/intents | 8-20 | 15+ |
-| Idioma | PT-BR ou EN | PT-BR (diferencial) |
-| Anotação | Intent por conversa | Intent por turno + conversa |
-| Splits | Train 70% / Val 15% / Test 15% | Holdout temporal |
+**Distribuição-alvo de intents:**
+
+| Intent | % | Conversas |
+|--------|---|-----------|
+| reclamacao | 20% | ~700 |
+| duvida_produto | 18% | ~630 |
+| duvida_servico | 17% | ~595 |
+| suporte_tecnico | 15% | ~525 |
+| compra | 10% | ~350 |
+| cancelamento | 8% | ~280 |
+| saudacao | 5% | ~175 |
+| elogio | 4% | ~140 |
+| outros | 3% | ~105 |
 
 ### 1.3 Pré-processamento
 

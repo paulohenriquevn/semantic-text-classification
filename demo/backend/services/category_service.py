@@ -283,6 +283,22 @@ def _find_best_sentence(text: str, query_vector: list[float], embedding_generato
     return find_best_sentence(text, query_vector, embedding_generator)
 
 
+def _detect_speaker(text: str) -> str | None:
+    """Detect the dominant speaker role from window text markers.
+
+    The BR dataset embeds speaker markers like ``[customer]`` and ``[agent]``
+    in the text.  We count occurrences and return the role that appears most
+    frequently.  Returns ``None`` when no markers are found.
+    """
+    customer_count = text.lower().count("[customer]")
+    agent_count = text.lower().count("[agent]")
+    if customer_count == 0 and agent_count == 0:
+        return None
+    if customer_count >= agent_count:
+        return "customer"
+    return "agent"
+
+
 class CategoryService:
     """Manages categories backed by the TalkEx rule engine.
 
@@ -501,9 +517,11 @@ class CategoryService:
                 source_type="context_window",
                 text=text,
                 features=features,
+                speaker_role=_detect_speaker(text),
                 metadata={
                     "domain": window_meta.get("domain", ""),
                     "topic": window_meta.get("topic", ""),
+                    "channel": "voice",
                 },
             )
 
@@ -618,9 +636,11 @@ class CategoryService:
                 source_type="context_window",
                 text=text,
                 features=features,
+                speaker_role=_detect_speaker(text),
                 metadata={
                     "domain": window_meta.get("domain", ""),
                     "topic": window_meta.get("topic", ""),
+                    "channel": "voice",
                 },
             )
 

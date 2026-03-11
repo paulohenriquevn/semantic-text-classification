@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { previewDSL } from "@/lib/api";
+import { extractHighlightFragments } from "@/lib/evidence";
 import type { PredicateEvidence, PreviewDSLResponse } from "@/types/api";
 
 // ---------------------------------------------------------------------------
@@ -264,30 +265,34 @@ function RunnableExample({
           {/* Sample matches */}
           {result.valid && result.sample_matches.length > 0 && (
             <div className="divide-y divide-gray-100">
-              {result.sample_matches.slice(0, 3).map((m, i) => (
-                <div key={`${m.window_id}-${i}`} className="px-3 py-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono text-gray-400">
-                      {m.conversation_id.length > 24
-                        ? `${m.conversation_id.slice(0, 24)}...`
-                        : m.conversation_id}
-                    </span>
-                    <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-1 rounded">
-                      score {m.score.toFixed(3)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-700 leading-relaxed line-clamp-3">
-                    {m.window_text}
-                  </p>
-                  {m.evidence.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {m.evidence.map((ev, j) => (
-                        <EvidenceBadge key={j} evidence={ev} />
-                      ))}
+              {result.sample_matches.slice(0, 3).map((m, i) => {
+                const fragments = extractHighlightFragments(m.evidence);
+
+                return (
+                  <div key={`${m.window_id}-${i}`} className="px-3 py-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-mono text-gray-400">
+                        {m.conversation_id.length > 24
+                          ? `${m.conversation_id.slice(0, 24)}...`
+                          : m.conversation_id}
+                      </span>
+                      <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-1 rounded">
+                        score {m.score.toFixed(3)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <p className="text-xs text-gray-700 leading-relaxed line-clamp-4 whitespace-pre-line">
+                      <HighlightedText text={m.window_text} fragments={fragments} />
+                    </p>
+                    {m.evidence.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {m.evidence.map((ev, j) => (
+                          <EvidenceBadge key={j} evidence={ev} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {result.match_count > 3 && (
                 <div className="px-3 py-1.5 text-center">
                   <span className="text-[10px] text-gray-400">
@@ -300,6 +305,42 @@ function RunnableExample({
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Text highlighter (matches SearchBuilderPanel pattern)
+// ---------------------------------------------------------------------------
+
+function HighlightedText({
+  text,
+  fragments,
+}: {
+  text: string;
+  fragments: string[];
+}) {
+  if (fragments.length === 0) return <>{text}</>;
+
+  const sorted = [...fragments].sort((a, b) => b.length - a.length);
+  const escaped = sorted.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = text.split(pattern);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        const isMatch = fragments.some(
+          (f) => f.toLowerCase() === part.toLowerCase(),
+        );
+        return isMatch ? (
+          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        );
+      })}
+    </>
   );
 }
 
@@ -406,7 +447,7 @@ THEN
 WHEN
     speaker == "customer"
     AND (lexical.contains_any(["cancelar", "encerrar"])
-         OR semantic.intent("cancelamento") > 0.8)
+         OR semantic.intent("cancelamento") > 0.6)
     AND NOT lexical.contains("teste")
 THEN
     tag("risco_cancelamento") priority("high")`}
@@ -896,7 +937,7 @@ THEN
             code={`RULE risco_cancelamento
 WHEN
     speaker == "customer"
-    AND semantic.intent("cancelamento") > 0.75
+    AND semantic.intent("cancelamento") > 0.60
     AND lexical.contains_any(["cancelar", "encerrar", "desistir"])
     AND lexical.excludes_any(["teste", "debug"])
 THEN
@@ -904,15 +945,15 @@ THEN
           />
 
           <RunnableExample
-            title="Frustacao Repetida (contextual)"
+            title="Frustacao do Cliente (lexical + estrutural)"
             titleColor="text-orange-500"
-            code={`RULE frustacao_repetida
+            code={`RULE frustacao_cliente
 WHEN
     speaker == "customer"
-    AND context.turn_window(5).count(intent="insatisfacao") >= 2
-    AND lexical.contains_any(["absurdo", "ridiculo", "pessimo"])
+    AND lexical.contains_any(["absurdo", "ridiculo", "pessimo", "horrivel", "terrivel"])
+    AND lexical.contains_any(["problema", "reclamacao", "erro"])
 THEN
-    tag("frustacao_repetida") priority("high")`}
+    tag("frustacao_cliente") priority("high")`}
           />
 
           <RunnableExample
@@ -944,8 +985,8 @@ THEN
             titleColor="text-purple-500"
             code={`RULE cobranca_indevida
 WHEN
-    semantic.similarity("recebi cobranca indevida na fatura") > 0.60
-    AND lexical.contains_all(["cobranca", "fatura"])
+    semantic.similarity("recebi uma cobranca que nao reconheco") > 0.40
+    AND lexical.stem("cobr")
     AND speaker == "customer"
 THEN
     tag("cobranca_indevida") score(0.9) priority("high")`}
