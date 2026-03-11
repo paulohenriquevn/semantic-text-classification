@@ -57,6 +57,7 @@ from talkex.rules.models import (
     RuleEvaluationInput,
     RuleResult,
 )
+from talkex.text_normalization import normalize_for_matching
 
 if TYPE_CHECKING:
     from talkex.models.rule_execution import RuleExecution
@@ -162,7 +163,15 @@ def _evaluate_lexical(
     node: PredicateNode,
     evaluation_input: RuleEvaluationInput,
 ) -> PredicateResult:
-    """Evaluate a lexical predicate (contains, regex).
+    """Evaluate a lexical predicate.
+
+    All lexical operators apply ``normalize_for_matching`` (lowercase + accent
+    stripping) to both the input text and the comparison target, so
+    ``contains("nao")`` matches ``"não"`` and vice-versa.
+
+    Supported operators:
+        contains, word, stem, contains_any, contains_all, not_contains,
+        excludes_any, near, starts_with, ends_with, regex.
 
     Args:
         node: Lexical predicate node.
@@ -174,8 +183,8 @@ def _evaluate_lexical(
     text_value = _get_field_value(node.field_name, evaluation_input)
     if text_value is None:
         text_value = ""
-    text_str = str(text_value).lower()
-    target = str(node.value).lower()
+    text_str = normalize_for_matching(str(text_value))
+    target = normalize_for_matching(str(node.value))
 
     if node.operator == "contains":
         matched = target in text_str
@@ -188,10 +197,38 @@ def _evaluate_lexical(
             matched_text=str(node.value) if matched else None,
         )
 
+    if node.operator == "word":
+        # Whole-word match using \b word boundaries on normalized text
+        pattern = r"\b" + re.escape(target) + r"\b"
+        match = re.search(pattern, text_str)
+        matched = match is not None
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=match.group(0) if match else None,
+        )
+
+    if node.operator == "stem":
+        # Word-prefix matching: any token in text starts with the target prefix
+        tokens = text_str.split()
+        matched_tokens = [t for t in tokens if t.startswith(target)]
+        matched = len(matched_tokens) > 0
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=", ".join(matched_tokens) if matched else None,
+            metadata={"matched_tokens": matched_tokens},
+        )
+
     if node.operator == "contains_any":
-        # Check if text contains any word from the list
         word_list = node.value if isinstance(node.value, list) else [str(node.value)]
-        matched_words = [w for w in word_list if w.lower() in text_str]
+        matched_words = [w for w in word_list if normalize_for_matching(w) in text_str]
         matched = len(matched_words) > 0
         return PredicateResult(
             predicate_type=node.predicate_type,
@@ -203,9 +240,97 @@ def _evaluate_lexical(
             metadata={"matched_words": matched_words, "total_words": len(word_list)},
         )
 
+    if node.operator == "contains_all":
+        word_list = node.value if isinstance(node.value, list) else [str(node.value)]
+        matched_words = [w for w in word_list if normalize_for_matching(w) in text_str]
+        matched = len(matched_words) == len(word_list)
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=len(matched_words) / len(word_list) if word_list else 0.0,
+            matched_text=", ".join(matched_words) if matched else None,
+            metadata={"matched_words": matched_words, "total_words": len(word_list)},
+        )
+
+    if node.operator == "not_contains":
+        found = target in text_str
+        matched = not found
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=None if matched else str(node.value),
+        )
+
+    if node.operator == "excludes_any":
+        word_list = node.value if isinstance(node.value, list) else [str(node.value)]
+        found_words = [w for w in word_list if normalize_for_matching(w) in text_str]
+        matched = len(found_words) == 0
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=None if matched else ", ".join(found_words),
+            metadata={"found_words": found_words, "total_words": len(word_list)},
+        )
+
+    if node.operator == "near":
+        word1 = target
+        word2 = normalize_for_matching(str(node.metadata.get("word2", "")))
+        max_distance = int(node.metadata.get("distance", 3))
+        tokens = text_str.split()
+
+        positions1 = [i for i, t in enumerate(tokens) if t == word1]
+        positions2 = [i for i, t in enumerate(tokens) if t == word2]
+
+        min_dist = float("inf")
+        for p1 in positions1:
+            for p2 in positions2:
+                min_dist = min(min_dist, abs(p1 - p2))
+
+        actual_dist = int(min_dist) if min_dist != float("inf") else -1
+        matched = actual_dist >= 0 and actual_dist <= max_distance
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=f"{node.value} ~ {node.metadata.get('word2', '')} (dist={actual_dist})" if matched else None,
+            metadata={"actual_distance": actual_dist, "max_distance": max_distance},
+        )
+
+    if node.operator == "starts_with":
+        matched = text_str.startswith(target)
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=str(node.value) if matched else None,
+        )
+
+    if node.operator == "ends_with":
+        matched = text_str.endswith(target)
+        return PredicateResult(
+            predicate_type=node.predicate_type,
+            field_name=node.field_name,
+            operator=node.operator,
+            matched=matched,
+            score=1.0 if matched else 0.0,
+            matched_text=str(node.value) if matched else None,
+        )
+
     if node.operator == "regex":
         pattern = str(node.value)
-        match = re.search(pattern, str(_get_field_value(node.field_name, evaluation_input) or ""))
+        match = re.search(pattern, text_str, re.IGNORECASE)
         matched = match is not None
         return PredicateResult(
             predicate_type=node.predicate_type,
@@ -331,10 +456,10 @@ def _evaluate_contextual(
     Returns:
         PredicateResult with match outcome.
     """
-    text = evaluation_input.text.lower()
+    text = normalize_for_matching(evaluation_input.text)
 
     if node.operator == "repeated_in_window":
-        target = str(node.value).lower()
+        target = normalize_for_matching(str(node.value))
         required_count = int(node.metadata.get("count", 1))
         actual_count = text.count(target)
         matched = actual_count >= required_count
@@ -349,8 +474,8 @@ def _evaluate_contextual(
         )
 
     if node.operator == "occurs_after":
-        first = str(node.value).lower()
-        second = str(node.metadata.get("second", "")).lower()
+        first = normalize_for_matching(str(node.value))
+        second = normalize_for_matching(str(node.metadata.get("second", "")))
         first_pos = text.find(first)
         second_pos = text.find(second) if second else -1
         matched = first_pos >= 0 and second_pos > first_pos

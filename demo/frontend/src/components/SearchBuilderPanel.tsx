@@ -23,6 +23,14 @@ type SearchMode = "examples" | "builder" | "dsl";
 type ConditionType =
   | "keyword"
   | "keywords_any"
+  | "contains_all"
+  | "word"
+  | "stem"
+  | "not_contains"
+  | "excludes_any"
+  | "near"
+  | "starts_with"
+  | "ends_with"
   | "regex"
   | "speaker"
   | "channel"
@@ -39,6 +47,10 @@ interface BuilderCondition {
   operator?: string;
   windowSize?: string;
   countValue?: string;
+  /** Second word for near() proximity search */
+  nearWord?: string;
+  /** Max distance between words for near() */
+  nearDistance?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,11 +66,29 @@ const CONDITION_GROUPS: { label: string; options: { value: ConditionType; label:
     ],
   },
   {
-    label: "Lexical",
+    label: "Lexical — Basic",
     options: [
-      { value: "keyword", label: "Contains word" },
+      { value: "keyword", label: "Contains (substring)" },
+      { value: "word", label: "Exact word (boundary)" },
+      { value: "stem", label: "Word prefix (stem)" },
+      { value: "regex", label: "Regex pattern" },
+    ],
+  },
+  {
+    label: "Lexical — Lists",
+    options: [
       { value: "keywords_any", label: "Contains any of" },
-      { value: "regex", label: "Matches pattern" },
+      { value: "contains_all", label: "Contains all of" },
+      { value: "excludes_any", label: "Excludes all of" },
+    ],
+  },
+  {
+    label: "Lexical — Advanced",
+    options: [
+      { value: "not_contains", label: "Does not contain" },
+      { value: "near", label: "Words near each other" },
+      { value: "starts_with", label: "Starts with" },
+      { value: "ends_with", label: "Ends with" },
     ],
   },
   {
@@ -78,8 +108,16 @@ const CONDITION_GROUPS: { label: string; options: { value: ConditionType; label:
 
 const CONDITION_PLACEHOLDERS: Record<ConditionType, string> = {
   keyword: "e.g. billing",
+  word: "e.g. cancelar (whole word only)",
+  stem: "e.g. cancel (matches cancelar, cancelamento...)",
   keywords_any: "e.g. cancel, terminate, close",
-  regex: "e.g. cancel|terminate",
+  contains_all: "e.g. cancelar, conta (all must match)",
+  not_contains: "e.g. teste (must NOT be present)",
+  excludes_any: "e.g. teste, debug (none must match)",
+  near: "First word, e.g. cancelar",
+  starts_with: "e.g. FAT- (text starts with this)",
+  ends_with: "e.g. .pdf (text ends with this)",
+  regex: "e.g. cancel(ar|amento)",
   speaker: "",
   channel: "",
   intent_score: "e.g. cancellation",
@@ -99,6 +137,8 @@ function defaultsForType(type: ConditionType): Partial<BuilderCondition> {
       return { value: "", threshold: "0.50", operator: ">" };
     case "window_count":
       return { value: "", windowSize: "5", countValue: "2", operator: ">=" };
+    case "near":
+      return { value: "", nearWord: "", nearDistance: "3" };
     default:
       return { value: "" };
   }
@@ -119,6 +159,10 @@ function generateSearchDSL(conditions: BuilderCondition[]): string {
     switch (c.type) {
       case "keyword":
         return val ? `keyword("${val}")` : "";
+      case "word":
+        return val ? `lexical.word("${val}")` : "";
+      case "stem":
+        return val ? `lexical.stem("${val}")` : "";
       case "keywords_any": {
         if (!val) return "";
         const words = val
@@ -128,6 +172,36 @@ function generateSearchDSL(conditions: BuilderCondition[]): string {
           .join(", ");
         return `lexical.contains_any([${words}])`;
       }
+      case "contains_all": {
+        if (!val) return "";
+        const words = val
+          .split(",")
+          .map((w) => `"${w.trim()}"`)
+          .filter((w) => w !== '""')
+          .join(", ");
+        return `lexical.contains_all([${words}])`;
+      }
+      case "not_contains":
+        return val ? `lexical.not_contains("${val}")` : "";
+      case "excludes_any": {
+        if (!val) return "";
+        const words = val
+          .split(",")
+          .map((w) => `"${w.trim()}"`)
+          .filter((w) => w !== '""')
+          .join(", ");
+        return `lexical.excludes_any([${words}])`;
+      }
+      case "near": {
+        if (!val) return "";
+        const w2 = c.nearWord?.trim() || "";
+        const dist = c.nearDistance || "3";
+        return w2 ? `lexical.near("${val}", "${w2}", ${dist})` : "";
+      }
+      case "starts_with":
+        return val ? `lexical.starts_with("${val}")` : "";
+      case "ends_with":
+        return val ? `lexical.ends_with("${val}")` : "";
       case "regex":
         return val ? `regex("${val}")` : "";
       case "speaker":
@@ -165,7 +239,6 @@ function generateSearchDSL(conditions: BuilderCondition[]): string {
 interface SearchExample {
   id: string;
   name: string;
-  icon: string;
   color: string;
   description: string;
   dsl: string;
@@ -176,7 +249,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "cancelamento",
     name: "Cancelamento",
-    icon: "🔴",
     color: "border-red-300 bg-red-50 hover:bg-red-100",
     description: "Detecta intenção de cancelamento via similaridade semântica",
     dsl: `RULE search_query\nWHEN\n    semantic.similarity("quero cancelar meu serviço") > 0.50\nTHEN\n    tag("search_result")`,
@@ -185,7 +257,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "reclamacao",
     name: "Reclamacao / Insatisfacao",
-    icon: "😠",
     color: "border-orange-300 bg-orange-50 hover:bg-orange-100",
     description: "Combina semantica + palavras-chave de reclamacao",
     dsl: `RULE search_query\nWHEN\n    semantic.similarity("reclamação sobre serviço de telefonia") > 0.45\n    AND lexical.contains_any(["internet", "telefone", "plano", "sinal"])\nTHEN\n    tag("search_result")`,
@@ -194,7 +265,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "cobranca",
     name: "Cobranca Indevida",
-    icon: "💰",
     color: "border-yellow-300 bg-yellow-50 hover:bg-yellow-100",
     description: "Busca por questoes de cobranca e faturamento",
     dsl: `RULE search_query\nWHEN\n    semantic.similarity("recebi uma cobrança indevida na minha fatura") > 0.50\nTHEN\n    tag("search_result")`,
@@ -203,7 +273,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "suporte",
     name: "Suporte Tecnico",
-    icon: "🔧",
     color: "border-blue-300 bg-blue-50 hover:bg-blue-100",
     description: "Problemas tecnicos como internet, sistema, erro",
     dsl: `RULE search_query\nWHEN\n    semantic.similarity("minha internet não está funcionando") > 0.50\nTHEN\n    tag("search_result")`,
@@ -212,7 +281,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "elogio",
     name: "Elogios",
-    icon: "⭐",
     color: "border-green-300 bg-green-50 hover:bg-green-100",
     description: "Combina semantica de satisfacao + palavras de agradecimento",
     dsl: `RULE search_query\nWHEN\n    semantic.intent("elogio satisfação") > 0.45\n    AND lexical.contains_any(["obrigado", "obrigada", "parabéns", "excelente"])\nTHEN\n    tag("search_result")`,
@@ -221,7 +289,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "entrega",
     name: "Prazo de Entrega",
-    icon: "📦",
     color: "border-indigo-300 bg-indigo-50 hover:bg-indigo-100",
     description: "Duvidas e reclamacoes sobre prazo de entrega",
     dsl: `RULE search_query\nWHEN\n    semantic.similarity("qual o prazo de entrega do meu pedido") > 0.50\nTHEN\n    tag("search_result")`,
@@ -230,7 +297,6 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "cancel_lexical",
     name: "Cancelamento (Lexical)",
-    icon: "🔍",
     color: "border-gray-300 bg-gray-50 hover:bg-gray-100",
     description: "Busca por palavras-chave de cancelamento — baseline lexical",
     dsl: `RULE search_query\nWHEN\n    lexical.contains_any(["cancelar", "cancelamento", "desistir", "encerrar"])\nTHEN\n    tag("search_result")`,
@@ -239,11 +305,42 @@ const SEARCH_EXAMPLES: SearchExample[] = [
   {
     id: "cancel_combo",
     name: "Cancelamento (Hibrido)",
-    icon: "🎯",
     color: "border-purple-300 bg-purple-50 hover:bg-purple-100",
     description: "Semantica + lexical: alta precisao combinando ambos sinais",
     dsl: `RULE search_query\nWHEN\n    semantic.intent("cancelamento") > 0.50\n    AND lexical.contains_any(["cancelar", "desistir", "encerrar"])\nTHEN\n    tag("search_result")`,
     type: "combined",
+  },
+  {
+    id: "stem_cancel",
+    name: "Stem: cancel* (prefixo)",
+    color: "border-teal-300 bg-teal-50 hover:bg-teal-100",
+    description: "Word prefix: encontra cancelar, cancelamento, cancelada, cancelei...",
+    dsl: `RULE search_query\nWHEN\n    lexical.stem("cancel")\nTHEN\n    tag("search_result")`,
+    type: "lexical",
+  },
+  {
+    id: "word_boundary",
+    name: "Palavra exata: conta",
+    color: "border-cyan-300 bg-cyan-50 hover:bg-cyan-100",
+    description: "Word boundary: 'conta' match exato, nao 'contato' ou 'desconta'",
+    dsl: `RULE search_query\nWHEN\n    lexical.word("conta")\nTHEN\n    tag("search_result")`,
+    type: "lexical",
+  },
+  {
+    id: "near_proximity",
+    name: "Proximidade: cancelar + conta",
+    color: "border-rose-300 bg-rose-50 hover:bg-rose-100",
+    description: "Proximity: 'cancelar' e 'conta' dentro de 5 palavras de distancia",
+    dsl: `RULE search_query\nWHEN\n    lexical.near("cancelar", "conta", 5)\nTHEN\n    tag("search_result")`,
+    type: "lexical",
+  },
+  {
+    id: "negation",
+    name: "Negacao: reclamacao sem teste",
+    color: "border-slate-300 bg-slate-50 hover:bg-slate-100",
+    description: "Reclamacoes reais: contem palavras de insatisfacao MAS exclui termos de teste/debug",
+    dsl: `RULE search_query\nWHEN\n    lexical.contains_any(["reclamação", "insatisfeito", "frustrado"])\n    AND lexical.excludes_any(["teste", "debug", "exemplo"])\nTHEN\n    tag("search_result")`,
+    type: "lexical",
   },
 ];
 
@@ -758,6 +855,36 @@ function ConditionBuilder({
                 </div>
               )}
 
+              {/* Near proximity extras */}
+              {cond.type === "near" && (
+                <div className="flex items-center gap-2 pl-[168px] flex-wrap">
+                  <span className="text-xs text-gray-500">near</span>
+                  <input
+                    type="text"
+                    value={cond.nearWord || ""}
+                    onChange={(e) =>
+                      updateCondition(cond.id, { nearWord: e.target.value })
+                    }
+                    placeholder="second word, e.g. conta"
+                    className="flex-1 min-w-[120px] px-2 py-1 rounded border border-gray-200 text-xs bg-white
+                               focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-500">within</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={cond.nearDistance || "3"}
+                    onChange={(e) =>
+                      updateCondition(cond.id, { nearDistance: e.target.value })
+                    }
+                    className="w-14 px-2 py-1 rounded border border-gray-200 text-xs font-mono bg-white
+                               focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-400">words</span>
+                </div>
+              )}
+
               {/* Window count extras */}
               {cond.type === "window_count" && (
                 <div className="flex items-center gap-2 pl-[168px] flex-wrap">
@@ -897,7 +1024,7 @@ function ExamplesGrid({ onSelect }: { onSelect: (example: SearchExample) => void
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-semibold text-gray-800">
-                  {ex.icon} {ex.name}
+                  {ex.name}
                 </span>
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.color}`}>
                   {badge.label}

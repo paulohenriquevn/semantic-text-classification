@@ -705,6 +705,14 @@ def _build_predicate_node(func_name: str, args: list[str | int | float], positio
         return _build_occurs_after(args, predicate_type, operator, cost_hint, position)
     if func_name == "contains_any":
         return _build_contains_any(args, predicate_type, operator, cost_hint, position)
+    if func_name == "contains_all":
+        return _build_contains_all(args, predicate_type, operator, cost_hint, position)
+    if func_name in ("word", "stem", "not_contains", "starts_with", "ends_with"):
+        return _build_one_or_two_arg(func_name, args, predicate_type, operator, cost_hint, position)
+    if func_name == "excludes_any":
+        return _build_excludes_any(args, predicate_type, operator, cost_hint, position)
+    if func_name == "near":
+        return _build_near(args, predicate_type, operator, cost_hint, position)
 
     # Should not reach here if PREDICATE_REGISTRY is consistent
     raise RuleError(f"No builder for predicate '{func_name}'")  # pragma: no cover
@@ -917,6 +925,98 @@ def _build_contains_any(
     )
 
 
+def _build_contains_all(
+    args: list[str | int | float],
+    predicate_type: PredicateType,
+    operator: str,
+    cost_hint: int,
+    position: int,
+) -> PredicateNode:
+    """contains_all("word1", "word2", ...) — inline function-call syntax.
+
+    Like contains_any but requires ALL words to be present in the text.
+    """
+    if not args:
+        raise RuleError(f"'contains_all' expects at least 1 argument at position {position}")
+    word_list = [str(a) for a in args]
+    return PredicateNode(
+        predicate_type=predicate_type,
+        field_name="text",
+        operator=operator,
+        value=word_list,
+        cost_hint=cost_hint,
+    )
+
+
+def _build_one_or_two_arg(
+    func_name: str,
+    args: list[str | int | float],
+    predicate_type: PredicateType,
+    operator: str,
+    cost_hint: int,
+    position: int,
+) -> PredicateNode:
+    """Generic builder for predicates that accept 1 or 2 args: func(value) or func(field, value).
+
+    Used by: word, stem, not_contains, starts_with, ends_with.
+    """
+    if len(args) == 1:
+        return PredicateNode(
+            predicate_type=predicate_type,
+            field_name="text",
+            operator=operator,
+            value=str(args[0]),
+            cost_hint=cost_hint,
+        )
+    _expect_arg_count(func_name, args, 2, position)
+    return PredicateNode(
+        predicate_type=predicate_type,
+        field_name=str(args[0]),
+        operator=operator,
+        value=str(args[1]),
+        cost_hint=cost_hint,
+    )
+
+
+def _build_excludes_any(
+    args: list[str | int | float],
+    predicate_type: PredicateType,
+    operator: str,
+    cost_hint: int,
+    position: int,
+) -> PredicateNode:
+    """excludes_any("word1", "word2", ...) — text must contain NONE of the words."""
+    if not args:
+        raise RuleError(f"'excludes_any' expects at least 1 argument at position {position}")
+    word_list = [str(a) for a in args]
+    return PredicateNode(
+        predicate_type=predicate_type,
+        field_name="text",
+        operator=operator,
+        value=word_list,
+        cost_hint=cost_hint,
+    )
+
+
+def _build_near(
+    args: list[str | int | float],
+    predicate_type: PredicateType,
+    operator: str,
+    cost_hint: int,
+    position: int,
+) -> PredicateNode:
+    """near("word1", "word2", distance) — two words within N words of each other."""
+    _expect_arg_count("near", args, 3, position)
+    return PredicateNode(
+        predicate_type=predicate_type,
+        field_name="text",
+        operator=operator,
+        value=str(args[0]),
+        cost_hint=cost_hint,
+        metadata={"word2": str(args[1]), "distance": int(args[2])},
+    )
+
+
 # ---------------------------------------------------------------------------
 # Predicate node construction — dotted namespace syntax
 # ---------------------------------------------------------------------------
@@ -1015,8 +1115,9 @@ def _build_dotted_predicate(
             cost_hint=1,
         )
 
-    if func_name == "contains_any":
+    if func_name in ("contains_any", "contains_all"):
         # lexical.contains_any(["cancelar", "encerrar", "desistir"])
+        # lexical.contains_all(["cancelar", "conta"])
         word_list: list[str] = []
         for arg in args:
             if isinstance(arg, list):
@@ -1026,7 +1127,7 @@ def _build_dotted_predicate(
         return PredicateNode(
             predicate_type=PredicateType.LEXICAL,
             field_name="text",
-            operator="contains_any",
+            operator="contains_any" if func_name == "contains_any" else "contains_all",
             value=word_list,
             cost_hint=1,
         )
@@ -1040,6 +1141,47 @@ def _build_dotted_predicate(
             operator="regex",
             value=pattern,
             cost_hint=1,
+        )
+
+    if func_name in ("word", "stem", "not_contains", "starts_with", "ends_with"):
+        # Simple single-value lexical predicates: lexical.word("cancelar"), etc.
+        value = str(args[0]) if args else ""
+        return PredicateNode(
+            predicate_type=PredicateType.LEXICAL,
+            field_name="text",
+            operator=func_name,
+            value=value,
+            cost_hint=1,
+        )
+
+    if func_name == "excludes_any":
+        # lexical.excludes_any(["teste", "debug"])
+        word_list_ea: list[str] = []
+        for arg in args:
+            if isinstance(arg, list):
+                word_list_ea.extend(arg)
+            else:
+                word_list_ea.append(str(arg))
+        return PredicateNode(
+            predicate_type=PredicateType.LEXICAL,
+            field_name="text",
+            operator="excludes_any",
+            value=word_list_ea,
+            cost_hint=1,
+        )
+
+    if func_name == "near":
+        # lexical.near("cancelar", "conta", 3)
+        word1 = str(args[0]) if len(args) > 0 and not isinstance(args[0], list) else ""
+        word2 = str(args[1]) if len(args) > 1 and not isinstance(args[1], list) else ""
+        distance = int(args[2]) if len(args) > 2 and not isinstance(args[2], list) else 3
+        return PredicateNode(
+            predicate_type=PredicateType.LEXICAL,
+            field_name="text",
+            operator="near",
+            value=word1,
+            cost_hint=1,
+            metadata={"word2": word2, "distance": distance},
         )
 
     raise RuleError(f"Unhandled dotted predicate '{namespace}.{method}' at position {position}")  # pragma: no cover

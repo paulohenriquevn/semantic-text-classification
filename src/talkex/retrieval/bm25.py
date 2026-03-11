@@ -29,26 +29,38 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
 
 from talkex.retrieval.config import LexicalIndexConfig
 from talkex.retrieval.models import RetrievalHit
+from talkex.text_normalization import normalize_for_matching
 
 logger = logging.getLogger(__name__)
 
 
+_PUNCTUATION_RE = re.compile(r"[^\w\s]", re.UNICODE)
+"""Regex to strip punctuation characters from tokens."""
+
+
 def _tokenize(text: str) -> list[str]:
-    """Simple whitespace tokenizer with lowercasing.
+    """Whitespace tokenizer with lowercasing, accent stripping, and punctuation removal.
+
+    Applies ``normalize_for_matching`` (lowercase + accent strip) and removes
+    punctuation so that tokens like ``"cancelar,"`` and ``"cancelar"`` collapse
+    to the same token, and ``"não"`` matches ``"nao"``.
 
     Args:
         text: Raw text to tokenize.
 
     Returns:
-        List of lowercase tokens.
+        List of normalized tokens (empty tokens are excluded).
     """
-    return text.lower().split()
+    normalized = normalize_for_matching(text)
+    cleaned = _PUNCTUATION_RE.sub("", normalized)
+    return [tok for tok in cleaned.split() if tok]
 
 
 @dataclass

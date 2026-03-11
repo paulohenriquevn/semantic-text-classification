@@ -45,10 +45,23 @@ Grammar (EBNF):
 Predicate functions (inline syntax):
 
     Lexical:
-        keyword(field, value)              → contains check
+        keyword(field, value)              → contains check (substring)
         keyword(value)                     → contains check on "text"
-        regex(field, pattern)              → regex match
+        word(field, value)                 → word boundary match (whole word)
+        word(value)                        → word boundary match on "text"
+        stem(field, prefix)               → word-prefix match (stemming)
+        stem(prefix)                      → word-prefix match on "text"
+        regex(field, pattern)              → regex match (accent-normalized)
         contains_any(word_list)            → any word in list found
+        contains_all(word_list)            → all words in list found
+        not_contains(field, value)         → text does NOT contain value
+        not_contains(value)               → text does NOT contain value on "text"
+        excludes_any(word_list)            → text contains NONE of the words
+        near(word1, word2, distance)       → two words within N words of each other
+        starts_with(field, prefix)         → text starts with prefix
+        starts_with(prefix)               → text starts with prefix on "text"
+        ends_with(field, suffix)           → text ends with suffix
+        ends_with(suffix)                 → text ends with suffix on "text"
 
     Semantic:
         intent(label)                      → intent score ≥ threshold
@@ -68,7 +81,15 @@ Predicate functions (inline syntax):
 Dotted namespace syntax (block rules):
 
     lexical.contains("billing")
+    lexical.word("cancelar")
+    lexical.stem("cancel")
     lexical.contains_any(["cancelar", "encerrar"])
+    lexical.contains_all(["cancelar", "conta"])
+    lexical.not_contains("teste")
+    lexical.excludes_any(["teste", "debug"])
+    lexical.near("cancelar", "conta", 3)
+    lexical.starts_with("FAT-")
+    lexical.ends_with(".pdf")
     lexical.regex("cancel|terminate")
     semantic.intent("cancelamento") > 0.82
     semantic.similarity("quero cancelar meu serviço") > 0.86
@@ -100,8 +121,16 @@ from __future__ import annotations
 PREDICATE_REGISTRY: dict[str, tuple[str, str, str, int]] = {
     # Lexical (cost 1)
     "keyword": ("lexical", "text", "contains", 1),
+    "word": ("lexical", "text", "word", 1),
+    "stem": ("lexical", "text", "stem", 1),
     "regex": ("lexical", "text", "regex", 1),
     "contains_any": ("lexical", "text", "contains_any", 1),
+    "contains_all": ("lexical", "text", "contains_all", 1),
+    "not_contains": ("lexical", "text", "not_contains", 1),
+    "excludes_any": ("lexical", "text", "excludes_any", 1),
+    "near": ("lexical", "text", "near", 1),
+    "starts_with": ("lexical", "text", "starts_with", 1),
+    "ends_with": ("lexical", "text", "ends_with", 1),
     # Semantic (cost 4)
     "intent": ("semantic", "intent_score", "gte", 4),
     "similarity": ("semantic", "embedding_similarity", "similarity_above", 4),
@@ -131,7 +160,15 @@ during semantic validation.
 NAMESPACE_PREDICATE_MAP: dict[tuple[str, str], str] = {
     # lexical.* → lexical predicates
     ("lexical", "contains"): "keyword",
+    ("lexical", "word"): "word",
+    ("lexical", "stem"): "stem",
     ("lexical", "contains_any"): "contains_any",
+    ("lexical", "contains_all"): "contains_all",
+    ("lexical", "not_contains"): "not_contains",
+    ("lexical", "excludes_any"): "excludes_any",
+    ("lexical", "near"): "near",
+    ("lexical", "starts_with"): "starts_with",
+    ("lexical", "ends_with"): "ends_with",
     ("lexical", "regex"): "regex",
     # semantic.* → semantic predicates
     ("semantic", "intent"): "intent",

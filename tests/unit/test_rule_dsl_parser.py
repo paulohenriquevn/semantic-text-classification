@@ -16,7 +16,7 @@ from talkex.rules.ast import (
     PredicateNode,
 )
 from talkex.rules.config import PredicateType
-from talkex.rules.models import ParsedRuleBlock, RuleAction
+from talkex.rules.models import ParsedRuleBlock, RuleAction, RuleResult
 from talkex.rules.parser import TokenType, parse_dsl, parse_rule_block, tokenize
 
 # ---------------------------------------------------------------------------
@@ -934,3 +934,505 @@ class TestEvaluatorContainsAny:
         pr = results[0].predicate_results[0]
         assert pr.score == pytest.approx(2.0 / 3.0)
         assert pr.metadata["matched_words"] == ["cancelar", "desistir"]
+
+
+# ---------------------------------------------------------------------------
+# contains_all predicate (inline + dotted)
+# ---------------------------------------------------------------------------
+
+
+class TestContainsAll:
+    def test_inline_contains_all(self) -> None:
+        ast = parse_dsl('contains_all("cancelar", "conta")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "contains_all"
+        assert ast.value == ["cancelar", "conta"]
+        assert ast.predicate_type == PredicateType.LEXICAL
+
+    def test_contains_all_single_word(self) -> None:
+        ast = parse_dsl('contains_all("billing")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.value == ["billing"]
+
+    def test_contains_all_no_args_raises(self) -> None:
+        with pytest.raises(RuleError, match="expects at least 1"):
+            parse_dsl("contains_all()")
+
+    def test_dotted_contains_all(self) -> None:
+        ast = parse_dsl('lexical.contains_all(["cancelar", "conta"])')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "contains_all"
+        assert ast.value == ["cancelar", "conta"]
+
+    def test_contains_all_matches_all_present(self) -> None:
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_all("cancelar", "conta")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="quero cancelar minha conta agora",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+        pr = results[0].predicate_results[0]
+        assert pr.score == pytest.approx(1.0)
+
+    def test_contains_all_fails_when_partial(self) -> None:
+        from talkex.rules.config import EvidencePolicy, RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_all("cancelar", "conta", "reembolso")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="quero cancelar minha conta agora",
+        )
+        evaluator = SimpleRuleEvaluator()
+        config = RuleEngineConfig(evidence_policy=EvidencePolicy.ALWAYS)
+        results = evaluator.evaluate([rule], eval_input, config)
+        assert results[0].matched is False
+        pr = results[0].predicate_results[0]
+        assert pr.score == pytest.approx(2.0 / 3.0)
+
+
+# ---------------------------------------------------------------------------
+# Accent/diacritic normalization in lexical predicates
+# ---------------------------------------------------------------------------
+
+
+class TestAccentNormalization:
+    def test_contains_matches_accented_text(self) -> None:
+        """contains("nao") should match "não" in the text."""
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('keyword("nao")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="Não quero esse serviço",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+
+    def test_contains_accented_target_matches_plain_text(self) -> None:
+        """contains("não") should also match "nao" in the text."""
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('keyword("não")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="nao quero esse servico",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+
+    def test_contains_any_with_accents(self) -> None:
+        """contains_any with accented words should match normalized text."""
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('contains_any("cancelamento", "devolução")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="quero a devoluçao do meu dinheiro",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+
+    def test_regex_case_insensitive(self) -> None:
+        """Regex predicates should match case-insensitively."""
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('regex("cancel(ar|amento)")')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="Quero CANCELAR minha conta",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+        assert results[0].predicate_results[0].matched_text == "cancelar"
+
+    def test_contextual_repeated_with_accents(self) -> None:
+        """Repeated-in-window should normalize accents."""
+        from talkex.rules.config import RuleEngineConfig
+        from talkex.rules.evaluator import SimpleRuleEvaluator
+        from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+        ast = parse_dsl('repeated("text", "nao", 2)')
+        rule = RuleDefinition(
+            rule_id="r1",
+            rule_name="test",
+            rule_version="1.0",
+            description="test",
+            ast=ast,
+        )
+        eval_input = RuleEvaluationInput(
+            source_id="w1",
+            source_type="context_window",
+            text="Não quero isso, não mesmo",
+        )
+        evaluator = SimpleRuleEvaluator()
+        results = evaluator.evaluate([rule], eval_input, RuleEngineConfig())
+        assert results[0].matched is True
+
+
+# ---------------------------------------------------------------------------
+# Shared helper for evaluator integration tests
+# ---------------------------------------------------------------------------
+
+
+def _eval_dsl(dsl_expr: str, text: str) -> RuleResult:
+    """Compile a DSL expression, evaluate against text, return the RuleResult."""
+    from talkex.rules.config import EvidencePolicy, RuleEngineConfig
+    from talkex.rules.evaluator import SimpleRuleEvaluator
+    from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+
+    ast_node = parse_dsl(dsl_expr)
+    rule = RuleDefinition(
+        rule_id="r1",
+        rule_name="test",
+        rule_version="1.0",
+        description="test",
+        ast=ast_node,
+    )
+    eval_input = RuleEvaluationInput(
+        source_id="w1",
+        source_type="context_window",
+        text=text,
+    )
+    evaluator = SimpleRuleEvaluator()
+    config = RuleEngineConfig(evidence_policy=EvidencePolicy.ALWAYS)
+    return evaluator.evaluate([rule], eval_input, config)[0]
+
+
+# ---------------------------------------------------------------------------
+# word operator (word boundary match)
+# ---------------------------------------------------------------------------
+
+
+class TestWordOperator:
+    def test_parse_inline(self) -> None:
+        ast = parse_dsl('word("cancelar")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "word"
+        assert ast.value == "cancelar"
+        assert ast.predicate_type == PredicateType.LEXICAL
+
+    def test_parse_inline_two_args(self) -> None:
+        ast = parse_dsl('word("subject", "net")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.field_name == "subject"
+        assert ast.value == "net"
+
+    def test_parse_dotted(self) -> None:
+        ast = parse_dsl('lexical.word("cancelar")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "word"
+
+    def test_matches_whole_word(self) -> None:
+        result = _eval_dsl('word("cancelar")', "quero cancelar minha conta")
+        assert result.matched is True
+
+    def test_rejects_substring(self) -> None:
+        """word("net") must NOT match inside 'internet' or 'network'."""
+        result = _eval_dsl('word("net")', "preciso de acesso à internet")
+        assert result.matched is False
+
+    def test_matches_at_boundaries(self) -> None:
+        result = _eval_dsl('word("net")', "a net está fora do ar")
+        assert result.matched is True
+
+    def test_accent_normalization(self) -> None:
+        result = _eval_dsl('word("nao")', "Não quero isso")
+        assert result.matched is True
+
+
+# ---------------------------------------------------------------------------
+# stem operator (word-prefix matching)
+# ---------------------------------------------------------------------------
+
+
+class TestStemOperator:
+    def test_parse_inline(self) -> None:
+        ast = parse_dsl('stem("cancel")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "stem"
+        assert ast.value == "cancel"
+
+    def test_parse_dotted(self) -> None:
+        ast = parse_dsl('lexical.stem("cancel")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "stem"
+
+    def test_matches_cancelar(self) -> None:
+        result = _eval_dsl('stem("cancel")', "quero cancelar minha conta")
+        assert result.matched is True
+
+    def test_matches_cancelamento(self) -> None:
+        result = _eval_dsl('stem("cancel")', "solicito o cancelamento do plano")
+        assert result.matched is True
+
+    def test_matches_cancelada(self) -> None:
+        result = _eval_dsl('stem("cancel")', "a conta foi cancelada ontem")
+        assert result.matched is True
+
+    def test_no_match_different_root(self) -> None:
+        result = _eval_dsl('stem("cancel")', "obrigado pela ajuda")
+        assert result.matched is False
+
+    def test_reports_matched_tokens(self) -> None:
+        result = _eval_dsl('stem("cancel")', "cancelar o cancelamento")
+        pr = result.predicate_results[0]
+        assert set(pr.metadata["matched_tokens"]) == {"cancelar", "cancelamento"}
+
+    def test_accent_normalization(self) -> None:
+        """stem("informac") should match "informação"."""
+        result = _eval_dsl('stem("informac")', "preciso de uma informação")
+        assert result.matched is True
+
+
+# ---------------------------------------------------------------------------
+# not_contains operator
+# ---------------------------------------------------------------------------
+
+
+class TestNotContainsOperator:
+    def test_parse_inline(self) -> None:
+        ast = parse_dsl('not_contains("teste")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "not_contains"
+
+    def test_parse_dotted(self) -> None:
+        ast = parse_dsl('lexical.not_contains("debug")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "not_contains"
+
+    def test_matches_when_absent(self) -> None:
+        result = _eval_dsl('not_contains("teste")', "quero cancelar minha conta")
+        assert result.matched is True
+
+    def test_fails_when_present(self) -> None:
+        result = _eval_dsl('not_contains("cancelar")', "quero cancelar minha conta")
+        assert result.matched is False
+
+    def test_accent_normalization(self) -> None:
+        """not_contains("nao") should NOT match text with "não" (word is present)."""
+        result = _eval_dsl('not_contains("nao")', "Não quero isso")
+        assert result.matched is False
+
+
+# ---------------------------------------------------------------------------
+# excludes_any operator
+# ---------------------------------------------------------------------------
+
+
+class TestExcludesAnyOperator:
+    def test_parse_inline(self) -> None:
+        ast = parse_dsl('excludes_any("teste", "debug")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "excludes_any"
+        assert ast.value == ["teste", "debug"]
+
+    def test_parse_dotted(self) -> None:
+        ast = parse_dsl('lexical.excludes_any(["teste", "debug"])')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "excludes_any"
+
+    def test_matches_when_none_present(self) -> None:
+        result = _eval_dsl('excludes_any("teste", "debug")', "quero cancelar minha conta")
+        assert result.matched is True
+
+    def test_fails_when_one_present(self) -> None:
+        result = _eval_dsl('excludes_any("cancelar", "debug")', "quero cancelar minha conta")
+        assert result.matched is False
+
+    def test_fails_when_all_present(self) -> None:
+        result = _eval_dsl('excludes_any("cancelar", "conta")', "quero cancelar minha conta")
+        assert result.matched is False
+
+    def test_reports_found_words(self) -> None:
+        result = _eval_dsl('excludes_any("cancelar", "debug")', "quero cancelar minha conta")
+        pr = result.predicate_results[0]
+        assert pr.metadata["found_words"] == ["cancelar"]
+
+    def test_no_args_raises(self) -> None:
+        with pytest.raises(RuleError, match="expects at least 1"):
+            parse_dsl("excludes_any()")
+
+
+# ---------------------------------------------------------------------------
+# near operator (proximity)
+# ---------------------------------------------------------------------------
+
+
+class TestNearOperator:
+    def test_parse_inline(self) -> None:
+        ast = parse_dsl('near("cancelar", "conta", 3)')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "near"
+        assert ast.value == "cancelar"
+        assert ast.metadata == {"word2": "conta", "distance": 3}
+
+    def test_parse_dotted(self) -> None:
+        ast = parse_dsl('lexical.near("cancelar", "conta", 3)')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "near"
+        assert ast.metadata["word2"] == "conta"
+        assert ast.metadata["distance"] == 3
+
+    def test_matches_adjacent_words(self) -> None:
+        """'cancelar minha conta' — cancelar and conta are 2 words apart."""
+        result = _eval_dsl('near("cancelar", "conta", 3)', "quero cancelar minha conta")
+        assert result.matched is True
+        pr = result.predicate_results[0]
+        assert pr.metadata["actual_distance"] == 2
+
+    def test_fails_when_too_far(self) -> None:
+        result = _eval_dsl(
+            'near("cancelar", "conta", 1)',
+            "quero cancelar minha conta",  # distance=2, max=1
+        )
+        assert result.matched is False
+
+    def test_fails_when_word_missing(self) -> None:
+        result = _eval_dsl('near("cancelar", "reembolso", 5)', "quero cancelar minha conta")
+        assert result.matched is False
+
+    def test_accent_normalization(self) -> None:
+        result = _eval_dsl('near("nao", "quero", 2)', "Não quero isso")
+        assert result.matched is True
+
+    def test_exact_distance_boundary(self) -> None:
+        """Distance=0 means same word position — should not match different words."""
+        result = _eval_dsl('near("cancelar", "conta", 0)', "cancelar conta")
+        assert result.matched is False  # distance=1, max=0
+
+    def test_wrong_arg_count_raises(self) -> None:
+        with pytest.raises(RuleError, match="expects 3 argument"):
+            parse_dsl('near("a", "b")')
+
+
+# ---------------------------------------------------------------------------
+# starts_with / ends_with operators
+# ---------------------------------------------------------------------------
+
+
+class TestStartsWithEndsWith:
+    def test_parse_starts_with_inline(self) -> None:
+        ast = parse_dsl('starts_with("fat-")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "starts_with"
+        assert ast.value == "fat-"
+
+    def test_parse_starts_with_dotted(self) -> None:
+        ast = parse_dsl('lexical.starts_with("fat-")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "starts_with"
+
+    def test_parse_ends_with_inline(self) -> None:
+        ast = parse_dsl('ends_with(".pdf")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "ends_with"
+
+    def test_parse_ends_with_dotted(self) -> None:
+        ast = parse_dsl('lexical.ends_with(".pdf")')
+        assert isinstance(ast, PredicateNode)
+        assert ast.operator == "ends_with"
+
+    def test_starts_with_matches(self) -> None:
+        result = _eval_dsl('starts_with("fat-")', "FAT-12345 fatura do mês")
+        assert result.matched is True
+
+    def test_starts_with_no_match(self) -> None:
+        result = _eval_dsl('starts_with("fat-")', "minha fatura é FAT-123")
+        assert result.matched is False  # text doesn't START with fat-
+
+    def test_ends_with_matches(self) -> None:
+        result = _eval_dsl('ends_with(".pdf")', "arquivo contrato.pdf")
+        assert result.matched is True
+
+    def test_ends_with_no_match(self) -> None:
+        result = _eval_dsl('ends_with(".pdf")', "arquivo contrato.docx")
+        assert result.matched is False
+
+    def test_accent_normalization(self) -> None:
+        result = _eval_dsl('starts_with("informac")', "Informação sobre o plano")
+        assert result.matched is True
+
+
+# ---------------------------------------------------------------------------
+# Regex accent normalization fix
+# ---------------------------------------------------------------------------
+
+
+class TestRegexAccentNormalization:
+    def test_regex_matches_accent_normalized_text(self) -> None:
+        """regex("nao") should match text containing "não" after normalization."""
+        result = _eval_dsl('regex("nao")', "Não quero isso")
+        assert result.matched is True
+
+    def test_regex_pattern_against_normalized_text(self) -> None:
+        """Regex patterns work against normalized (accent-free) text."""
+        result = _eval_dsl('regex("nao|cancelar")', "Não quero cancelar")
+        assert result.matched is True

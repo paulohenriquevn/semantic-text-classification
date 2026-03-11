@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AnalyticsPanel } from "@/components/AnalyticsPanel";
 import { CategoriesPanel } from "@/components/CategoriesPanel";
 import { ConversationView } from "@/components/ConversationView";
+import { DSLGuidePanel } from "@/components/DSLGuidePanel";
 import { FilterBar } from "@/components/FilterBar";
 import { ResultCard } from "@/components/ResultCard";
 import { SearchBar } from "@/components/SearchBar";
@@ -11,7 +12,7 @@ import { SearchLoading } from "@/components/SearchLoading";
 import { searchConversations } from "@/lib/api";
 import type { SearchFilters, SearchResponse } from "@/types/api";
 
-type Tab = "search" | "categories" | "analytics";
+type Tab = "search" | "categories" | "analytics" | "guide";
 type SearchMode = "text" | "dsl";
 
 export default function App() {
@@ -63,6 +64,9 @@ export default function App() {
               <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>
                 Analytics
               </TabButton>
+              <TabButton active={tab === "guide"} onClick={() => setTab("guide")}>
+                Guia
+              </TabButton>
             </nav>
           </div>
         </div>
@@ -79,6 +83,8 @@ export default function App() {
               setHighlightFragments([]);
             }}
           />
+        ) : tab === "guide" ? (
+          <DSLGuidePanel />
         ) : tab === "analytics" ? (
           <AnalyticsPanel />
         ) : tab === "categories" ? (
