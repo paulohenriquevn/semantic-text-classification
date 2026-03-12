@@ -1,53 +1,53 @@
 [
   {
-    "comparison": "ML+Rules-feature vs ML-only",
+    "comparison": "ML-only vs Rules-only",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 2190.0,
+    "p_value": 1.810295338388208e-33,
+    "significant": true,
+    "effect_size": 0.8165137614678899,
+    "summary": "ML-only > Rules-only (mean diff=0.5266, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "ML-only vs Rules-only",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.46153846153846156,
+    "ci_upper": 0.5887573964497042,
+    "observed_diff": 0.5266272189349113,
+    "summary": "accuracy_diff: observed diff=0.5266, 95% CI=[0.4615, 0.5888] (excludes zero (significant))"
+  },
+  {
+    "comparison": "ML-only vs ML+Rules-override",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 208.0,
+    "p_value": 9.535962224699303e-07,
+    "significant": true,
+    "effect_size": 0.6862745098039216,
+    "summary": "ML-only > ML+Rules-override (mean diff=0.1036, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "ML-only vs ML+Rules-override",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.0650887573964497,
+    "ci_upper": 0.1420118343195267,
+    "observed_diff": 0.10355029585798814,
+    "summary": "accuracy_diff: observed diff=0.1036, 95% CI=[0.0651, 0.1420] (excludes zero (significant))"
+  },
+  {
+    "comparison": "ML-only vs ML+Rules-feature",
     "test": "Wilcoxon signed-rank",
     "statistic": 63.0,
     "p_value": 0.46685427082272546,
     "significant": false,
     "effect_size": 0.17647058823529416,
-    "summary": "ML+Rules-feature > ML-only (mean diff=0.0089, p=0.4669, not significant at alpha=0.05)"
+    "summary": "ML-only > ML+Rules-feature (mean diff=0.0089, p=0.4669, not significant at alpha=0.05)"
   },
   {
-    "comparison": "ML+Rules-feature vs ML-only",
+    "comparison": "ML-only vs ML+Rules-feature",
     "test": "Bootstrap CI",
     "ci_lower": -0.014792899408283988,
     "ci_upper": 0.03254437869822491,
     "observed_diff": 0.00887573964497046,
     "summary": "accuracy_diff: observed diff=0.0089, 95% CI=[-0.0148, 0.0325] (contains zero (not significant))"
-  },
-  {
-    "comparison": "ML+Rules-feature vs Rules-only",
-    "test": "Wilcoxon signed-rank",
-    "statistic": 1680.0,
-    "p_value": 3.285441310491704e-38,
-    "significant": true,
-    "effect_size": 0.8654708520179373,
-    "summary": "ML+Rules-feature > Rules-only (mean diff=0.5710, p=0.0000, significant at alpha=0.05)"
-  },
-  {
-    "comparison": "ML+Rules-feature vs Rules-only",
-    "test": "Bootstrap CI",
-    "ci_lower": 0.5088757396449703,
-    "ci_upper": 0.6331360946745561,
-    "observed_diff": 0.5710059171597633,
-    "summary": "accuracy_diff: observed diff=0.5710, 95% CI=[0.5089, 0.6331] (excludes zero (significant))"
-  },
-  {
-    "comparison": "ML+Rules-feature vs ML+Rules-override",
-    "test": "Wilcoxon signed-rank",
-    "statistic": 153.0,
-    "p_value": 7.700392745696402e-08,
-    "significant": true,
-    "effect_size": 0.76,
-    "summary": "ML+Rules-feature > ML+Rules-override (mean diff=0.1124, p=0.0000, significant at alpha=0.05)"
-  },
-  {
-    "comparison": "ML+Rules-feature vs ML+Rules-override",
-    "test": "Bootstrap CI",
-    "ci_lower": 0.07396449704142016,
-    "ci_upper": 0.15384615384615374,
-    "observed_diff": 0.1124260355029586,
-    "summary": "accuracy_diff: observed diff=0.1124, 95% CI=[0.0740, 0.1538] (excludes zero (significant))"
   }
 ]

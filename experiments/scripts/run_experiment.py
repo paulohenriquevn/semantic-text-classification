@@ -19,11 +19,22 @@ import json
 import logging
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import click
 import numpy as np
+
+from talkex.classification.features import extract_lexical_features, extract_structural_features
+from talkex.context import ContextWindowConfig, SlidingWindowBuilder
+from talkex.ingestion.enums import SourceFormat
+from talkex.ingestion.inputs import TranscriptInput
+from talkex.models.context_window import ContextWindow
+from talkex.models.conversation import Conversation
+from talkex.models.enums import Channel
+from talkex.models.types import ConversationId
+from talkex.segmentation import SegmentationConfig, TurnSegmenter
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -81,20 +92,161 @@ def _get_record_id(record: dict, fallback: str) -> str:
     return record.get("conversation_id", record.get("id", fallback))
 
 
-def _estimate_turn_count(record: dict) -> int:
-    """Estimate turn count from a record.
+# ---------------------------------------------------------------------------
+# Context window utilities — uses real TalkEx pipeline modules
+# ---------------------------------------------------------------------------
 
-    Supports structured format (conversation list) and flat format
-    (count [customer]/[agent] markers in text).
+# Window configuration: matches ContextWindowConfig defaults in src/talkex/context/config.py
+WINDOW_SIZE = 5
+WINDOW_STRIDE = 2
+
+# Reusable pipeline instances (stateless, safe to share)
+_SEGMENTER = TurnSegmenter()
+_WINDOW_BUILDER = SlidingWindowBuilder()
+_SEG_CONFIG = SegmentationConfig(
+    speaker_label_pattern=r"\[(customer|agent)\]",
+    merge_consecutive_same_speaker=False,
+    normalize_unicode=False,
+    collapse_whitespace=False,
+    strip_lines=False,
+)
+_WINDOW_CONFIG = ContextWindowConfig(window_size=WINDOW_SIZE, stride=WINDOW_STRIDE)
+_EPOCH = datetime(2024, 1, 1)
+
+
+@dataclass(frozen=True)
+class ConversationWindows:
+    """All windows for a single conversation, with its ground-truth label.
+
+    Wraps real TalkEx ContextWindow objects with the experiment-specific
+    ground-truth label (which is not part of the TalkEx domain model).
     """
-    turns = record.get("conversation", [])
-    if turns:
-        return len(turns)
-    import re
 
-    text = record.get("text", "")
-    markers = len(re.findall(r"\[(customer|agent)\]", text, re.IGNORECASE))
-    return max(markers, 1)
+    conversation_id: str
+    label: str
+    windows: list[ContextWindow]
+
+
+def _prepare_windowed_data(
+    records: list[dict],
+) -> list[ConversationWindows]:
+    """Parse conversations into turns and build context windows using the real TalkEx pipeline.
+
+    Uses TurnSegmenter → SlidingWindowBuilder — the same modules that run in production.
+    Each conversation produces N windows (N depends on turn count).
+    All windows inherit the conversation's intent label for training/evaluation.
+    The split is by conversation (not by window), preserving data integrity.
+    """
+    result: list[ConversationWindows] = []
+    for r in records:
+        conv_id = _get_record_id(r, "unknown")
+        label = r.get("topic", "outros")
+        text = r.get("text", "")
+        if not text.strip():
+            continue
+
+        # Step 1: Segment raw text into Turn objects via TalkEx
+        transcript = TranscriptInput(
+            conversation_id=ConversationId(conv_id),
+            channel=Channel.CHAT,
+            raw_text=text,
+            source_format=SourceFormat.LABELED,
+        )
+        turns = _SEGMENTER.segment(transcript, _SEG_CONFIG)
+        if not turns:
+            continue
+
+        # Step 2: Build context windows via TalkEx
+        conversation = Conversation(
+            conversation_id=ConversationId(conv_id),
+            channel=Channel.CHAT,
+            start_time=_EPOCH,
+        )
+        windows = _WINDOW_BUILDER.build(conversation, turns, _WINDOW_CONFIG)
+        if windows:
+            result.append(
+                ConversationWindows(
+                    conversation_id=conv_id,
+                    label=label,
+                    windows=windows,
+                )
+            )
+    return result
+
+
+def _flatten_windows(
+    conv_windows: list[ConversationWindows],
+) -> tuple[list[str], list[str], list[str]]:
+    """Flatten windowed data into parallel lists for training/classification.
+
+    Returns:
+        (window_texts, window_labels, window_conv_ids) — all aligned by index.
+    """
+    texts: list[str] = []
+    labels: list[str] = []
+    conv_ids: list[str] = []
+    for cw in conv_windows:
+        for w in cw.windows:
+            texts.append(w.window_text)
+            labels.append(cw.label)
+            conv_ids.append(cw.conversation_id)
+    return texts, labels, conv_ids
+
+
+def _extract_window_structural_features(
+    conv_windows: list[ConversationWindows],
+) -> list[dict[str, float]]:
+    """Extract structural features from real TalkEx ContextWindow metadata.
+
+    Uses talkex.classification.features.extract_structural_features with
+    metadata populated by SlidingWindowBuilder → compute_window_metrics.
+    """
+    features: list[dict[str, float]] = []
+    for cw in conv_windows:
+        for w in cw.windows:
+            speakers_meta = w.metadata.get("speakers", {})
+            feat = extract_structural_features(
+                is_customer=speakers_meta.get("has_customer", False),
+                is_agent=speakers_meta.get("has_agent", False),
+                turn_count=w.window_size,
+                speaker_count=len(speakers_meta.get("distribution", {})),
+            )
+            features.append(feat.features)
+    return features
+
+
+def _aggregate_window_predictions(
+    window_results: list,  # list of ClassificationResult
+    labels: list[str],
+) -> tuple[str, float]:
+    """Aggregate window-level predictions to conversation level.
+
+    Strategy: average class probabilities across windows, then argmax.
+    Tiebreak: majority vote, then max confidence.
+
+    Args:
+        window_results: ClassificationResult objects for each window.
+        labels: All possible labels (for consistent aggregation).
+
+    Returns:
+        (predicted_label, confidence_score) for the conversation.
+    """
+    if not window_results:
+        return labels[0] if labels else "outros", 0.0
+
+    # Average probabilities per class across all windows
+    class_probs: dict[str, float] = {label: 0.0 for label in labels}
+    for result in window_results:
+        for ls in result.label_scores:
+            if ls.label in class_probs:
+                class_probs[ls.label] += ls.score
+
+    n_windows = len(window_results)
+    for label in class_probs:
+        class_probs[label] /= n_windows
+
+    best_label = max(class_probs, key=lambda lbl: class_probs[lbl])
+    return best_label, class_probs[best_label]
 
 
 # ---------------------------------------------------------------------------
@@ -546,71 +698,93 @@ def _evaluate_retriever_fn(
 
 
 def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
-    """Run H2 experiments: multi-level representation gains.
+    """Run H2 experiments: multi-level representation gains with context windows.
 
-    Compares lexical-only vs lexical+embedding features
-    across LogReg, LightGBM, MLP classifiers.
+    Compares lexical-only vs lexical+embedding features across LogReg, LightGBM,
+    MLP classifiers. Conversations are segmented into turns and windowed
+    (window_size=5, stride=2) to align with the real TalkEx pipeline.
+
+    Training: classifiers learn on window-level features (labels inherited from conversation).
+    Evaluation: window predictions are aggregated to conversation level via
+    average class probabilities (argmax), then compared with conversation-level ground truth.
+
     Best configuration is identified on validation set; all metrics reported on test.
-    Uses talkex SentenceTransformerGenerator for embedding generation.
     """
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.logistic import LogisticRegressionClassifier
     from talkex.classification.mlp_classifier import MLPClassifier
     from talkex.classification.models import ClassificationInput
-    from talkex.classification_eval.dataset import ClassificationDataset, ClassificationExample, GroundTruthLabel
-    from talkex.classification_eval.runner import ClassificationBenchmarkRunner
 
     logger.info("=" * 60)
-    logger.info("H2: Multi-Level Classification Experiment")
+    logger.info("H2: Multi-Level Classification Experiment (context windows)")
     logger.info("=" * 60)
 
-    train_labels = extract_labels(train)
-    val_labels = extract_labels(val)
-    test_labels = extract_labels(test)
-    train_texts = extract_texts(train)
-    val_texts = extract_texts(val)
-    test_texts_h2 = extract_texts(test)
-    train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
-    val_ids = [_get_record_id(r, f"val_{i}") for i, r in enumerate(val)]
-    test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + val_labels + test_labels))
+    # --- Step 1: Parse conversations into context windows ---
+    train_cw = _prepare_windowed_data(train)
+    val_cw = _prepare_windowed_data(val)
+    test_cw = _prepare_windowed_data(test)
+    logger.info(
+        "Windows: train=%d (from %d convs), val=%d (from %d convs), test=%d (from %d convs)",
+        sum(len(c.windows) for c in train_cw),
+        len(train_cw),
+        sum(len(c.windows) for c in val_cw),
+        len(val_cw),
+        sum(len(c.windows) for c in test_cw),
+        len(test_cw),
+    )
+
+    # Flatten windows for training (window-level labels inherited from conversation)
+    train_win_texts, train_win_labels, _ = _flatten_windows(train_cw)
+    val_win_texts, val_win_labels, _ = _flatten_windows(val_cw)
+    test_win_texts, _, _ = _flatten_windows(test_cw)
+
+    # Conversation-level labels for evaluation
+    test_conv_labels = [cw.label for cw in test_cw]
+    val_conv_labels = [cw.label for cw in val_cw]
+    unique_labels = sorted(set(train_win_labels + val_win_labels + test_conv_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
-    # Feature extraction: lexical + structural
-    from talkex.classification.features import extract_lexical_features, extract_structural_features, merge_feature_sets
+    # --- Step 2: Extract features per window ---
 
-    def make_lexical_features(records: list[dict]) -> tuple[list[dict[str, float]], list[str]]:
-        texts = extract_texts(records)
-        all_features = []
-        for i, text in enumerate(texts):
-            r = records[i]
-            lex = extract_lexical_features(text)
-            struct = extract_structural_features(
-                is_customer=True,
-                is_agent=True,
-                turn_count=_estimate_turn_count(r),
-                speaker_count=2,
-            )
-            merged = merge_feature_sets(lex, struct)
-            all_features.append(merged.features)
+    def make_window_features(
+        conv_windows: list[ConversationWindows],
+    ) -> tuple[list[dict[str, float]], list[str]]:
+        """Extract lexical + structural features per window."""
+        struct_feats = _extract_window_structural_features(conv_windows)
+        all_features: list[dict[str, float]] = []
+        for idx, cw in enumerate(conv_windows):
+            for w_idx, w in enumerate(cw.windows):
+                lex = extract_lexical_features(w.window_text)
+                flat_idx = sum(len(c.windows) for c in conv_windows[:idx]) + w_idx
+                combined = {**lex.features, **struct_feats[flat_idx]}
+                all_features.append(combined)
         feature_names = list(all_features[0].keys()) if all_features else []
         return all_features, feature_names
 
-    train_lex_features, lex_feature_names = make_lexical_features(train)
-    val_lex_features, _ = make_lexical_features(val)
-    test_lex_features, _ = make_lexical_features(test)
+    train_lex_features, lex_feature_names = make_window_features(train_cw)
+    val_lex_features, _ = make_window_features(val_cw)
+    test_lex_features, _ = make_window_features(test_cw)
 
-    # Generate embeddings via talkex pipeline
-    logger.info("Generating embeddings via talkex SentenceTransformerGenerator (%s)...", EMBEDDING_MODEL)
+    # --- Step 3: Generate embeddings per window ---
+    logger.info("Generating window embeddings via talkex (%s)...", EMBEDDING_MODEL)
     emb_gen = _make_embedding_generator()
-    train_embeddings = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
-    val_embeddings = generate_embeddings_via_talkex(val_texts, val_ids, emb_gen)
-    test_embeddings = generate_embeddings_via_talkex(test_texts_h2, test_ids, emb_gen)
+    train_win_ids = [f"train_win_{i}" for i in range(len(train_win_texts))]
+    val_win_ids = [f"val_win_{i}" for i in range(len(val_win_texts))]
+    test_win_ids = [f"test_win_{i}" for i in range(len(test_win_texts))]
+    train_embeddings = generate_embeddings_via_talkex(train_win_texts, train_win_ids, emb_gen)
+    val_embeddings = generate_embeddings_via_talkex(val_win_texts, val_win_ids, emb_gen)
+    test_embeddings = generate_embeddings_via_talkex(test_win_texts, test_win_ids, emb_gen)
     emb_dims = train_embeddings.shape[1]
-    logger.info("Embeddings generated: %d dims (via talkex pipeline)", emb_dims)
+    logger.info(
+        "Window embeddings: %d dims, %d train, %d val, %d test",
+        emb_dims,
+        len(train_win_texts),
+        len(val_win_texts),
+        len(test_win_texts),
+    )
 
-    # Build feature sets: lexical-only and lexical+embedding
+    # --- Step 4: Build feature configurations ---
     def merge_with_embeddings(
         lex_features: list[dict[str, float]], embeddings: np.ndarray
     ) -> tuple[list[dict[str, float]], list[str]]:
@@ -627,61 +801,45 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     val_full_features, _ = merge_with_embeddings(val_lex_features, val_embeddings)
     test_full_features, _ = merge_with_embeddings(test_lex_features, test_embeddings)
 
-    # Build feature configurations to test
     feature_configs = {
         "lexical": (train_lex_features, val_lex_features, test_lex_features, lex_feature_names),
         "lexical+emb": (train_full_features, val_full_features, test_full_features, full_feature_names),
     }
 
+    # --- Step 5: Train, evaluate with window→conversation aggregation ---
     results: list[ExperimentResult] = []
-
-    # Step 1: Train all configs and evaluate on val to identify best
     best_val_f1 = -1.0
     best_val_config = ""
-    val_f1_by_config: dict[str, float] = {}
 
     for feat_name, (tr_feats, va_feats, te_feats, feat_names) in feature_configs.items():
-        # Build inputs for this feature config
         train_inputs = [
             ClassificationInput(
-                source_id=_get_record_id(train[i], f"train_{i}"),
-                source_type="conversation",
-                text=train_texts[i],
+                source_id=f"train_win_{i}",
+                source_type="window",
+                text=train_win_texts[i],
                 features=tr_feats[i],
             )
-            for i in range(len(train))
+            for i in range(len(train_win_texts))
         ]
-
         val_inputs = [
             ClassificationInput(
-                source_id=_get_record_id(val[i], f"val_{i}"),
-                source_type="conversation",
-                text=val_texts[i],
+                source_id=f"val_win_{i}",
+                source_type="window",
+                text=val_win_texts[i],
                 features=va_feats[i],
             )
-            for i in range(len(val))
+            for i in range(len(val_win_texts))
         ]
-
-        test_examples = [
-            ClassificationExample(
-                example_id=_get_record_id(test[i], f"test_{i}"),
-                source_type="conversation",
-                text=test_texts_h2[i],
+        test_inputs = [
+            ClassificationInput(
+                source_id=f"test_win_{i}",
+                source_type="window",
+                text=test_win_texts[i],
                 features=te_feats[i],
-                ground_truth=[GroundTruthLabel(label=test_labels[i])],
             )
-            for i in range(len(test))
+            for i in range(len(test_win_texts))
         ]
 
-        eval_dataset = ClassificationDataset(
-            name=f"talkex-h2-{feat_name}",
-            version="1.0",
-            examples=test_examples,
-            label_names=unique_labels,
-        )
-        runner = ClassificationBenchmarkRunner(dataset=eval_dataset)
-
-        # Define classifiers
         classifier_configs_map = {
             "LogReg": lambda fn=feat_names: LogisticRegressionClassifier(
                 label_space=label_space,
@@ -705,45 +863,36 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
         }
 
         for clf_name, clf_factory in classifier_configs_map.items():
-            logger.info("Training %s (%s)...", clf_name, feat_name)
+            logger.info("Training %s (%s) on %d windows...", clf_name, feat_name, len(train_inputs))
             t0 = time.perf_counter()
             clf = clf_factory()
-            clf.fit(train_inputs, train_labels)
+            clf.fit(train_inputs, train_win_labels)
 
-            # Evaluate on validation set for config selection
-            val_preds = clf.classify(val_inputs)
-            val_pred_labels = [p.top_label for p in val_preds]
-            val_f1 = _compute_macro_f1(val_pred_labels, val_labels, unique_labels)
+            # --- Val evaluation: aggregate windows → conversations ---
+            val_window_preds = clf.classify(val_inputs)
+            val_conv_preds = _aggregate_windows_to_conversations(val_window_preds, val_cw, unique_labels)
+            val_f1 = _compute_macro_f1(val_conv_preds, val_conv_labels, unique_labels)
             config_key = f"{feat_name}_{clf_name}"
-            val_f1_by_config[config_key] = val_f1
             logger.info("  [VAL] %s/%s: macro_f1=%.4f", feat_name, clf_name, val_f1)
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
                 best_val_config = config_key
 
-            # Evaluate on test set for final reporting
-            method_result = runner.evaluate(clf, clf_name)
+            # --- Test evaluation: aggregate windows → conversations ---
+            test_window_preds = clf.classify(test_inputs)
+            test_conv_preds = _aggregate_windows_to_conversations(test_window_preds, test_cw, unique_labels)
             dur = (time.perf_counter() - t0) * 1000
 
-            metrics = method_result.aggregated.copy()
+            # Compute conversation-level metrics
+            metrics = _compute_classification_metrics(test_conv_preds, test_conv_labels, unique_labels)
             metrics["val_macro_f1"] = val_f1
-            # Add per-label F1
-            for label_name, label_metrics in method_result.per_label.items():
-                metrics[f"f1_{label_name}"] = label_metrics.get("f1", 0.0)
+            metrics["n_train_windows"] = len(train_inputs)
+            metrics["n_test_windows"] = len(test_inputs)
 
-            # Per-sample scores: 1.0 if correct, 0.0 if incorrect
-            clf_preds = clf.classify(
-                [
-                    ClassificationInput(
-                        source_id=_get_record_id(test[i], f"test_{i}"),
-                        source_type="conversation",
-                        text=test_texts_h2[i],
-                        features=te_feats[i],
-                    )
-                    for i in range(len(test))
-                ]
-            )
-            per_sample = [1.0 if pred.top_label == test_labels[i] else 0.0 for i, pred in enumerate(clf_preds)]
+            # Per-conversation scores for statistical tests
+            per_sample = [
+                1.0 if pred == true else 0.0 for pred, true in zip(test_conv_preds, test_conv_labels, strict=False)
+            ]
 
             results.append(
                 ExperimentResult(
@@ -753,26 +902,26 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                     config={
                         "classifier": clf_name,
                         "features": feat_name,
+                        "window_size": WINDOW_SIZE,
+                        "window_stride": WINDOW_STRIDE,
+                        "aggregation": "avg_confidence_argmax",
                     },
                     duration_ms=dur,
                     per_query_scores=per_sample,
                 )
             )
             logger.info(
-                "  %s/%s: macro_f1=%.4f, micro_f1=%.4f",
+                "  %s/%s: macro_f1=%.4f, accuracy=%.4f",
                 feat_name,
                 clf_name,
                 metrics.get("macro_f1", 0),
-                metrics.get("micro_f1", 0),
+                metrics.get("accuracy", 0),
             )
 
-    # Mark val-selected best config after all configs are evaluated
+    # Mark val-selected best config
     logger.info("Best config on validation: %s (val F1=%.4f)", best_val_config, best_val_f1)
     for r in results:
-        if r.variant_name == best_val_config:
-            r.config["selected_on_val"] = True
-        else:
-            r.config["selected_on_val"] = False
+        r.config["selected_on_val"] = r.variant_name == best_val_config
 
     logger.info("H2 complete: %d variants evaluated", len(results))
     return results
@@ -784,156 +933,161 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
 
 
 def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
-    """Run H4 experiments: cascaded inference efficiency.
+    """Run H4 experiments: cascaded inference efficiency (with context windows).
 
     Compares uniform pipeline vs cascaded pipeline at different thresholds.
-    Stage 1 (lightweight): LogReg with lexical+emb features (cheap linear model).
-    Stage 2 (full): LightGBM with lexical+emb features (expensive ensemble).
+    Stage 1 (lightweight): LogReg with lexical+structural+emb features (cheap linear model).
+    Stage 2 (full): LightGBM with lexical+structural+emb features (expensive ensemble).
+
+    Pipeline aligned with real TalkEx: conversations segmented into context windows
+    (window_size=5, stride=2). Cascade threshold check happens per window.
+    A conversation might have some windows resolved by Stage 1 and others escalated
+    to Stage 2. Final predictions aggregate windows to conversations.
+
     Cascade threshold is tuned on validation set; final metrics on test.
-    Uses talkex SentenceTransformerGenerator for embedding generation.
     """
     logger.info("=" * 60)
-    logger.info("H4: Cascaded Inference Experiment")
+    logger.info("H4: Cascaded Inference Experiment (context windows)")
     logger.info("=" * 60)
 
-    from talkex.classification.features import extract_lexical_features, extract_structural_features, merge_feature_sets
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.logistic import LogisticRegressionClassifier
     from talkex.classification.models import ClassificationInput
 
-    train_labels = extract_labels(train)
-    val_labels = extract_labels(val)
-    test_labels = extract_labels(test)
-    train_texts = extract_texts(train)
-    val_texts = extract_texts(val)
-    test_texts_h4 = extract_texts(test)
-    train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
-    val_ids = [_get_record_id(r, f"val_{i}") for i, r in enumerate(val)]
-    test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + val_labels + test_labels))
+    # --- Step 1: Parse conversations into context windows ---
+    train_cw = _prepare_windowed_data(train)
+    val_cw = _prepare_windowed_data(val)
+    test_cw = _prepare_windowed_data(test)
+    logger.info(
+        "Windows: train=%d (from %d convs), val=%d (from %d convs), test=%d (from %d convs)",
+        sum(len(c.windows) for c in train_cw),
+        len(train_cw),
+        sum(len(c.windows) for c in val_cw),
+        len(val_cw),
+        sum(len(c.windows) for c in test_cw),
+        len(test_cw),
+    )
+
+    train_win_texts, train_win_labels, _ = _flatten_windows(train_cw)
+    val_win_texts, val_win_labels, _ = _flatten_windows(val_cw)
+    test_win_texts, _, _ = _flatten_windows(test_cw)
+
+    test_conv_labels = [cw.label for cw in test_cw]
+    val_conv_labels = [cw.label for cw in val_cw]
+    unique_labels = sorted(set(train_win_labels + val_win_labels + test_conv_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
-    # Build lexical features (for lightweight classifier)
-    def build_lex_inputs(records: list[dict], texts: list[str]) -> tuple[list[ClassificationInput], list[str]]:
-        inputs = []
-        feature_names_ref: list[str] = []
-        for i, text in enumerate(texts):
-            r = records[i]
-            lex = extract_lexical_features(text)
-            struct = extract_structural_features(
-                is_customer=True,
-                is_agent=True,
-                turn_count=_estimate_turn_count(r),
-                speaker_count=2,
-            )
-            merged = merge_feature_sets(lex, struct)
-            if not feature_names_ref:
-                feature_names_ref.extend(merged.features.keys())
-            inputs.append(
-                ClassificationInput(
-                    source_id=_get_record_id(r, f"rec_{i}"),
-                    source_type="conversation",
-                    text=text,
-                    features=merged.features,
-                )
-            )
-        return inputs, feature_names_ref
+    # --- Step 2: Extract features per window (lexical + structural + embeddings) ---
+    train_struct = _extract_window_structural_features(train_cw)
+    val_struct = _extract_window_structural_features(val_cw)
+    test_struct = _extract_window_structural_features(test_cw)
 
-    train_lex_inputs, _lex_feature_names = build_lex_inputs(train, train_texts)
-    val_lex_inputs, _ = build_lex_inputs(val, val_texts)
-    test_lex_inputs, _ = build_lex_inputs(test, test_texts_h4)
-
-    # Generate embeddings via talkex pipeline
-    logger.info("Generating embeddings via talkex SentenceTransformerGenerator (%s)...", EMBEDDING_MODEL)
-    emb_gen = _make_embedding_generator()
-    train_embs = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
-    val_embs = generate_embeddings_via_talkex(val_texts, val_ids, emb_gen)
-    test_embs = generate_embeddings_via_talkex(test_texts_h4, test_ids, emb_gen)
-
-    def build_full_inputs(
-        lex_inputs: list[ClassificationInput], embeddings: np.ndarray
+    def build_window_inputs(
+        win_texts: list[str],
+        struct_feats: list[dict[str, float]],
+        embeddings: np.ndarray,
+        prefix: str,
     ) -> tuple[list[ClassificationInput], list[str]]:
-        full_inputs = []
-        full_names: list[str] = []
-        for i, inp in enumerate(lex_inputs):
-            features = dict(inp.features)
+        inputs = []
+        feat_names: list[str] = []
+        for i, text in enumerate(win_texts):
+            lex = extract_lexical_features(text)
+            features = {**(lex.features if hasattr(lex, "features") else dict(lex)), **struct_feats[i]}
             for d in range(embeddings.shape[1]):
                 features[f"emb_{d}"] = float(embeddings[i][d])
-            if not full_names:
-                full_names = list(features.keys())
-            full_inputs.append(
+            if not feat_names:
+                feat_names = list(features.keys())
+            inputs.append(
                 ClassificationInput(
-                    source_id=inp.source_id,
-                    source_type=inp.source_type,
-                    text=inp.text,
+                    source_id=f"{prefix}_win_{i}",
+                    source_type="window",
+                    text=text,
                     features=features,
                 )
             )
-        return full_inputs, full_names
+        return inputs, feat_names
 
-    train_full_inputs, full_feature_names = build_full_inputs(train_lex_inputs, train_embs)
-    val_full_inputs, _ = build_full_inputs(val_lex_inputs, val_embs)
-    test_full_inputs, _ = build_full_inputs(test_lex_inputs, test_embs)
+    logger.info("Generating window embeddings via talkex (%s)...", EMBEDDING_MODEL)
+    emb_gen = _make_embedding_generator()
+    train_embs = generate_embeddings_via_talkex(
+        train_win_texts, [f"train_win_{i}" for i in range(len(train_win_texts))], emb_gen
+    )
+    val_embs = generate_embeddings_via_talkex(
+        val_win_texts, [f"val_win_{i}" for i in range(len(val_win_texts))], emb_gen
+    )
+    test_embs = generate_embeddings_via_talkex(
+        test_win_texts, [f"test_win_{i}" for i in range(len(test_win_texts))], emb_gen
+    )
+    logger.info("Window embeddings: %d dims", train_embs.shape[1])
 
-    # Train lightweight (LogReg with embeddings, fast inference) and full (LightGBM with embeddings, expensive)
-    # Both use the same features; the cost difference is model complexity (linear vs ensemble)
-    logger.info("Training lightweight classifier (LogReg, lexical+emb)...")
+    train_inputs, feature_names = build_window_inputs(train_win_texts, train_struct, train_embs, "train")
+    val_inputs, _ = build_window_inputs(val_win_texts, val_struct, val_embs, "val")
+    test_inputs, _ = build_window_inputs(test_win_texts, test_struct, test_embs, "test")
+
+    # --- Step 3: Train lightweight and full classifiers ---
+    logger.info("Training lightweight classifier (LogReg, lexical+structural+emb) on %d windows...", len(train_inputs))
     light_clf = LogisticRegressionClassifier(
         label_space=label_space,
-        feature_names=full_feature_names,
+        feature_names=feature_names,
         sklearn_kwargs={"max_iter": 2000, "random_state": CURRENT_SEED},
     )
-    light_clf.fit(train_full_inputs, train_labels)
+    light_clf.fit(train_inputs, train_win_labels)
 
-    logger.info("Training full classifier (LightGBM, lexical+emb)...")
+    logger.info("Training full classifier (LightGBM, lexical+structural+emb) on %d windows...", len(train_inputs))
     full_clf = LightGBMClassifier(
         label_space=label_space,
-        feature_names=full_feature_names,
+        feature_names=feature_names,
         lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
-    full_clf.fit(train_full_inputs, train_labels)
+    full_clf.fit(train_inputs, train_win_labels)
 
     results: list[ExperimentResult] = []
+    window_config = {
+        "window_size": WINDOW_SIZE,
+        "window_stride": WINDOW_STRIDE,
+        "aggregation": "avg_confidence_argmax",
+    }
 
-    # --- Measure per-sample inference cost for each model ---
-    # Run each model multiple times to get stable per-sample cost estimates
-    n_test = len(test_full_inputs)
+    # --- Measure per-window inference cost for each model ---
+    n_test_windows = len(test_inputs)
     n_warmup = 3
     n_measure = 10
 
     for _ in range(n_warmup):
-        light_clf.classify(test_full_inputs)
-        full_clf.classify(test_full_inputs)
+        light_clf.classify(test_inputs)
+        full_clf.classify(test_inputs)
 
     light_times = []
     for _ in range(n_measure):
         t0 = time.perf_counter()
-        light_clf.classify(test_full_inputs)
+        light_clf.classify(test_inputs)
         light_times.append((time.perf_counter() - t0) * 1000)
-    light_cost_per_sample = float(np.median(light_times)) / n_test
+    light_cost_per_window = float(np.median(light_times)) / n_test_windows
 
     full_times = []
     for _ in range(n_measure):
         t0 = time.perf_counter()
-        full_clf.classify(test_full_inputs)
+        full_clf.classify(test_inputs)
         full_times.append((time.perf_counter() - t0) * 1000)
-    full_cost_per_sample = float(np.median(full_times)) / n_test
+    full_cost_per_window = float(np.median(full_times)) / n_test_windows
 
     logger.info(
-        "Per-sample cost: light=%.4f ms, full=%.4f ms (ratio=%.1fx)",
-        light_cost_per_sample,
-        full_cost_per_sample,
-        full_cost_per_sample / light_cost_per_sample if light_cost_per_sample > 0 else 0,
+        "Per-window cost: light=%.4f ms, full=%.4f ms (ratio=%.1fx)",
+        light_cost_per_window,
+        full_cost_per_window,
+        full_cost_per_window / light_cost_per_window if light_cost_per_window > 0 else 0,
     )
 
-    # --- Uniform pipeline (full classifier on all) ---
+    # --- Uniform pipeline (full classifier on all windows, aggregate to conversations) ---
     logger.info("Running uniform pipeline...")
-    full_results = full_clf.classify(test_full_inputs)
-    uniform_preds = [r.top_label for r in full_results]
-    uniform_f1 = _compute_macro_f1(uniform_preds, test_labels, unique_labels)
-    uniform_cost = n_test * full_cost_per_sample
-    uniform_per_sample = [1.0 if uniform_preds[i] == test_labels[i] else 0.0 for i in range(n_test)]
+    full_window_results = full_clf.classify(test_inputs)
+    uniform_conv_preds = _aggregate_windows_to_conversations(full_window_results, test_cw, unique_labels)
+    uniform_f1 = _compute_macro_f1(uniform_conv_preds, test_conv_labels, unique_labels)
+    uniform_cost = n_test_windows * full_cost_per_window
+    uniform_per_sample = [
+        1.0 if pred == true else 0.0 for pred, true in zip(uniform_conv_preds, test_conv_labels, strict=False)
+    ]
 
     results.append(
         ExperimentResult(
@@ -944,54 +1098,70 @@ def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                 "cost_ms": uniform_cost,
                 "pct_stage1": 0,
                 "pct_stage2": 100,
-                "light_cost_per_sample_ms": light_cost_per_sample,
-                "full_cost_per_sample_ms": full_cost_per_sample,
+                "light_cost_per_window_ms": light_cost_per_window,
+                "full_cost_per_window_ms": full_cost_per_window,
+                "n_test_windows": n_test_windows,
             },
-            config={"type": "uniform", "classifier": "lightgbm-100t"},
+            config={"type": "uniform", "classifier": "lightgbm-100t", **window_config},
             duration_ms=uniform_cost,
             per_query_scores=uniform_per_sample,
         )
     )
 
-    # --- Cascaded pipeline: tune threshold on val, report on test ---
+    # --- Cascaded pipeline: per-window cascade, aggregate to conversations ---
     threshold_candidates = [0.50, 0.60, 0.70, 0.80, 0.90]
 
-    def _run_cascade(inputs: list, labels: list[str], threshold: float) -> tuple[list[str], float, int]:
-        """Run cascade on given inputs, return (predictions, pct_stage1, n_stage2)."""
+    def _run_cascade_windowed(
+        inputs: list[ClassificationInput],
+        conv_windows: list[ConversationWindows],
+        threshold: float,
+    ) -> tuple[list[str], float, int]:
+        """Run cascade on windows, aggregate to conversations.
+
+        Returns: (conversation_preds, pct_stage1_windows, n_stage2_windows).
+        """
         light_results = light_clf.classify(inputs)
-        cascaded_preds = []
-        stage2_indices = []
+        # Determine which windows need Stage 2
+        window_preds_list: list[tuple[int, Any]] = []
+        stage2_indices: list[int] = []
         for idx, lr in enumerate(light_results):
             if lr.top_score >= threshold:
-                cascaded_preds.append((idx, lr.top_label))
+                window_preds_list.append((idx, lr))
             else:
                 stage2_indices.append(idx)
+
         if stage2_indices:
             stage2_inputs = [inputs[i] for i in stage2_indices]
             stage2_results = full_clf.classify(stage2_inputs)
             for i, sr in zip(stage2_indices, stage2_results, strict=True):
-                cascaded_preds.append((i, sr.top_label))
-        cascaded_preds.sort(key=lambda x: x[0])
-        final_preds = [p for _, p in cascaded_preds]
+                window_preds_list.append((i, sr))
+
+        # Sort by original index to restore order
+        window_preds_list.sort(key=lambda x: x[0])
+        ordered_window_preds = [p for _, p in window_preds_list]
+
+        # Aggregate windows to conversations
+        conv_preds = _aggregate_windows_to_conversations(ordered_window_preds, conv_windows, unique_labels)
+
         n_total = len(inputs)
         pct_s1 = (n_total - len(stage2_indices)) / n_total * 100
-        return final_preds, pct_s1, len(stage2_indices)
+        return conv_preds, pct_s1, len(stage2_indices)
 
     # Step 1: Select best threshold on validation set
-    n_val = len(val_full_inputs)
-    val_uniform_results = full_clf.classify(val_full_inputs)
-    val_uniform_preds = [r.top_label for r in val_uniform_results]
-    val_uniform_f1 = _compute_macro_f1(val_uniform_preds, val_labels, unique_labels)
-    val_uniform_cost = n_val * full_cost_per_sample
+    n_val_windows = len(val_inputs)
+    val_uniform_window_results = full_clf.classify(val_inputs)
+    val_uniform_preds = _aggregate_windows_to_conversations(val_uniform_window_results, val_cw, unique_labels)
+    val_uniform_f1 = _compute_macro_f1(val_uniform_preds, val_conv_labels, unique_labels)
+    val_uniform_cost = n_val_windows * full_cost_per_window
 
     best_val_threshold = threshold_candidates[0]
     best_val_f1 = -1.0
     val_metrics_by_threshold: dict[float, dict[str, float]] = {}
 
     for threshold in threshold_candidates:
-        val_preds, val_pct_s1, val_n_s2 = _run_cascade(val_full_inputs, val_labels, threshold)
-        val_cascade_f1 = _compute_macro_f1(val_preds, val_labels, unique_labels)
-        val_cascade_cost = n_val * light_cost_per_sample + val_n_s2 * full_cost_per_sample
+        val_preds, val_pct_s1, val_n_s2 = _run_cascade_windowed(val_inputs, val_cw, threshold)
+        val_cascade_f1 = _compute_macro_f1(val_preds, val_conv_labels, unique_labels)
+        val_cascade_cost = n_val_windows * light_cost_per_window + val_n_s2 * full_cost_per_window
         val_cost_reduction = (1 - val_cascade_cost / val_uniform_cost) * 100 if val_uniform_cost > 0 else 0
         val_f1_delta = val_uniform_f1 - val_cascade_f1
 
@@ -1009,7 +1179,6 @@ def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             val_pct_s1,
             val_cost_reduction,
         )
-        # Best threshold: maximize F1 while achieving some cost reduction
         if val_cascade_f1 > best_val_f1:
             best_val_f1 = val_cascade_f1
             best_val_threshold = threshold
@@ -1017,17 +1186,20 @@ def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     logger.info("Best threshold=%.2f selected on validation (F1=%.4f)", best_val_threshold, best_val_f1)
 
     # Step 2: Evaluate all thresholds on test set, marking val-selected best
+    n_test_convs = len(test_cw)
     for threshold in threshold_candidates:
         logger.info("Evaluating cascaded pipeline (threshold=%.2f) on test...", threshold)
 
-        final_preds, pct_stage1, n_stage2 = _run_cascade(test_full_inputs, test_labels, threshold)
+        conv_preds, pct_stage1, n_stage2 = _run_cascade_windowed(test_inputs, test_cw, threshold)
 
-        cascade_f1 = _compute_macro_f1(final_preds, test_labels, unique_labels)
-        cascade_cost = n_test * light_cost_per_sample + n_stage2 * full_cost_per_sample
+        cascade_f1 = _compute_macro_f1(conv_preds, test_conv_labels, unique_labels)
+        cascade_cost = n_test_windows * light_cost_per_window + n_stage2 * full_cost_per_window
         cost_reduction = (1 - cascade_cost / uniform_cost) * 100 if uniform_cost > 0 else 0
         f1_delta = uniform_f1 - cascade_f1
 
-        cascade_per_sample = [1.0 if final_preds[i] == test_labels[i] else 0.0 for i in range(n_test)]
+        cascade_per_sample = [
+            1.0 if pred == true else 0.0 for pred, true in zip(conv_preds, test_conv_labels, strict=False)
+        ]
 
         variant_name = f"cascade_t{threshold:.2f}"
         if threshold == best_val_threshold:
@@ -1044,12 +1216,20 @@ def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                     "pct_stage2": 100 - pct_stage1,
                     "cost_reduction_pct": cost_reduction,
                     "f1_delta": f1_delta,
-                    "light_cost_per_sample_ms": light_cost_per_sample,
-                    "full_cost_per_sample_ms": full_cost_per_sample,
+                    "light_cost_per_window_ms": light_cost_per_window,
+                    "full_cost_per_window_ms": full_cost_per_window,
+                    "n_test_windows": n_test_windows,
+                    "n_test_conversations": n_test_convs,
                     **val_metrics_by_threshold.get(threshold, {}),
                     "selected_on_val": threshold == best_val_threshold,
                 },
-                config={"type": "cascade", "threshold": threshold, "light": "logreg", "full": "lightgbm-100t"},
+                config={
+                    "type": "cascade",
+                    "threshold": threshold,
+                    "light": "logreg",
+                    "full": "lightgbm-100t",
+                    **window_config,
+                },
                 duration_ms=cascade_cost,
                 per_query_scores=cascade_per_sample,
             )
@@ -1083,20 +1263,83 @@ def _compute_macro_f1(predictions: list[str], ground_truth: list[str], labels: l
     return float(np.mean(f1_scores))
 
 
+def _aggregate_windows_to_conversations(
+    window_preds: list,  # list of ClassificationResult
+    conv_windows: list[ConversationWindows],
+    labels: list[str],
+) -> list[str]:
+    """Aggregate window-level predictions to conversation-level labels.
+
+    For each conversation, collects its window predictions and applies
+    average-confidence aggregation (avg class probs -> argmax).
+
+    Args:
+        window_preds: Flat list of ClassificationResult, one per window,
+            in the same order as _flatten_windows() output.
+        conv_windows: Original windowed data (provides conversation grouping).
+        labels: All possible labels.
+
+    Returns:
+        List of predicted labels, one per conversation (same order as conv_windows).
+    """
+    conv_preds: list[str] = []
+    offset = 0
+    for cw in conv_windows:
+        n_win = len(cw.windows)
+        window_results = window_preds[offset : offset + n_win]
+        pred_label, _ = _aggregate_window_predictions(window_results, labels)
+        conv_preds.append(pred_label)
+        offset += n_win
+    return conv_preds
+
+
+def _compute_classification_metrics(
+    predictions: list[str],
+    ground_truth: list[str],
+    labels: list[str],
+) -> dict[str, float]:
+    """Compute classification metrics at conversation level.
+
+    Returns dict with macro_f1, accuracy, and per-label F1/precision/recall.
+    """
+    metrics: dict[str, float] = {}
+
+    f1_scores = []
+    for label in labels:
+        tp = sum(1 for p, g in zip(predictions, ground_truth, strict=True) if p == label and g == label)
+        fp = sum(1 for p, g in zip(predictions, ground_truth, strict=True) if p == label and g != label)
+        fn = sum(1 for p, g in zip(predictions, ground_truth, strict=True) if p != label and g == label)
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        f1_scores.append(f1)
+        metrics[f"f1_{label}"] = f1
+        metrics[f"precision_{label}"] = precision
+        metrics[f"recall_{label}"] = recall
+
+    metrics["macro_f1"] = float(np.mean(f1_scores))
+    correct = sum(1 for p, g in zip(predictions, ground_truth, strict=True) if p == g)
+    metrics["accuracy"] = correct / len(ground_truth) if ground_truth else 0.0
+
+    return metrics
+
+
 # ---------------------------------------------------------------------------
 # H3: Rules Complement ML
 # ---------------------------------------------------------------------------
 
 
-def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
-    """Run H3 experiments: deterministic rules complement ML.
+def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
+    """Run H3 experiments: deterministic rules complement ML (with context windows).
 
-    Compares ML-only, Rules-only, and ML+Rules-override on critical classes
-    (cancelamento, reclamacao) using precision/recall/F1.
-    Uses lexical + embedding features for the ML classifier (same as H2 best config).
-    Uses talkex SentenceTransformerGenerator for embedding generation.
+    Compares ML-only, Rules-only, ML+Rules-override, and ML+Rules-feature
+    on critical classes (cancelamento, reclamacao) using precision/recall/F1.
+
+    Pipeline aligned with real TalkEx: conversations segmented into context windows
+    (window_size=5, stride=2). Features and rules evaluated per window.
+    Training at window level; evaluation aggregates back to conversation level
+    via average class probabilities (argmax).
     """
-    from talkex.classification.features import extract_lexical_features, extract_structural_features, merge_feature_sets
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.models import ClassificationInput
@@ -1106,70 +1349,87 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     from talkex.rules.models import RuleDefinition, RuleEvaluationInput
 
     logger.info("=" * 60)
-    logger.info("H3: Rules Complement ML Experiment")
+    logger.info("H3: Rules Complement ML Experiment (context windows)")
     logger.info("=" * 60)
 
-    train_labels = extract_labels(train)
-    test_labels = extract_labels(test)
-    train_texts = extract_texts(train)
-    test_texts = extract_texts(test)
-    train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
-    test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + test_labels))
+    # --- Step 1: Parse conversations into context windows ---
+    # H3 uses val only for label space construction (no hyperparameter tuning)
+    train_cw = _prepare_windowed_data(train)
+    test_cw = _prepare_windowed_data(test)
+    val_labels_for_space = extract_labels(val)
+    logger.info(
+        "Windows: train=%d (from %d convs), test=%d (from %d convs)",
+        sum(len(c.windows) for c in train_cw),
+        len(train_cw),
+        sum(len(c.windows) for c in test_cw),
+        len(test_cw),
+    )
+
+    # Flatten windows for training
+    train_win_texts, train_win_labels, _ = _flatten_windows(train_cw)
+    test_win_texts, _, _ = _flatten_windows(test_cw)
+
+    # Conversation-level labels for evaluation
+    test_conv_labels = [cw.label for cw in test_cw]
+    unique_labels = sorted(set(train_win_labels + val_labels_for_space + test_conv_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
-    # --- Generate embeddings via talkex pipeline ---
-    logger.info("Generating embeddings via talkex SentenceTransformerGenerator (%s)...", EMBEDDING_MODEL)
-    emb_gen = _make_embedding_generator()
-    train_embs = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
-    test_embs = generate_embeddings_via_talkex(test_texts, test_ids, emb_gen)
-    logger.info("Embeddings generated: %d dims (via talkex pipeline)", train_embs.shape[1])
-
-    # --- Build features (lexical + structural + embeddings) and train ML classifier ---
-    def build_inputs(
-        records: list[dict], texts: list[str], embeddings: np.ndarray
-    ) -> tuple[list[ClassificationInput], list[str]]:
-        inputs = []
-        feature_names_ref: list[str] = []
-        for i, text in enumerate(texts):
-            r = records[i]
+    # --- Step 2: Extract features per window (lexical + structural + embeddings) ---
+    def build_window_features(
+        conv_windows: list[ConversationWindows],
+        win_texts: list[str],
+        embeddings: np.ndarray,
+    ) -> tuple[list[dict[str, float]], list[str]]:
+        """Build combined feature dicts for each window."""
+        struct_feats = _extract_window_structural_features(conv_windows)
+        features_list: list[dict[str, float]] = []
+        for i, text in enumerate(win_texts):
             lex = extract_lexical_features(text)
-            struct = extract_structural_features(
-                is_customer=True,
-                is_agent=True,
-                turn_count=_estimate_turn_count(r),
-                speaker_count=2,
-            )
-            merged = merge_feature_sets(lex, struct)
-            features = dict(merged.features)
-            # Add embedding dimensions
+            combined = {**(lex.features if hasattr(lex, "features") else dict(lex)), **struct_feats[i]}
             for d in range(embeddings.shape[1]):
-                features[f"emb_{d}"] = float(embeddings[i][d])
-            if not feature_names_ref:
-                feature_names_ref.extend(features.keys())
-            inputs.append(
-                ClassificationInput(
-                    source_id=_get_record_id(r, f"rec_{i}"),
-                    source_type="conversation",
-                    text=text,
-                    features=features,
-                )
+                combined[f"emb_{d}"] = float(embeddings[i][d])
+            features_list.append(combined)
+        feat_names = list(features_list[0].keys()) if features_list else []
+        return features_list, feat_names
+
+    logger.info("Generating window embeddings via talkex (%s)...", EMBEDDING_MODEL)
+    emb_gen = _make_embedding_generator()
+    train_embs = generate_embeddings_via_talkex(
+        train_win_texts, [f"train_win_{i}" for i in range(len(train_win_texts))], emb_gen
+    )
+    test_embs = generate_embeddings_via_talkex(
+        test_win_texts, [f"test_win_{i}" for i in range(len(test_win_texts))], emb_gen
+    )
+    logger.info("Window embeddings: %d dims", train_embs.shape[1])
+
+    train_features, feature_names = build_window_features(train_cw, train_win_texts, train_embs)
+    test_features, _ = build_window_features(test_cw, test_win_texts, test_embs)
+
+    # Build ClassificationInputs
+    def make_inputs(win_texts: list[str], features: list[dict[str, float]], prefix: str) -> list[ClassificationInput]:
+        return [
+            ClassificationInput(
+                source_id=f"{prefix}_win_{i}",
+                source_type="window",
+                text=win_texts[i],
+                features=features[i],
             )
-        return inputs, feature_names_ref
+            for i in range(len(win_texts))
+        ]
 
-    train_inputs, feature_names = build_inputs(train, train_texts, train_embs)
-    test_inputs, _ = build_inputs(test, test_texts, test_embs)
+    train_inputs = make_inputs(train_win_texts, train_features, "train")
+    test_inputs = make_inputs(test_win_texts, test_features, "test")
 
-    logger.info("Training ML classifier (LightGBM, lexical+emb)...")
+    # --- Step 3: Train ML classifier (LightGBM, lexical+structural+emb) ---
+    logger.info("Training ML classifier (LightGBM, lexical+structural+emb) on %d windows...", len(train_inputs))
     ml_clf = LightGBMClassifier(
         label_space=label_space,
         feature_names=feature_names,
         lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
-    ml_clf.fit(train_inputs, train_labels)
+    ml_clf.fit(train_inputs, train_win_labels)
 
     # --- Define deterministic rules for critical classes ---
-    # Rule: cancelamento — keywords indicating cancellation intent
     cancel_rule = RuleDefinition(
         rule_id="rule_cancel",
         rule_name="cancelamento_keywords",
@@ -1188,8 +1448,6 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         ),
         tags=["critical", "cancelamento"],
     )
-
-    # Rule: reclamacao — keywords indicating complaints
     complaint_rule = RuleDefinition(
         rule_id="rule_complaint",
         rule_name="reclamacao_keywords",
@@ -1231,110 +1489,153 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     rule_config = RuleEngineConfig()
 
     results: list[ExperimentResult] = []
+    window_config = {
+        "window_size": WINDOW_SIZE,
+        "window_stride": WINDOW_STRIDE,
+        "aggregation": "avg_confidence_argmax",
+    }
 
     # --- ML-only baseline ---
-    logger.info("Evaluating ML-only...")
+    logger.info("Evaluating ML-only (window→conversation aggregation)...")
     t0 = time.perf_counter()
-    ml_results = ml_clf.classify(test_inputs)
-    ml_preds = [r.top_label for r in ml_results]
+    ml_window_preds = ml_clf.classify(test_inputs)
+    ml_conv_preds = _aggregate_windows_to_conversations(ml_window_preds, test_cw, unique_labels)
     ml_dur = (time.perf_counter() - t0) * 1000
 
-    ml_metrics = _compute_per_class_metrics(ml_preds, test_labels, unique_labels)
-    ml_metrics["macro_f1"] = _compute_macro_f1(ml_preds, test_labels, unique_labels)
-    ml_per_sample = [1.0 if ml_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
+    ml_metrics = _compute_classification_metrics(ml_conv_preds, test_conv_labels, unique_labels)
+    ml_per_sample = [1.0 if pred == true else 0.0 for pred, true in zip(ml_conv_preds, test_conv_labels, strict=False)]
     results.append(
         ExperimentResult(
             hypothesis="H3",
             variant_name="ML-only",
             metrics=ml_metrics,
-            config={"type": "ml_only", "classifier": "lightgbm"},
+            config={"type": "ml_only", "classifier": "lightgbm", **window_config},
             duration_ms=ml_dur,
             per_query_scores=ml_per_sample,
         )
     )
 
-    # --- Rules-only ---
-    logger.info("Evaluating Rules-only...")
+    # --- Rules-only (evaluate rules per window, aggregate to conversation) ---
+    logger.info("Evaluating Rules-only (per window)...")
     t0 = time.perf_counter()
-    rule_preds = []
-    for i, text in enumerate(test_texts):
-        eval_input = RuleEvaluationInput(
-            source_id=_get_record_id(test[i], f"test_{i}"),
-            source_type="conversation",
-            text=text,
-        )
-        rule_results = evaluator.evaluate(rules, eval_input, rule_config)
-        matched_rules = [rr for rr in rule_results if rr.matched]
 
-        if matched_rules:
-            # Take the first matching rule's label
-            rule_preds.append(rule_to_label.get(matched_rules[0].rule_id, "outros"))
+    def evaluate_rules_per_window(win_texts: list[str]) -> list[str]:
+        """Evaluate rules on each window, return per-window predicted label."""
+        preds = []
+        for i, text in enumerate(win_texts):
+            eval_input = RuleEvaluationInput(
+                source_id=f"win_{i}",
+                source_type="window",
+                text=text,
+            )
+            rule_results = evaluator.evaluate(rules, eval_input, rule_config)
+            matched_rules = [rr for rr in rule_results if rr.matched]
+            if matched_rules:
+                preds.append(rule_to_label.get(matched_rules[0].rule_id, "outros"))
+            else:
+                preds.append("outros")
+        return preds
+
+    test_rule_window_preds = evaluate_rules_per_window(test_win_texts)
+
+    # Aggregate rule predictions per conversation (majority vote for rules)
+    rule_conv_preds: list[str] = []
+    offset = 0
+    for cw in test_cw:
+        n_win = len(cw.windows)
+        window_preds_slice = test_rule_window_preds[offset : offset + n_win]
+        # For rules: if ANY window triggers a rule, use that label; else "outros"
+        non_outros = [p for p in window_preds_slice if p != "outros"]
+        if non_outros:
+            # Most frequent rule-triggered label across windows
+            from collections import Counter
+
+            label_counts = Counter(non_outros)
+            rule_conv_preds.append(label_counts.most_common(1)[0][0])
         else:
-            rule_preds.append("outros")  # Default when no rule matches
+            rule_conv_preds.append("outros")
+        offset += n_win
+
     rules_dur = (time.perf_counter() - t0) * 1000
 
-    rules_metrics = _compute_per_class_metrics(rule_preds, test_labels, unique_labels)
-    rules_metrics["macro_f1"] = _compute_macro_f1(rule_preds, test_labels, unique_labels)
-    rules_per_sample = [1.0 if rule_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
+    rules_metrics = _compute_classification_metrics(rule_conv_preds, test_conv_labels, unique_labels)
+    rules_per_sample = [
+        1.0 if pred == true else 0.0 for pred, true in zip(rule_conv_preds, test_conv_labels, strict=False)
+    ]
     results.append(
         ExperimentResult(
             hypothesis="H3",
             variant_name="Rules-only",
             metrics=rules_metrics,
-            config={"type": "rules_only", "rules": list(rule_to_label.keys())},
+            config={"type": "rules_only", "rules": list(rule_to_label.keys()), **window_config},
             duration_ms=rules_dur,
             per_query_scores=rules_per_sample,
         )
     )
 
-    # --- ML + Rules-override (rules override ML on critical classes when matched) ---
-    logger.info("Evaluating ML+Rules-override...")
+    # --- ML + Rules-override (per window: if rule fires, override ML prediction) ---
+    logger.info("Evaluating ML+Rules-override (per window)...")
     t0 = time.perf_counter()
-    override_preds = []
-    for i, text in enumerate(test_texts):
+
+    # Override at window level: use ML prediction unless a rule fires
+    override_window_preds: list[str] = []
+    ml_window_labels = [r.top_label for r in ml_window_preds]
+    for i, text in enumerate(test_win_texts):
         eval_input = RuleEvaluationInput(
-            source_id=_get_record_id(test[i], f"test_{i}"),
-            source_type="conversation",
+            source_id=f"test_win_{i}",
+            source_type="window",
             text=text,
         )
         rule_results = evaluator.evaluate(rules, eval_input, rule_config)
         matched_rules = [rr for rr in rule_results if rr.matched]
-
         if matched_rules:
-            # Rule fires → use rule's label (deterministic override)
-            override_preds.append(rule_to_label.get(matched_rules[0].rule_id, ml_preds[i]))
+            override_window_preds.append(rule_to_label.get(matched_rules[0].rule_id, ml_window_labels[i]))
         else:
-            # No rule fires → use ML prediction
-            override_preds.append(ml_preds[i])
+            override_window_preds.append(ml_window_labels[i])
+
+    # Aggregate overridden predictions to conversation level (majority vote)
+    override_conv_preds: list[str] = []
+    offset = 0
+    for cw in test_cw:
+        n_win = len(cw.windows)
+        window_preds_slice = override_window_preds[offset : offset + n_win]
+        from collections import Counter
+
+        label_counts = Counter(window_preds_slice)
+        override_conv_preds.append(label_counts.most_common(1)[0][0])
+        offset += n_win
+
     override_dur = (time.perf_counter() - t0) * 1000
 
-    override_metrics = _compute_per_class_metrics(override_preds, test_labels, unique_labels)
-    override_metrics["macro_f1"] = _compute_macro_f1(override_preds, test_labels, unique_labels)
-    override_per_sample = [1.0 if override_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
+    override_metrics = _compute_classification_metrics(override_conv_preds, test_conv_labels, unique_labels)
+    override_per_sample = [
+        1.0 if pred == true else 0.0 for pred, true in zip(override_conv_preds, test_conv_labels, strict=False)
+    ]
     results.append(
         ExperimentResult(
             hypothesis="H3",
             variant_name="ML+Rules-override",
             metrics=override_metrics,
-            config={"type": "ml_rules_override", "classifier": "lightgbm"},
+            config={"type": "ml_rules_override", "classifier": "lightgbm", **window_config},
             duration_ms=override_dur,
             per_query_scores=override_per_sample,
         )
     )
 
-    # --- ML + Rules-feature (rule match as additional feature) ---
+    # --- ML + Rules-feature (rule match as additional features, train new classifier) ---
     logger.info("Evaluating ML+Rules-feature...")
     t0 = time.perf_counter()
 
-    # Add rule-match features to training data
-    def add_rule_features(records: list[dict], inputs: list[ClassificationInput]) -> list[ClassificationInput]:
+    def add_rule_features_to_inputs(
+        win_texts: list[str], inputs: list[ClassificationInput]
+    ) -> list[ClassificationInput]:
+        """Add rule-match binary features to each window's feature dict."""
         augmented = []
-        for _i, inp in enumerate(inputs):
-            text = inp.text
+        for i, inp in enumerate(inputs):
             eval_input = RuleEvaluationInput(
                 source_id=inp.source_id,
-                source_type="conversation",
-                text=text,
+                source_type="window",
+                text=win_texts[i],
             )
             rule_results = evaluator.evaluate(rules, eval_input, rule_config)
             new_features = dict(inp.features)
@@ -1351,8 +1652,8 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             )
         return augmented
 
-    aug_train = add_rule_features(train, train_inputs)
-    aug_test = add_rule_features(test, test_inputs)
+    aug_train = add_rule_features_to_inputs(train_win_texts, train_inputs)
+    aug_test = add_rule_features_to_inputs(test_win_texts, test_inputs)
     aug_feature_names = list(aug_train[0].features.keys()) if aug_train else feature_names
 
     aug_clf = LightGBMClassifier(
@@ -1360,20 +1661,23 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         feature_names=aug_feature_names,
         lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
-    aug_clf.fit(aug_train, train_labels)
-    aug_results_ml = aug_clf.classify(aug_test)
-    aug_preds = [r.top_label for r in aug_results_ml]
+    aug_clf.fit(aug_train, train_win_labels)
+
+    # Evaluate on test with window→conversation aggregation
+    aug_window_preds = aug_clf.classify(aug_test)
+    aug_conv_preds = _aggregate_windows_to_conversations(aug_window_preds, test_cw, unique_labels)
     feature_dur = (time.perf_counter() - t0) * 1000
 
-    feature_metrics = _compute_per_class_metrics(aug_preds, test_labels, unique_labels)
-    feature_metrics["macro_f1"] = _compute_macro_f1(aug_preds, test_labels, unique_labels)
-    feature_per_sample = [1.0 if aug_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
+    feature_metrics = _compute_classification_metrics(aug_conv_preds, test_conv_labels, unique_labels)
+    feature_per_sample = [
+        1.0 if pred == true else 0.0 for pred, true in zip(aug_conv_preds, test_conv_labels, strict=False)
+    ]
     results.append(
         ExperimentResult(
             hypothesis="H3",
             variant_name="ML+Rules-feature",
             metrics=feature_metrics,
-            config={"type": "ml_rules_feature", "classifier": "lightgbm"},
+            config={"type": "ml_rules_feature", "classifier": "lightgbm", **window_config},
             duration_ms=feature_dur,
             per_query_scores=feature_per_sample,
         )
@@ -1411,23 +1715,24 @@ def _compute_per_class_metrics(
 # ---------------------------------------------------------------------------
 
 
-def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
-    """Run ablation studies: remove one component at a time from the full pipeline.
+def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
+    """Run ablation studies with context windows: remove one component at a time.
 
-    Baseline: LightGBM with lexical + structural + embedding + rule features
-    (best config from H2/H3).
+    Mirrors H2 pipeline: conversations are segmented into context windows
+    (window_size=5, stride=2). Features are extracted per window. Training
+    happens at window level; evaluation aggregates back to conversation level
+    via average class probabilities (argmax).
+
+    Baseline: LightGBM with lexical + structural + embedding + rule features.
 
     Ablations:
         -Embeddings: remove embedding features (lexical + structural + rules only)
         -Lexical: remove lexical features (embeddings + structural + rules only)
         -Rules: remove rule features (lexical + structural + embeddings only)
         -Structural: remove structural features (lexical + embeddings + rules only)
-        -Emb-only: embedding features only (no lexical, no structural, no rules)
+        Emb-only: embedding features only (no lexical, no structural, no rules)
+        Lexical-only: lexical + structural features only (no embeddings, no rules)
     """
-    from talkex.classification.features import (
-        extract_lexical_features,
-        extract_structural_features,
-    )
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.models import ClassificationInput
@@ -1437,61 +1742,73 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     from talkex.rules.models import RuleDefinition, RuleEvaluationInput
 
     logger.info("=" * 60)
-    logger.info("Ablation Studies")
+    logger.info("Ablation Studies (context windows)")
     logger.info("=" * 60)
 
-    train_labels = extract_labels(train)
-    test_labels = extract_labels(test)
-    train_texts = extract_texts(train)
-    test_texts = extract_texts(test)
-    train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
-    test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + test_labels))
+    # --- Step 1: Parse conversations into context windows ---
+    train_cw = _prepare_windowed_data(train)
+    val_cw = _prepare_windowed_data(val)
+    test_cw = _prepare_windowed_data(test)
+    logger.info(
+        "Windows: train=%d (from %d convs), val=%d (from %d convs), test=%d (from %d convs)",
+        sum(len(c.windows) for c in train_cw),
+        len(train_cw),
+        sum(len(c.windows) for c in val_cw),
+        len(val_cw),
+        sum(len(c.windows) for c in test_cw),
+        len(test_cw),
+    )
+
+    # Flatten windows for training
+    train_win_texts, train_win_labels, _ = _flatten_windows(train_cw)
+    val_win_texts, val_win_labels, _ = _flatten_windows(val_cw)
+    test_win_texts, _, _ = _flatten_windows(test_cw)
+
+    # Conversation-level labels for evaluation
+    test_conv_labels = [cw.label for cw in test_cw]
+    val_conv_labels = [cw.label for cw in val_cw]
+    unique_labels = sorted(set(train_win_labels + val_win_labels + test_conv_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
-    # --- Generate embeddings ---
-    logger.info("Generating embeddings via talkex pipeline...")
-    emb_gen = _make_embedding_generator()
-    train_embs = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
-    test_embs = generate_embeddings_via_talkex(test_texts, test_ids, emb_gen)
-    logger.info("Embeddings: %d dims", train_embs.shape[1])
-
-    # --- Extract feature components separately ---
-    def extract_components(
-        records: list[dict],
-        texts: list[str],
-        embeddings: np.ndarray,
-    ) -> dict[str, list[dict[str, float]]]:
-        """Extract each feature family separately."""
-        lexical_feats = []
-        structural_feats = []
-        embedding_feats = []
-
-        for i, text in enumerate(texts):
-            r = records[i]
+    # --- Step 2: Extract feature components per window ---
+    # Lexical features
+    def extract_window_lexical(win_texts: list[str]) -> list[dict[str, float]]:
+        feats = []
+        for text in win_texts:
             lex = extract_lexical_features(text)
-            struct = extract_structural_features(
-                is_customer=True,
-                is_agent=True,
-                turn_count=_estimate_turn_count(r),
-                speaker_count=2,
-            )
-            emb_dict = {f"emb_{d}": float(embeddings[i][d]) for d in range(embeddings.shape[1])}
+            feats.append(lex.features if hasattr(lex, "features") else dict(lex))
+        return feats
 
-            lexical_feats.append(lex.features if hasattr(lex, "features") else dict(lex))
-            structural_feats.append(struct.features if hasattr(struct, "features") else dict(struct))
-            embedding_feats.append(emb_dict)
+    train_lex = extract_window_lexical(train_win_texts)
+    val_lex = extract_window_lexical(val_win_texts)
+    test_lex = extract_window_lexical(test_win_texts)
 
-        return {
-            "lexical": lexical_feats,
-            "structural": structural_feats,
-            "embedding": embedding_feats,
-        }
+    # Structural features (real variance from window metadata)
+    train_struct = _extract_window_structural_features(train_cw)
+    val_struct = _extract_window_structural_features(val_cw)
+    test_struct = _extract_window_structural_features(test_cw)
 
-    train_components = extract_components(train, train_texts, train_embs)
-    test_components = extract_components(test, test_texts, test_embs)
+    # --- Step 3: Generate embeddings per window ---
+    logger.info("Generating window embeddings via talkex (%s)...", EMBEDDING_MODEL)
+    emb_gen = _make_embedding_generator()
+    train_win_ids = [f"train_win_{i}" for i in range(len(train_win_texts))]
+    val_win_ids = [f"val_win_{i}" for i in range(len(val_win_texts))]
+    test_win_ids = [f"test_win_{i}" for i in range(len(test_win_texts))]
+    train_embs = generate_embeddings_via_talkex(train_win_texts, train_win_ids, emb_gen)
+    val_embs = generate_embeddings_via_talkex(val_win_texts, val_win_ids, emb_gen)
+    test_embs = generate_embeddings_via_talkex(test_win_texts, test_win_ids, emb_gen)
+    logger.info("Window embeddings: %d dims", train_embs.shape[1])
 
-    # --- Rule features ---
+    def make_embedding_dicts(embeddings: np.ndarray) -> list[dict[str, float]]:
+        return [
+            {f"emb_{d}": float(embeddings[i][d]) for d in range(embeddings.shape[1])} for i in range(len(embeddings))
+        ]
+
+    train_emb_feats = make_embedding_dicts(train_embs)
+    val_emb_feats = make_embedding_dicts(val_embs)
+    test_emb_feats = make_embedding_dicts(test_embs)
+
+    # --- Step 4: Rule features per window ---
     cancel_rule = RuleDefinition(
         rule_id="rule_cancel",
         rule_name="cancelamento_keywords",
@@ -1548,12 +1865,12 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     evaluator = SimpleRuleEvaluator()
     rule_config = RuleEngineConfig()
 
-    def compute_rule_features(records: list[dict], texts: list[str]) -> list[dict[str, float]]:
+    def compute_window_rule_features(win_texts: list[str]) -> list[dict[str, float]]:
         rule_feats = []
-        for i, text in enumerate(texts):
+        for i, text in enumerate(win_texts):
             eval_input = RuleEvaluationInput(
-                source_id=_get_record_id(records[i], f"rec_{i}"),
-                source_type="conversation",
+                source_id=f"win_{i}",
+                source_type="window",
                 text=text,
             )
             rule_results = evaluator.evaluate(rules, eval_input, rule_config)
@@ -1564,11 +1881,12 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             rule_feats.append(feats)
         return rule_feats
 
-    logger.info("Computing rule features...")
-    train_rule_feats = compute_rule_features(train, train_texts)
-    test_rule_feats = compute_rule_features(test, test_texts)
+    logger.info("Computing rule features per window...")
+    train_rule_feats = compute_window_rule_features(train_win_texts)
+    val_rule_feats = compute_window_rule_features(val_win_texts)
+    test_rule_feats = compute_window_rule_features(test_win_texts)
 
-    # --- Define ablation configurations ---
+    # --- Step 5: Define ablation configurations ---
     # Each config: (name, which component families to include)
     ablation_configs = [
         ("full_pipeline", ["lexical", "structural", "embedding", "rules"]),
@@ -1581,26 +1899,28 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     ]
 
     def merge_components(
-        components: dict[str, list[dict[str, float]]],
-        rule_feats: list[dict[str, float]],
+        lex: list[dict[str, float]],
+        struct: list[dict[str, float]],
+        emb: list[dict[str, float]],
+        rule: list[dict[str, float]],
         include: list[str],
-        n_samples: int,
     ) -> tuple[list[dict[str, float]], list[str]]:
         merged = []
-        for i in range(n_samples):
+        for i in range(len(lex)):
             features: dict[str, float] = {}
             if "lexical" in include:
-                features.update(components["lexical"][i])
+                features.update(lex[i])
             if "structural" in include:
-                features.update(components["structural"][i])
+                features.update(struct[i])
             if "embedding" in include:
-                features.update(components["embedding"][i])
+                features.update(emb[i])
             if "rules" in include:
-                features.update(rule_feats[i])
+                features.update(rule[i])
             merged.append(features)
         names = list(merged[0].keys()) if merged else []
         return merged, names
 
+    # --- Step 6: Train and evaluate each ablation config ---
     results: list[ExperimentResult] = []
     lgbm_kwargs = {"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED}
 
@@ -1608,26 +1928,36 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         logger.info("Running ablation: %s (features: %s)...", config_name, include)
         t0 = time.perf_counter()
 
-        train_feats, feat_names = merge_components(train_components, train_rule_feats, include, len(train))
-        test_feats, _ = merge_components(test_components, test_rule_feats, include, len(test))
+        train_feats, feat_names = merge_components(train_lex, train_struct, train_emb_feats, train_rule_feats, include)
+        val_feats, _ = merge_components(val_lex, val_struct, val_emb_feats, val_rule_feats, include)
+        test_feats, _ = merge_components(test_lex, test_struct, test_emb_feats, test_rule_feats, include)
 
         train_inputs = [
             ClassificationInput(
-                source_id=_get_record_id(train[i], f"train_{i}"),
-                source_type="conversation",
-                text=train_texts[i],
+                source_id=f"train_win_{i}",
+                source_type="window",
+                text=train_win_texts[i],
                 features=train_feats[i],
             )
-            for i in range(len(train))
+            for i in range(len(train_win_texts))
+        ]
+        val_inputs = [
+            ClassificationInput(
+                source_id=f"val_win_{i}",
+                source_type="window",
+                text=val_win_texts[i],
+                features=val_feats[i],
+            )
+            for i in range(len(val_win_texts))
         ]
         test_inputs = [
             ClassificationInput(
-                source_id=_get_record_id(test[i], f"test_{i}"),
-                source_type="conversation",
-                text=test_texts[i],
+                source_id=f"test_win_{i}",
+                source_type="window",
+                text=test_win_texts[i],
                 features=test_feats[i],
             )
-            for i in range(len(test))
+            for i in range(len(test_win_texts))
         ]
 
         clf = LightGBMClassifier(
@@ -1635,26 +1965,53 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             feature_names=feat_names,
             lgbm_kwargs=lgbm_kwargs,
         )
-        clf.fit(train_inputs, train_labels)
-        clf_results = clf.classify(test_inputs)
-        preds = [r.top_label for r in clf_results]
+        clf.fit(train_inputs, train_win_labels)
+
+        # Val evaluation: aggregate windows → conversations
+        val_window_preds = clf.classify(val_inputs)
+        val_conv_preds = _aggregate_windows_to_conversations(val_window_preds, val_cw, unique_labels)
+        val_f1 = _compute_macro_f1(val_conv_preds, val_conv_labels, unique_labels)
+
+        # Test evaluation: aggregate windows → conversations
+        test_window_preds = clf.classify(test_inputs)
+        test_conv_preds = _aggregate_windows_to_conversations(test_window_preds, test_cw, unique_labels)
         dur = (time.perf_counter() - t0) * 1000
 
-        macro_f1 = _compute_macro_f1(preds, test_labels, unique_labels)
-        per_class = _compute_per_class_metrics(preds, test_labels, unique_labels)
-        metrics = {"macro_f1": macro_f1, "n_features": len(feat_names)}
-        metrics.update(per_class)
+        metrics = _compute_classification_metrics(test_conv_preds, test_conv_labels, unique_labels)
+        metrics["val_macro_f1"] = val_f1
+        metrics["n_features"] = len(feat_names)
+        metrics["n_train_windows"] = len(train_win_texts)
+        metrics["n_test_windows"] = len(test_win_texts)
+
+        # Per-conversation scores for statistical tests
+        per_sample = [
+            1.0 if pred == true else 0.0 for pred, true in zip(test_conv_preds, test_conv_labels, strict=False)
+        ]
 
         results.append(
             ExperimentResult(
                 hypothesis="ablation",
                 variant_name=config_name,
                 metrics=metrics,
-                config={"type": "ablation", "include": include, "n_features": len(feat_names)},
+                config={
+                    "type": "ablation",
+                    "include": include,
+                    "n_features": len(feat_names),
+                    "window_size": WINDOW_SIZE,
+                    "window_stride": WINDOW_STRIDE,
+                    "aggregation": "avg_confidence_argmax",
+                },
                 duration_ms=dur,
+                per_query_scores=per_sample,
             )
         )
-        logger.info("  %s: macro_f1=%.4f, n_features=%d", config_name, macro_f1, len(feat_names))
+        logger.info(
+            "  %s: macro_f1=%.4f (val=%.4f), n_features=%d",
+            config_name,
+            metrics.get("macro_f1", 0),
+            val_f1,
+            len(feat_names),
+        )
 
     # Compute deltas from full pipeline
     full_f1 = results[0].metrics["macro_f1"]
@@ -1729,11 +2086,11 @@ def main(hypothesis: str, splits_dir: str, output_dir: str, seeds: str) -> None:
             elif h == "H2":
                 results = run_h2(train, val, test)
             elif h == "H3":
-                results = run_h3(train, test)
+                results = run_h3(train, val, test)
             elif h == "H4":
                 results = run_h4(train, val, test)
             elif h == "ablation":
-                results = run_ablation(train, test)
+                results = run_ablation(train, val, test)
             else:
                 logger.warning("Hypothesis %s not yet implemented in orchestration script", h)
                 continue

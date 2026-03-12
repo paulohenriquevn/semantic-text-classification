@@ -111,10 +111,10 @@ demo/
 | Hypothesis | Best Config | Key Metric | Verdict |
 |---|---|---|---|
 | H1 — Hybrid Retrieval | Hybrid-RRF | MRR=0.826 vs BM25 0.802 | Refutada no critério primário (p=0.103) |
-| H2 — Lexical + Embeddings | lexical+emb LightGBM | Macro-F1=0.715 vs 0.309 | Confirmada (9/9 classes significant) |
-| H3 — Rules + ML | ML+Rules-feature | Macro-F1=0.714 | Confirmada (cancelamento F1=1.000) |
-| H4 — Cascaded Inference | cascade t=0.90 | Macro-F1=0.707, cost ratio 1.5× | Refutada (cost reduction < 40%) |
-| Ablation | full_pipeline | Macro-F1=0.714 | Embeddings: +35.0pp; Lexical: +1.5pp |
+| H2 — Lexical + Embeddings | lexical+emb LightGBM | Macro-F1=0.659 vs 0.334 | Confirmada (all comparisons significant) |
+| H3 — Rules + ML | ML-only best | Macro-F1=0.659 > ML+Rules 0.654 | Refutada (rules neutral-to-harmful, p=0.467) |
+| H4 — Cascaded Inference | uniform baseline | Macro-F1=0.659, cost ratio ~1.1× | Refutada (no cost reduction achieved) |
+| Ablation | -Rules (no rules) | Macro-F1=0.659 | Embeddings: +25.8pp; Lexical: +2.0pp; Rules: -0.5pp |
 
 LightGBM unified config: `n_estimators=100, num_leaves=31`.
 

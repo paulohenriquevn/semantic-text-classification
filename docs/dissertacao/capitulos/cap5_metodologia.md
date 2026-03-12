@@ -109,6 +109,18 @@ O corpus utilizado é de origem sintética e não dispõe de timestamps naturais
 
 Optou-se por partição estratificada única (70/15/15%) com semente fixa (seed=42), em vez de validação cruzada de 5 folds, por duas razões: (i) o custo computacional da geração de embeddings multiplicado por 5 folds tornaria a execução proibitiva no hardware disponível (CPU-only); e (ii) a partição estratificada com semente fixa garante reprodutibilidade exata e distribuição proporcional de classes em cada split.
 
+#### Integridade dos splits com janelas deslizantes
+
+Nos experimentos H2–H4 e na ablação, a unidade de classificação é a **janela de contexto** (5 turnos, stride 2), não a conversa completa. Essa granularidade introduz sobreposição entre janelas adjacentes de uma mesma conversa. Para evitar vazamento de informação (*data leakage*), a partição dos dados é realizada **no nível da conversa**, antes da geração de janelas. Cada conversa pertence integralmente a um único split (treino, validação ou teste); janelas são geradas somente após a partição. Dessa forma, nenhuma janela do conjunto de teste compartilha turnos com janelas do conjunto de treino, mesmo quando há sobreposição entre janelas dentro de uma mesma conversa.
+
+#### Herança de rótulos e supervisão fraca
+
+Os rótulos de intenção são atribuídos no nível da conversa. Ao gerar janelas deslizantes, cada janela **herda** o rótulo da conversa de origem. Essa estratégia constitui uma forma de **supervisão fraca** (*weak supervision*): janelas intermediárias (e.g., turnos de resolução ou esclarecimento) podem não conter evidências lexicais ou semânticas diretas da intenção anotada. Essa é uma limitação reconhecida da abordagem, compartilhada com trabalhos que operam em nível de documento e transferem rótulos para segmentos (Rayo et al., 2024). A agregação no nível da conversa (descrita a seguir) mitiga parcialmente esse efeito.
+
+#### Estratégia de agregação janela→conversa
+
+O treinamento dos classificadores opera no **nível da janela**: cada janela é um exemplo de treino com features próprias (lexicais, estruturais e embeddings). A avaliação, no entanto, opera no **nível da conversa**: as probabilidades de classe preditas para cada janela são **promediadas** (*mean class probabilities*) e a classe final é determinada por *argmax* sobre a distribuição média. Essa estratégia privilegia a contribuição uniforme de todas as janelas, evitando que uma única janela com predição extrema domine o resultado — uma escolha conservadora alinhada com a natureza ruidosa da supervisão por herança de rótulos.
+
 ---
 
 ## 5.2 Métricas de Avaliação

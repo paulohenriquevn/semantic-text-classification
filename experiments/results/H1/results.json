@@ -1,6 +1,6 @@
 {
   "hypothesis": "H1",
-  "timestamp": "2026-03-11T23:34:58",
+  "timestamp": "2026-03-12T06:11:32",
   "n_variants": 8,
   "variants": [
     {
@@ -22,7 +22,7 @@
         "type": "bm25",
         "normalization": false
       },
-      "duration_ms": 25985.739195006317,
+      "duration_ms": 36079.478971000295,
       "per_query_scores": [
         1.0,
         1.0,
@@ -383,7 +383,7 @@
         "type": "bm25",
         "normalization": true
       },
-      "duration_ms": 27735.288520008908,
+      "duration_ms": 35264.29911499963,
       "per_query_scores": [
         1.0,
         1.0,
@@ -745,7 +745,7 @@
         "model": "paraphrase-multilingual-MiniLM-L12-v2",
         "dimensions": 384
       },
-      "duration_ms": 51162.45784099738,
+      "duration_ms": 69459.51983499981,
       "per_query_scores": [
         0.5,
         1.0,
@@ -1106,7 +1106,7 @@
         "type": "hybrid",
         "fusion": "rrf"
       },
-      "duration_ms": 72744.47173999215,
+      "duration_ms": 96756.4236760004,
       "per_query_scores": [
         0.3333333333333333,
         1.0,
@@ -1470,7 +1470,7 @@
         "alpha": 0.3,
         "selected_on_val": true
       },
-      "duration_ms": 65575.66716299334,
+      "duration_ms": 69118.27704000007,
       "per_query_scores": [
         1.0,
         1.0,
@@ -1834,7 +1834,7 @@
         "alpha": 0.5,
         "selected_on_val": false
       },
-      "duration_ms": 66127.321811,
+      "duration_ms": 67967.94134099946,
       "per_query_scores": [
         0.5,
         1.0,
@@ -2198,7 +2198,7 @@
         "alpha": 0.65,
         "selected_on_val": false
       },
-      "duration_ms": 65034.80754100019,
+      "duration_ms": 65585.3331369999,
       "per_query_scores": [
         0.5,
         1.0,
@@ -2562,7 +2562,7 @@
         "alpha": 0.8,
         "selected_on_val": false
       },
-      "duration_ms": 67734.86922599841,
+      "duration_ms": 69736.98062499988,
       "per_query_scores": [
         0.5,
         1.0,

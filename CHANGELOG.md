@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- SOTA roadmap document (`docs/ROADMAP_SOTA.md`) with 6 improvement tracks, A/B testing protocol, promotion gates, and phased execution plan targeting Macro-F1 ≥ 0.850 (no-ticket)
+
+### Changed
+- Experiment pipeline now uses real TalkEx modules (TurnSegmenter, SlidingWindowBuilder, ContextWindow) — architecture evaluated ≡ architecture described (no-ticket)
+- H2 results updated: Macro-F1=0.659 (was 0.715) with context window evaluation and window→conversation aggregation (no-ticket)
+- H3 verdict changed from "Inconclusiva" to "Refutada": ML-only (0.659) ≥ ML+Rules-feature (0.654), p=0.467 (no-ticket)
+- H4 results updated: cost ratio ~1.1× (was 1.5×), all cascades cost MORE than uniform baseline with context windows (no-ticket)
+- Ablation updated: embeddings +25.8pp (was +35.0pp), lexical +2.0pp (was +1.5pp), rules −0.5pp (was +0.5pp) (no-ticket)
+- Cap 6 (Resultados): all tables, per-class analysis, verdicts, and discussion updated for context window evaluation (no-ticket)
+- Cap 7 (Conclusão): contributions, limitations (added weak supervision), future work, and final remarks updated to reflect new verdicts (no-ticket)
+- CLAUDE.md experiment results table updated with corrected numbers (no-ticket)
+
+### Fixed
+- Ruff E402: moved TalkEx imports to top-level in run_experiment.py (was after logging.basicConfig) (no-ticket)
+- Consolidated 4 duplicate inline imports of extract_lexical_features into single top-level import (no-ticket)
+- Speaker label rendering: experiments now use TalkEx's `[CUSTOMER]` (uppercase) instead of ad-hoc `[customer]` (lowercase) (no-ticket)
+
+### Added
 - Experiment orchestration script (`run_experiment.py`) for hypotheses H1-H4: hybrid retrieval, multi-level classification, rules+ML complementarity, and cascaded inference (no-ticket)
 - Experiment plotting script (`plot_results.py`) generating Recall@K curves, F1 heatmaps, critical-class comparisons, and Pareto cost-quality charts (no-ticket)
 - Index build script (`build_index.py`) for BM25 + vector index construction from conversation splits (no-ticket)
