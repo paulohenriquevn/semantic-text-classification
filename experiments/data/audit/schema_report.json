@@ -1,0 +1,7 @@
+{
+  "check": "schema_validation",
+  "status": "PASS",
+  "total_records": 2257,
+  "violations": 0,
+  "details": []
+}

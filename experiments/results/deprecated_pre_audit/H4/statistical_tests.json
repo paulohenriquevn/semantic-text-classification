@@ -1,0 +1,87 @@
+[
+  {
+    "comparison": "uniform vs cascade_t0.50",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 10.5,
+    "p_value": 5.699411623331837e-05,
+    "significant": true,
+    "effect_size": 0.9,
+    "summary": "uniform > cascade_t0.50 (mean diff=0.0533, p=0.0001, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.50",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.029585798816567976,
+    "ci_upper": 0.07988165680473369,
+    "observed_diff": 0.053254437869822535,
+    "summary": "accuracy_diff: observed diff=0.0533, 95% CI=[0.0296, 0.0799] (excludes zero (significant))"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.60",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 0.0,
+    "p_value": 0.0081509715935027,
+    "significant": true,
+    "effect_size": 1.0,
+    "summary": "uniform > cascade_t0.60 (mean diff=0.0207, p=0.0082, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.60",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.00591715976331364,
+    "ci_upper": 0.038461538461538436,
+    "observed_diff": 0.020710059171597628,
+    "summary": "accuracy_diff: observed diff=0.0207, 95% CI=[0.0059, 0.0385] (excludes zero (significant))"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.70",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 0.0,
+    "p_value": 0.0832645166635504,
+    "significant": false,
+    "effect_size": 1.0,
+    "summary": "uniform > cascade_t0.70 (mean diff=0.0089, p=0.0833, not significant at alpha=0.05)"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.70",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.0,
+    "ci_upper": 0.020710059171597628,
+    "observed_diff": 0.00887573964497046,
+    "summary": "accuracy_diff: observed diff=0.0089, 95% CI=[0.0000, 0.0207] (contains zero (not significant))"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.80",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 0.0,
+    "p_value": 0.31731050786291415,
+    "significant": false,
+    "effect_size": 1.0,
+    "summary": "uniform > cascade_t0.80 (mean diff=0.0030, p=0.3173, not significant at alpha=0.05)"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.80",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.0,
+    "ci_upper": 0.00887573964497046,
+    "observed_diff": 0.00295857988165682,
+    "summary": "accuracy_diff: observed diff=0.0030, 95% CI=[0.0000, 0.0089] (contains zero (not significant))"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.90",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 0.0,
+    "p_value": 1.0,
+    "significant": false,
+    "effect_size": 0.0,
+    "summary": "No difference between uniform and cascade_t0.90 (all pairs tied)"
+  },
+  {
+    "comparison": "uniform vs cascade_t0.90",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.0,
+    "ci_upper": 0.0,
+    "observed_diff": 0.0,
+    "summary": "accuracy_diff: observed diff=0.0000, 95% CI=[0.0000, 0.0000] (contains zero (not significant))"
+  }
+]

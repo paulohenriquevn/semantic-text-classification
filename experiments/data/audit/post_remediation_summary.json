@@ -1,0 +1,84 @@
+{
+  "remediation_date": "2026-03-12",
+  "original_total": 2257,
+  "removed_duplicates": 5,
+  "removed_out_of_scope": 100,
+  "moved_to_abstention": 30,
+  "reclassified": 1,
+  "final_supervised_total": 2122,
+  "reduction_pct": 5.98,
+  "final_intent_distribution": {
+    "reclamacao": {
+      "count": 368,
+      "pct": 17.34
+    },
+    "duvida_produto": {
+      "count": 340,
+      "pct": 16.02
+    },
+    "duvida_servico": {
+      "count": 334,
+      "pct": 15.74
+    },
+    "suporte_tecnico": {
+      "count": 310,
+      "pct": 14.61
+    },
+    "compra": {
+      "count": 238,
+      "pct": 11.22
+    },
+    "cancelamento": {
+      "count": 213,
+      "pct": 10.04
+    },
+    "saudacao": {
+      "count": 172,
+      "pct": 8.11
+    },
+    "elogio": {
+      "count": 147,
+      "pct": 6.93
+    }
+  },
+  "final_domain_distribution": {
+    "financeiro": {
+      "count": 297,
+      "pct": 14.0
+    },
+    "restaurante": {
+      "count": 276,
+      "pct": 13.01
+    },
+    "saude": {
+      "count": 276,
+      "pct": 13.01
+    },
+    "imobiliario": {
+      "count": 269,
+      "pct": 12.68
+    },
+    "telecom": {
+      "count": 265,
+      "pct": 12.49
+    },
+    "ecommerce": {
+      "count": 257,
+      "pct": 12.11
+    },
+    "tecnologia": {
+      "count": 241,
+      "pct": 11.36
+    },
+    "educacao": {
+      "count": 241,
+      "pct": 11.36
+    }
+  },
+  "final_source_distribution": {
+    "original": 847,
+    "synthetic": 1275
+  },
+  "final_n_intents": 8,
+  "abstention_calibration_records": 30
+}

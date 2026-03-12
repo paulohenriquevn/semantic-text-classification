@@ -84,7 +84,7 @@ def extract_texts(records: list[dict]) -> list[str]:
 
 def extract_labels(records: list[dict]) -> list[str]:
     """Extract intent labels from conversation records."""
-    return [r.get("topic", "outros") for r in records]
+    return [r.get("topic", "unknown") for r in records]
 
 
 def _get_record_id(record: dict, fallback: str) -> str:
@@ -140,7 +140,7 @@ def _prepare_windowed_data(
     result: list[ConversationWindows] = []
     for r in records:
         conv_id = _get_record_id(r, "unknown")
-        label = r.get("topic", "outros")
+        label = r.get("topic", "unknown")
         text = r.get("text", "")
         if not text.strip():
             continue
@@ -232,7 +232,7 @@ def _aggregate_window_predictions(
         (predicted_label, confidence_score) for the conversation.
     """
     if not window_results:
-        return labels[0] if labels else "outros", 0.0
+        return labels[0] if labels else "unknown", 0.0
 
     # Average probabilities per class across all windows
     class_probs: dict[str, float] = {label: 0.0 for label in labels}
@@ -1531,9 +1531,9 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             rule_results = evaluator.evaluate(rules, eval_input, rule_config)
             matched_rules = [rr for rr in rule_results if rr.matched]
             if matched_rules:
-                preds.append(rule_to_label.get(matched_rules[0].rule_id, "outros"))
+                preds.append(rule_to_label.get(matched_rules[0].rule_id, "__no_rule__"))
             else:
-                preds.append("outros")
+                preds.append("__no_rule__")
         return preds
 
     test_rule_window_preds = evaluate_rules_per_window(test_win_texts)
@@ -1544,8 +1544,8 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     for cw in test_cw:
         n_win = len(cw.windows)
         window_preds_slice = test_rule_window_preds[offset : offset + n_win]
-        # For rules: if ANY window triggers a rule, use that label; else "outros"
-        non_outros = [p for p in window_preds_slice if p != "outros"]
+        # For rules: if ANY window triggers a rule, use that label; else no prediction
+        non_outros = [p for p in window_preds_slice if p != "__no_rule__"]
         if non_outros:
             # Most frequent rule-triggered label across windows
             from collections import Counter
@@ -1553,7 +1553,7 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             label_counts = Counter(non_outros)
             rule_conv_preds.append(label_counts.most_common(1)[0][0])
         else:
-            rule_conv_preds.append("outros")
+            rule_conv_preds.append("__no_rule__")
         offset += n_win
 
     rules_dur = (time.perf_counter() - t0) * 1000

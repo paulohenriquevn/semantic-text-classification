@@ -8,7 +8,7 @@ TalkEx — Conversation Intelligence Engine — an NLP platform for large-scale 
 
 **Current state:** Advanced alpha. 97 source files, 100 test files, complete experiment pipeline (H1-H4 + ablation), 7 dissertation chapters drafted, demo infrastructure (FastAPI + React). Package renamed from `semantic_conversation_engine` to `talkex` (RFC-005).
 
-**Dissertation context:** TalkEx is the technical artifact of a master's dissertation. The thesis investigates whether a hybrid cascaded architecture (BM25 + semantic embeddings + deterministic rules) outperforms isolated paradigms in conversation intent classification. Dataset: 2,257 PT-BR customer service conversations, 9 intent classes.
+**Dissertation context:** TalkEx is the technical artifact of a master's dissertation. The thesis investigates whether a hybrid cascaded architecture (BM25 + semantic embeddings + deterministic rules) outperforms isolated paradigms in conversation intent classification. Dataset: 2,122 PT-BR customer service conversations (post-audit), 8 intent classes.
 
 ## Commands
 
@@ -106,15 +106,17 @@ demo/
 - **LLMs offline only** — lightweight models for online inference, LLMs only for offline labeling/discovery
 - **Every prediction carries evidence** — label, score, confidence, threshold, model version, text evidence
 
-## Experiment Results (Current)
+## Experiment Results (Post-Audit Baseline — Official)
+
+Dataset: 2,122 records, 8 intents, contamination-aware splits, 5 seeds [13,42,123,2024,999].
 
 | Hypothesis | Best Config | Key Metric | Verdict |
 |---|---|---|---|
-| H1 — Hybrid Retrieval | Hybrid-RRF | MRR=0.826 vs BM25 0.802 | Refutada no critério primário (p=0.103) |
-| H2 — Lexical + Embeddings | lexical+emb LightGBM | Macro-F1=0.659 vs 0.334 | Confirmada (all comparisons significant) |
-| H3 — Rules + ML | ML-only best | Macro-F1=0.659 > ML+Rules 0.654 | Refutada (rules neutral-to-harmful, p=0.467) |
-| H4 — Cascaded Inference | uniform baseline | Macro-F1=0.659, cost ratio ~1.1× | Refutada (no cost reduction achieved) |
-| Ablation | -Rules (no rules) | Macro-F1=0.659 | Embeddings: +25.8pp; Lexical: +2.0pp; Rules: -0.5pp |
+| H1 — Hybrid Retrieval | Hybrid-LINEAR-a0.30 | MRR=0.853 vs BM25 0.835 (p=0.017) | Confirmada |
+| H2 — Lexical + Embeddings | lexical+emb LightGBM | Macro-F1=0.722 vs 0.334 | Confirmada |
+| H3 — Rules + ML | ML+Rules-feature | Macro-F1=0.740 vs ML-only 0.722 (+1.8pp, p=0.131) | Inconclusiva (positive direction, not significant) |
+| H4 — Cascaded Inference | uniform baseline | Macro-F1=0.659, cascade increases cost | Refutada |
+| Ablation | full_pipeline | Macro-F1=0.740 | Emb: +33.0pp; Lex: +2.9pp; Rules: +1.8pp; Struct: +1.3pp |
 
 LightGBM unified config: `n_estimators=100, num_leaves=31`.
 

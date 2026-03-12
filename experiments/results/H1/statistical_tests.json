@@ -1,121 +1,121 @@
 [
   {
-    "comparison": "Hybrid-RRF vs BM25-base",
+    "comparison": "Hybrid-LINEAR-a0.30 vs BM25-base",
     "test": "Wilcoxon signed-rank",
-    "statistic": 2140.0,
-    "p_value": 0.10317838986449791,
-    "significant": false,
-    "effect_size": 0.18522748905387398,
-    "summary": "Hybrid-RRF > BM25-base (mean diff=0.0241, p=0.1032, not significant at alpha=0.05)"
-  },
-  {
-    "comparison": "Hybrid-RRF vs BM25-base",
-    "test": "Bootstrap CI",
-    "ci_lower": -0.003232617490797167,
-    "ci_upper": 0.05220101299216126,
-    "observed_diff": 0.024122248173762184,
-    "summary": "MRR_diff: observed diff=0.0241, 95% CI=[-0.0032, 0.0522] (contains zero (not significant))"
-  },
-  {
-    "comparison": "Hybrid-RRF vs BM25-norm",
-    "test": "Wilcoxon signed-rank",
-    "statistic": 2140.0,
-    "p_value": 0.10317838986449791,
-    "significant": false,
-    "effect_size": 0.18522748905387398,
-    "summary": "Hybrid-RRF > BM25-norm (mean diff=0.0241, p=0.1032, not significant at alpha=0.05)"
-  },
-  {
-    "comparison": "Hybrid-RRF vs BM25-norm",
-    "test": "Bootstrap CI",
-    "ci_lower": -0.003232617490797167,
-    "ci_upper": 0.05220101299216126,
-    "observed_diff": 0.024122248173762184,
-    "summary": "MRR_diff: observed diff=0.0241, 95% CI=[-0.0032, 0.0522] (contains zero (not significant))"
-  },
-  {
-    "comparison": "Hybrid-RRF vs ANN-MiniLM",
-    "test": "Wilcoxon signed-rank",
-    "statistic": 1945.0,
-    "p_value": 0.03180743120812617,
+    "statistic": 1418.5,
+    "p_value": 0.016538539531426068,
     "significant": true,
-    "effect_size": 0.24480683362453892,
-    "summary": "Hybrid-RRF > ANN-MiniLM (mean diff=0.0268, p=0.0318, significant at alpha=0.05)"
+    "effect_size": 0.2916354556803995,
+    "summary": "Hybrid-LINEAR-a0.30 > BM25-base (mean diff=0.0177, p=0.0165, significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs ANN-MiniLM",
+    "comparison": "Hybrid-LINEAR-a0.30 vs BM25-base",
     "test": "Bootstrap CI",
-    "ci_lower": 0.0010423471484427285,
-    "ci_upper": 0.05307268328501644,
-    "observed_diff": 0.026812992539607783,
-    "summary": "MRR_diff: observed diff=0.0268, 95% CI=[0.0010, 0.0531] (excludes zero (significant))"
+    "ci_lower": 0.0028033222564472745,
+    "ci_upper": 0.033416427300877634,
+    "observed_diff": 0.017668489232403384,
+    "summary": "MRR_diff: observed diff=0.0177, 95% CI=[0.0028, 0.0334] (excludes zero (significant))"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30 (val-selected)",
+    "comparison": "Hybrid-LINEAR-a0.30 vs BM25-norm",
     "test": "Wilcoxon signed-rank",
-    "statistic": 1420.5,
-    "p_value": 0.2570369487833061,
-    "significant": false,
-    "effect_size": 0.1445347786811202,
-    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.30 (val-selected) (mean diff=0.0132, p=0.2570, not significant at alpha=0.05)"
+    "statistic": 1418.5,
+    "p_value": 0.016538539531426068,
+    "significant": true,
+    "effect_size": 0.2916354556803995,
+    "summary": "Hybrid-LINEAR-a0.30 > BM25-norm (mean diff=0.0177, p=0.0165, significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30 (val-selected)",
+    "comparison": "Hybrid-LINEAR-a0.30 vs BM25-norm",
     "test": "Bootstrap CI",
-    "ci_lower": -0.009505973152422726,
-    "ci_upper": 0.03591904161338347,
-    "observed_diff": 0.013186406788477933,
-    "summary": "MRR_diff: observed diff=0.0132, 95% CI=[-0.0095, 0.0359] (contains zero (not significant))"
+    "ci_lower": 0.0028033222564472745,
+    "ci_upper": 0.033416427300877634,
+    "observed_diff": 0.017668489232403384,
+    "summary": "MRR_diff: observed diff=0.0177, 95% CI=[0.0028, 0.0334] (excludes zero (significant))"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.50",
+    "comparison": "Hybrid-LINEAR-a0.30 vs ANN-MiniLM",
     "test": "Wilcoxon signed-rank",
-    "statistic": 738.0,
-    "p_value": 0.9690585033549786,
-    "significant": false,
-    "effect_size": 0.0060606060606061,
-    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.50 (mean diff=0.0007, p=0.9691, not significant at alpha=0.05)"
+    "statistic": 4320.5,
+    "p_value": 0.02964536591251836,
+    "significant": true,
+    "effect_size": 0.20564441993013427,
+    "summary": "Hybrid-LINEAR-a0.30 > ANN-MiniLM (mean diff=0.0289, p=0.0296, significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.50",
+    "comparison": "Hybrid-LINEAR-a0.30 vs ANN-MiniLM",
     "test": "Bootstrap CI",
-    "ci_lower": -0.012928557231636509,
-    "ci_upper": 0.01480326066455788,
-    "observed_diff": 0.0006524104118311724,
-    "summary": "MRR_diff: observed diff=0.0007, 95% CI=[-0.0129, 0.0148] (contains zero (not significant))"
+    "ci_lower": 0.002824607597656151,
+    "ci_upper": 0.05520293628254603,
+    "observed_diff": 0.028924949136110545,
+    "summary": "MRR_diff: observed diff=0.0289, 95% CI=[0.0028, 0.0552] (excludes zero (significant))"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.65",
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-RRF",
     "test": "Wilcoxon signed-rank",
-    "statistic": 1084.0,
-    "p_value": 0.4583339931159609,
+    "statistic": 2209.0,
+    "p_value": 0.7912877084377365,
     "significant": false,
-    "effect_size": 0.10227743271221534,
-    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.65 (mean diff=0.0028, p=0.4583, not significant at alpha=0.05)"
+    "effect_size": 0.031140350877193024,
+    "summary": "Hybrid-LINEAR-a0.30 > Hybrid-RRF (mean diff=0.0015, p=0.7913, not significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.65",
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-RRF",
     "test": "Bootstrap CI",
-    "ci_lower": -0.016350031044437892,
-    "ci_upper": 0.022158266165564756,
-    "observed_diff": 0.0028427797789092324,
-    "summary": "MRR_diff: observed diff=0.0028, 95% CI=[-0.0164, 0.0222] (contains zero (not significant))"
+    "ci_lower": -0.015492277783944422,
+    "ci_upper": 0.01857187217163186,
+    "observed_diff": 0.001481172554890553,
+    "summary": "MRR_diff: observed diff=0.0015, 95% CI=[-0.0155, 0.0186] (contains zero (not significant))"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.80",
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.50 (val-selected)",
     "test": "Wilcoxon signed-rank",
-    "statistic": 1563.5,
-    "p_value": 0.13616198860575032,
+    "statistic": 1950.0,
+    "p_value": 0.36455690635182847,
     "significant": false,
-    "effect_size": 0.1831243469174504,
-    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.80 (mean diff=0.0161, p=0.1362, not significant at alpha=0.05)"
+    "effect_size": 0.10775566231983524,
+    "summary": "Hybrid-LINEAR-a0.30 > Hybrid-LINEAR-a0.50 (val-selected) (mean diff=0.0049, p=0.3646, not significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.80",
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.50 (val-selected)",
     "test": "Bootstrap CI",
-    "ci_lower": -0.007491222643968979,
-    "ci_upper": 0.040196185933689864,
-    "observed_diff": 0.016051914753643093,
-    "summary": "MRR_diff: observed diff=0.0161, 95% CI=[-0.0075, 0.0402] (contains zero (not significant))"
+    "ci_lower": -0.011002382976954082,
+    "ci_upper": 0.020436558720872616,
+    "observed_diff": 0.004908896024092169,
+    "summary": "MRR_diff: observed diff=0.0049, 95% CI=[-0.0110, 0.0204] (contains zero (not significant))"
+  },
+  {
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.65",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 2964.5,
+    "p_value": 0.46201326239477514,
+    "significant": false,
+    "effect_size": 0.0794907623039901,
+    "summary": "Hybrid-LINEAR-a0.30 > Hybrid-LINEAR-a0.65 (mean diff=0.0082, p=0.4620, not significant at alpha=0.05)"
+  },
+  {
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.65",
+    "test": "Bootstrap CI",
+    "ci_lower": -0.011561279480160348,
+    "ci_upper": 0.028375337722082117,
+    "observed_diff": 0.008213795844531524,
+    "summary": "MRR_diff: observed diff=0.0082, 95% CI=[-0.0116, 0.0284] (contains zero (not significant))"
+  },
+  {
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.80",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 3724.5,
+    "p_value": 0.33530242553196854,
+    "significant": false,
+    "effect_size": 0.0977470930232558,
+    "summary": "Hybrid-LINEAR-a0.30 > Hybrid-LINEAR-a0.80 (mean diff=0.0118, p=0.3353, not significant at alpha=0.05)"
+  },
+  {
+    "comparison": "Hybrid-LINEAR-a0.30 vs Hybrid-LINEAR-a0.80",
+    "test": "Bootstrap CI",
+    "ci_lower": -0.01109743709144862,
+    "ci_upper": 0.03458876357092433,
+    "observed_diff": 0.011835555045744073,
+    "summary": "MRR_diff: observed diff=0.0118, 95% CI=[-0.0111, 0.0346] (contains zero (not significant))"
   }
 ]

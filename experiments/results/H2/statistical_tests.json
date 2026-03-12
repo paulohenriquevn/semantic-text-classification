@@ -2,123 +2,123 @@
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LogReg",
     "test": "Wilcoxon signed-rank",
-    "statistic": 1023.0,
-    "p_value": 4.310226942992442e-33,
+    "statistic": 1506.0,
+    "p_value": 2.4024335783310277e-46,
     "significant": true,
-    "effect_size": 0.8810810810810811,
-    "summary": "lexical+emb_LightGBM > lexical_LogReg (mean diff=0.4822, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.904,
+    "summary": "lexical+emb_LightGBM > lexical_LogReg (mean diff=0.4829, p=0.0000, significant at alpha=0.05)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LogReg",
     "test": "Bootstrap CI",
-    "ci_lower": 0.4230769230769231,
-    "ci_upper": 0.544378698224852,
-    "observed_diff": 0.4822485207100592,
-    "summary": "accuracy_diff: observed diff=0.4822, 95% CI=[0.4231, 0.5444] (excludes zero (significant))"
+    "ci_lower": 0.4316239316239316,
+    "ci_upper": 0.532051282051282,
+    "observed_diff": 0.48290598290598297,
+    "summary": "accuracy_diff: observed diff=0.4829, 95% CI=[0.4316, 0.5321] (excludes zero (significant))"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM",
     "test": "Wilcoxon signed-rank",
-    "statistic": 792.0,
-    "p_value": 4.572387971178033e-24,
+    "statistic": 1989.0,
+    "p_value": 2.446637396574677e-35,
     "significant": true,
-    "effect_size": 0.8461538461538461,
-    "summary": "lexical+emb_LightGBM > lexical_LightGBM (mean diff=0.3580, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.8363636363636364,
+    "summary": "lexical+emb_LightGBM > lexical_LightGBM (mean diff=0.3932, p=0.0000, significant at alpha=0.05)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM",
     "test": "Bootstrap CI",
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
-    "observed_diff": 0.35798816568047337,
-    "summary": "accuracy_diff: observed diff=0.3580, 95% CI=[0.2988, 0.4172] (excludes zero (significant))"
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
+    "observed_diff": 0.3931623931623932,
+    "summary": "accuracy_diff: observed diff=0.3932, 95% CI=[0.3419, 0.4444] (excludes zero (significant))"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_MLP",
     "test": "Wilcoxon signed-rank",
-    "statistic": 388.0,
-    "p_value": 1.8537984462357924e-40,
+    "statistic": 1480.0,
+    "p_value": 1.0687031768303835e-57,
     "significant": true,
-    "effect_size": 0.9585492227979274,
-    "summary": "lexical+emb_LightGBM > lexical_MLP (mean diff=0.5473, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.9322033898305084,
+    "summary": "lexical+emb_LightGBM > lexical_MLP (mean diff=0.5876, p=0.0000, significant at alpha=0.05)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_MLP",
     "test": "Bootstrap CI",
-    "ci_lower": 0.49408284023668636,
-    "ci_upper": 0.6035502958579881,
-    "observed_diff": 0.5473372781065089,
-    "summary": "accuracy_diff: observed diff=0.5473, 95% CI=[0.4941, 0.6036] (excludes zero (significant))"
+    "ci_lower": 0.5384615384615384,
+    "ci_upper": 0.6346153846153846,
+    "observed_diff": 0.5876068376068376,
+    "summary": "accuracy_diff: observed diff=0.5876, 95% CI=[0.5385, 0.6346] (excludes zero (significant))"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical+emb_LogReg",
     "test": "Wilcoxon signed-rank",
-    "statistic": 297.0,
-    "p_value": 2.061002941256615e-05,
+    "statistic": 448.5,
+    "p_value": 3.519805600638141e-07,
     "significant": true,
-    "effect_size": 0.5849056603773585,
-    "summary": "lexical+emb_LightGBM > lexical+emb_LogReg (mean diff=0.0917, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.6176470588235294,
+    "summary": "lexical+emb_LightGBM > lexical+emb_LogReg (mean diff=0.0897, p=0.0000, significant at alpha=0.05)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical+emb_LogReg",
     "test": "Bootstrap CI",
-    "ci_lower": 0.050295857988165715,
-    "ci_upper": 0.13313609467455623,
-    "observed_diff": 0.09171597633136097,
-    "summary": "accuracy_diff: observed diff=0.0917, 95% CI=[0.0503, 0.1331] (excludes zero (significant))"
+    "ci_lower": 0.05769230769230771,
+    "ci_upper": 0.12393162393162394,
+    "observed_diff": 0.08974358974358976,
+    "summary": "accuracy_diff: observed diff=0.0897, 95% CI=[0.0577, 0.1239] (excludes zero (significant))"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical+emb_MLP",
     "test": "Wilcoxon signed-rank",
-    "statistic": 504.0,
-    "p_value": 0.010408346187801858,
+    "statistic": 1155.0,
+    "p_value": 4.0171881544453125e-09,
     "significant": true,
-    "effect_size": 0.34545454545454546,
-    "summary": "lexical+emb_LightGBM > lexical+emb_MLP (mean diff=0.0562, p=0.0104, significant at alpha=0.05)"
+    "effect_size": 0.5769230769230769,
+    "summary": "lexical+emb_LightGBM > lexical+emb_MLP (mean diff=0.1282, p=0.0000, significant at alpha=0.05)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical+emb_MLP",
     "test": "Bootstrap CI",
-    "ci_lower": 0.014792899408283988,
-    "ci_upper": 0.10059171597633132,
-    "observed_diff": 0.056213017751479355,
-    "summary": "accuracy_diff: observed diff=0.0562, 95% CI=[0.0148, 0.1006] (excludes zero (significant))"
+    "ci_lower": 0.08760683760683752,
+    "ci_upper": 0.16880341880341887,
+    "observed_diff": 0.1282051282051282,
+    "summary": "accuracy_diff: observed diff=0.1282, 95% CI=[0.0876, 0.1688] (excludes zero (significant))"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (cancelamento)",
     "test": "Per-class Bootstrap CI",
     "class": "cancelamento",
-    "f1_emb": 0.967741935483871,
-    "f1_lex": 0.3103448275862069,
-    "f1_diff": 0.6573971078976641,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.909090909090909,
+    "f1_lex": 0.24657534246575344,
+    "f1_diff": 0.6625155666251555,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "cancelamento: emb F1=0.968 vs lex F1=0.310 (diff=0.657, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "cancelamento: emb F1=0.909 vs lex F1=0.247 (diff=0.663, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (cancelamento_std)",
     "test": "Per-class Bootstrap CI",
     "class": "cancelamento_std",
-    "f1_emb": 0.0,
+    "f1_emb": 1.2412670766236366e-16,
     "f1_lex": 0.0,
-    "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_diff": 1.2412670766236366e-16,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "cancelamento_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "cancelamento_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (compra)",
     "test": "Per-class Bootstrap CI",
     "class": "compra",
-    "f1_emb": 0.5,
-    "f1_lex": 0.14814814814814814,
-    "f1_diff": 0.35185185185185186,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.44186046511627913,
+    "f1_lex": 0.1927710843373494,
+    "f1_diff": 0.24908938077892973,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "compra: emb F1=0.500 vs lex F1=0.148 (diff=0.352, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "compra: emb F1=0.442 vs lex F1=0.193 (diff=0.249, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (compra_std)",
@@ -127,22 +127,22 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "compra_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "compra_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_produto)",
     "test": "Per-class Bootstrap CI",
     "class": "duvida_produto",
-    "f1_emb": 0.6942148760330579,
-    "f1_lex": 0.35294117647058826,
-    "f1_diff": 0.3412736995624696,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.6774193548387097,
+    "f1_lex": 0.34594594594594597,
+    "f1_diff": 0.3314734088927638,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "duvida_produto: emb F1=0.694 vs lex F1=0.353 (diff=0.341, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "duvida_produto: emb F1=0.677 vs lex F1=0.346 (diff=0.331, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_produto_std)",
@@ -151,22 +151,22 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "duvida_produto_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "duvida_produto_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_servico)",
     "test": "Per-class Bootstrap CI",
     "class": "duvida_servico",
-    "f1_emb": 0.796116504854369,
-    "f1_lex": 0.3928571428571428,
-    "f1_diff": 0.40325936199722623,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.7500000000000001,
+    "f1_lex": 0.38216560509554137,
+    "f1_diff": 0.36783439490445874,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "duvida_servico: emb F1=0.796 vs lex F1=0.393 (diff=0.403, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "duvida_servico: emb F1=0.750 vs lex F1=0.382 (diff=0.368, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_servico_std)",
@@ -175,22 +175,22 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "duvida_servico_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "duvida_servico_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (elogio)",
     "test": "Per-class Bootstrap CI",
     "class": "elogio",
-    "f1_emb": 0.7777777777777778,
-    "f1_lex": 0.47368421052631576,
-    "f1_diff": 0.304093567251462,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.8727272727272727,
+    "f1_lex": 0.4,
+    "f1_diff": 0.47272727272727266,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "elogio: emb F1=0.778 vs lex F1=0.474 (diff=0.304, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "elogio: emb F1=0.873 vs lex F1=0.400 (diff=0.473, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (elogio_std)",
@@ -199,46 +199,22 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "elogio_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
-  },
-  {
-    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (outros)",
-    "test": "Per-class Bootstrap CI",
-    "class": "outros",
-    "f1_emb": 0.09523809523809523,
-    "f1_lex": 0.0,
-    "f1_diff": 0.09523809523809523,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
-    "significant": true,
-    "summary": "outros: emb F1=0.095 vs lex F1=0.000 (diff=0.095, 95% CI=[0.2988, 0.4172], significant)"
-  },
-  {
-    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (outros_std)",
-    "test": "Per-class Bootstrap CI",
-    "class": "outros_std",
-    "f1_emb": 0.0,
-    "f1_lex": 0.0,
-    "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
-    "significant": true,
-    "summary": "outros_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "elogio_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (reclamacao)",
     "test": "Per-class Bootstrap CI",
     "class": "reclamacao",
-    "f1_emb": 0.7222222222222222,
-    "f1_lex": 0.4122137404580153,
-    "f1_diff": 0.3100084817642069,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.7999999999999999,
+    "f1_lex": 0.4236453201970443,
+    "f1_diff": 0.3763546798029556,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "reclamacao: emb F1=0.722 vs lex F1=0.412 (diff=0.310, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "reclamacao: emb F1=0.800 vs lex F1=0.424 (diff=0.376, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (reclamacao_std)",
@@ -247,46 +223,46 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "reclamacao_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "reclamacao_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (saudacao)",
     "test": "Per-class Bootstrap CI",
     "class": "saudacao",
-    "f1_emb": 0.5405405405405405,
-    "f1_lex": 0.5,
-    "f1_diff": 0.04054054054054046,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.4782608695652174,
+    "f1_lex": 0.37735849056603776,
+    "f1_diff": 0.10090237899917964,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "saudacao: emb F1=0.541 vs lex F1=0.500 (diff=0.041, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "saudacao: emb F1=0.478 vs lex F1=0.377 (diff=0.101, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (saudacao_std)",
     "test": "Per-class Bootstrap CI",
     "class": "saudacao_std",
-    "f1_emb": 0.0,
+    "f1_emb": 6.206335383118183e-17,
     "f1_lex": 0.0,
-    "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_diff": 6.206335383118183e-17,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "saudacao_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "saudacao_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (suporte_tecnico)",
     "test": "Per-class Bootstrap CI",
     "class": "suporte_tecnico",
-    "f1_emb": 0.8333333333333333,
-    "f1_lex": 0.4123711340206186,
-    "f1_diff": 0.42096219931271467,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "f1_emb": 0.84375,
+    "f1_lex": 0.30656934306569344,
+    "f1_diff": 0.5371806569343065,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "suporte_tecnico: emb F1=0.833 vs lex F1=0.412 (diff=0.421, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "suporte_tecnico: emb F1=0.844 vs lex F1=0.307 (diff=0.537, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (suporte_tecnico_std)",
@@ -295,17 +271,17 @@
     "f1_emb": 0.0,
     "f1_lex": 0.0,
     "f1_diff": 0.0,
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
+    "ci_lower": 0.3418803418803419,
+    "ci_upper": 0.4444444444444444,
     "significant": true,
-    "summary": "suporte_tecnico_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.2988, 0.4172], significant)"
+    "summary": "suporte_tecnico_std: emb F1=0.000 vs lex F1=0.000 (diff=0.000, 95% CI=[0.3419, 0.4444], significant)"
   },
   {
     "test": "H2 Per-class Summary",
-    "n_classes": 18,
-    "n_significant": 18,
+    "n_classes": 16,
+    "n_significant": 16,
     "pct_significant": 100.0,
     "h2_criterion_met": true,
-    "summary": "H2 per-class analysis: 18/18 classes (100%) show significant improvement. Criterion (≥60%): MET"
+    "summary": "H2 per-class analysis: 16/16 classes (100%) show significant improvement. Criterion (≥60%): MET"
   }
 ]

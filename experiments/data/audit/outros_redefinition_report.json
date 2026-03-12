@@ -1,0 +1,1309 @@
+{
+  "check": "outros_analysis",
+  "total_outros": 131,
+  "non_outros_intents": [
+    "cancelamento",
+    "compra",
+    "duvida_produto",
+    "duvida_servico",
+    "elogio",
+    "reclamacao",
+    "saudacao",
+    "suporte_tecnico"
+  ],
+  "categorization_k5": [
+    {
+      "cluster_id": 0,
+      "size": 35,
+      "nearest_intent": "compra",
+      "nearest_intent_similarity": 0.911,
+      "outros_centroid_similarity": 0.8624,
+      "all_intent_similarities": {
+        "cancelamento": 0.6116,
+        "compra": 0.911,
+        "duvida_produto": 0.878,
+        "duvida_servico": 0.817,
+        "elogio": 0.7512,
+        "reclamacao": 0.6307,
+        "saudacao": 0.855,
+        "suporte_tecnico": 0.605
+      },
+      "category": "A_mislabeled",
+      "action": "Reclassify to compra"
+    },
+    {
+      "cluster_id": 1,
+      "size": 10,
+      "nearest_intent": "saudacao",
+      "nearest_intent_similarity": 0.7247,
+      "outros_centroid_similarity": 0.6921,
+      "all_intent_similarities": {
+        "cancelamento": 0.49,
+        "compra": 0.7207,
+        "duvida_produto": 0.6435,
+        "duvida_servico": 0.6354,
+        "elogio": 0.6471,
+        "reclamacao": 0.5633,
+        "saudacao": 0.7247,
+        "suporte_tecnico": 0.4396
+      },
+      "category": "C_out_of_scope",
+      "action": "Remove from supervised training"
+    },
+    {
+      "cluster_id": 2,
+      "size": 24,
+      "nearest_intent": "saudacao",
+      "nearest_intent_similarity": 0.7654,
+      "outros_centroid_similarity": 0.7946,
+      "all_intent_similarities": {
+        "cancelamento": 0.6601,
+        "compra": 0.6597,
+        "duvida_produto": 0.5701,
+        "duvida_servico": 0.6964,
+        "elogio": 0.6134,
+        "reclamacao": 0.659,
+        "saudacao": 0.7654,
+        "suporte_tecnico": 0.5302
+      },
+      "category": "B_ambiguous",
+      "action": "Keep for abstention calibration"
+    },
+    {
+      "cluster_id": 3,
+      "size": 48,
+      "nearest_intent": "reclamacao",
+      "nearest_intent_similarity": 0.944,
+      "outros_centroid_similarity": 0.9249,
+      "all_intent_similarities": {
+        "cancelamento": 0.795,
+        "compra": 0.7777,
+        "duvida_produto": 0.6927,
+        "duvida_servico": 0.7416,
+        "elogio": 0.8183,
+        "reclamacao": 0.944,
+        "saudacao": 0.8855,
+        "suporte_tecnico": 0.8636
+      },
+      "category": "A_mislabeled",
+      "action": "Reclassify to reclamacao"
+    },
+    {
+      "cluster_id": 4,
+      "size": 14,
+      "nearest_intent": "saudacao",
+      "nearest_intent_similarity": 0.6649,
+      "outros_centroid_similarity": 0.696,
+      "all_intent_similarities": {
+        "cancelamento": 0.5,
+        "compra": 0.6023,
+        "duvida_produto": 0.5166,
+        "duvida_servico": 0.6091,
+        "elogio": 0.5975,
+        "reclamacao": 0.5194,
+        "saudacao": 0.6649,
+        "suporte_tecnico": 0.5665
+      },
+      "category": "C_out_of_scope",
+      "action": "Remove from supervised training"
+    }
+  ],
+  "per_record_categorization": [
+    {
+      "conversation_id": "conv_00206",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7694,
+      "outros_centroid_similarity": 0.6921,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00851",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.5999,
+      "outros_centroid_similarity": 0.5138,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00200",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5973,
+      "outros_centroid_similarity": 0.5104,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02472",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7737,
+      "outros_centroid_similarity": 0.6471,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02488",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6809,
+      "outros_centroid_similarity": 0.7229,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02467",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6504,
+      "outros_centroid_similarity": 0.6835,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00422",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7629,
+      "outros_centroid_similarity": 0.6669,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00529",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7593,
+      "outros_centroid_similarity": 0.713,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00420",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8109,
+      "outros_centroid_similarity": 0.8066,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02475",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6937,
+      "outros_centroid_similarity": 0.7189,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00741",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6853,
+      "outros_centroid_similarity": 0.6534,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00312",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7842,
+      "outros_centroid_similarity": 0.6609,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_03499",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.674,
+      "outros_centroid_similarity": 0.7025,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02487",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.777,
+      "outros_centroid_similarity": 0.7847,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00415",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.8273,
+      "outros_centroid_similarity": 0.7814,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00421",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7274,
+      "outros_centroid_similarity": 0.664,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02493",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6885,
+      "outros_centroid_similarity": 0.654,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00522",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.7321,
+      "outros_centroid_similarity": 0.6306,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02460",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.58,
+      "outros_centroid_similarity": 0.6179,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02485",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7147,
+      "outros_centroid_similarity": 0.7094,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00845",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.747,
+      "outros_centroid_similarity": 0.6009,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00523",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.4467,
+      "outros_centroid_similarity": 0.404,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00634",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.4844,
+      "outros_centroid_similarity": 0.5078,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00635",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7155,
+      "outros_centroid_similarity": 0.5687,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00737",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.667,
+      "outros_centroid_similarity": 0.6629,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00309",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7989,
+      "outros_centroid_similarity": 0.6964,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00304",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.5,
+      "outros_centroid_similarity": 0.5068,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00078",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.6927,
+      "outros_centroid_similarity": 0.538,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00313",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7961,
+      "outros_centroid_similarity": 0.7547,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00854",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7249,
+      "outros_centroid_similarity": 0.6834,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_03455",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.674,
+      "outros_centroid_similarity": 0.6305,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00305",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.6686,
+      "outros_centroid_similarity": 0.5721,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00853",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5335,
+      "outros_centroid_similarity": 0.4543,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00201",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6086,
+      "outros_centroid_similarity": 0.6385,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00303",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.6664,
+      "outros_centroid_similarity": 0.541,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00198",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.3586,
+      "outros_centroid_similarity": 0.4155,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00740",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6818,
+      "outros_centroid_similarity": 0.6291,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02458",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7502,
+      "outros_centroid_similarity": 0.6773,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02482",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5491,
+      "outros_centroid_similarity": 0.5959,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00746",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.783,
+      "outros_centroid_similarity": 0.7078,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02483",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.669,
+      "outros_centroid_similarity": 0.6911,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00528",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7561,
+      "outros_centroid_similarity": 0.7183,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00745",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7163,
+      "outros_centroid_similarity": 0.6395,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_03429",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7386,
+      "outros_centroid_similarity": 0.634,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02490",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7235,
+      "outros_centroid_similarity": 0.728,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02491",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6635,
+      "outros_centroid_similarity": 0.6747,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00079",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.77,
+      "outros_centroid_similarity": 0.7093,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02455",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.4371,
+      "outros_centroid_similarity": 0.3717,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00631",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.4833,
+      "outros_centroid_similarity": 0.4805,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00414",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.8203,
+      "outros_centroid_similarity": 0.7806,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00630",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6393,
+      "outros_centroid_similarity": 0.6296,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02481",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5051,
+      "outros_centroid_similarity": 0.5374,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00742",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.6208,
+      "outros_centroid_similarity": 0.6027,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00524",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.6149,
+      "outros_centroid_similarity": 0.5478,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02457",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.668,
+      "outros_centroid_similarity": 0.6972,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00307",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.5351,
+      "outros_centroid_similarity": 0.4167,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00024",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.6314,
+      "outros_centroid_similarity": 0.6162,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00306",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.6365,
+      "outros_centroid_similarity": 0.6167,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02465",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5303,
+      "outros_centroid_similarity": 0.557,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00413",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.6937,
+      "outros_centroid_similarity": 0.6624,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00530",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.733,
+      "outros_centroid_similarity": 0.694,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00846",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.8215,
+      "outros_centroid_similarity": 0.655,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02474",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6514,
+      "outros_centroid_similarity": 0.6779,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00053",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8229,
+      "outros_centroid_similarity": 0.6768,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00080",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.8335,
+      "outros_centroid_similarity": 0.6585,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00418",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7938,
+      "outros_centroid_similarity": 0.8217,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00848",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6615,
+      "outros_centroid_similarity": 0.584,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00637",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.6991,
+      "outros_centroid_similarity": 0.614,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00025",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.429,
+      "outros_centroid_similarity": 0.3793,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00207",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7864,
+      "outros_centroid_similarity": 0.7392,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00633",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.4942,
+      "outros_centroid_similarity": 0.4784,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00310",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5431,
+      "outros_centroid_similarity": 0.5503,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02492",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.6065,
+      "outros_centroid_similarity": 0.6087,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02478",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7053,
+      "outros_centroid_similarity": 0.7288,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02494",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.6713,
+      "outros_centroid_similarity": 0.6469,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00419",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7204,
+      "outros_centroid_similarity": 0.7119,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00843",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5631,
+      "outros_centroid_similarity": 0.5605,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02484",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6107,
+      "outros_centroid_similarity": 0.638,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02486",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5394,
+      "outros_centroid_similarity": 0.5519,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02473",
+      "nearest_intent": "cancelamento",
+      "nearest_similarity": 0.5821,
+      "outros_centroid_similarity": 0.6037,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00527",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7856,
+      "outros_centroid_similarity": 0.7418,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02497",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7116,
+      "outros_centroid_similarity": 0.7276,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02500",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7687,
+      "outros_centroid_similarity": 0.7691,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00412",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.7077,
+      "outros_centroid_similarity": 0.5023,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02495",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5423,
+      "outros_centroid_similarity": 0.5438,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00736",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.7043,
+      "outros_centroid_similarity": 0.695,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00847",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.617,
+      "outros_centroid_similarity": 0.5277,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00629",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.4699,
+      "outros_centroid_similarity": 0.4559,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00627",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5252,
+      "outros_centroid_similarity": 0.5268,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02477",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.667,
+      "outros_centroid_similarity": 0.7103,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00526",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.5327,
+      "outros_centroid_similarity": 0.4842,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02464",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5867,
+      "outros_centroid_similarity": 0.6078,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00519",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.5828,
+      "outros_centroid_similarity": 0.5984,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00311",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.7068,
+      "outros_centroid_similarity": 0.685,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00521",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6039,
+      "outros_centroid_similarity": 0.6285,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00204",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8582,
+      "outros_centroid_similarity": 0.75,
+      "category": "A_mislabeled"
+    },
+    {
+      "conversation_id": "conv_00197",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.7836,
+      "outros_centroid_similarity": 0.7776,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_synth_02468",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6608,
+      "outros_centroid_similarity": 0.6861,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00411",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8098,
+      "outros_centroid_similarity": 0.8211,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00743",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7059,
+      "outros_centroid_similarity": 0.7169,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02476",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.4194,
+      "outros_centroid_similarity": 0.3869,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02462",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.6366,
+      "outros_centroid_similarity": 0.6143,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00026",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.79,
+      "outros_centroid_similarity": 0.738,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00417",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.693,
+      "outros_centroid_similarity": 0.619,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00202",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.6,
+      "outros_centroid_similarity": 0.4695,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00416",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6786,
+      "outros_centroid_similarity": 0.6289,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00520",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.5621,
+      "outros_centroid_similarity": 0.5707,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00051",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.8174,
+      "outros_centroid_similarity": 0.8194,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00196",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6403,
+      "outros_centroid_similarity": 0.6505,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00844",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5874,
+      "outros_centroid_similarity": 0.5309,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00636",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.5503,
+      "outros_centroid_similarity": 0.5615,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00735",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.6538,
+      "outros_centroid_similarity": 0.6498,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00852",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7702,
+      "outros_centroid_similarity": 0.6979,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00638",
+      "nearest_intent": "suporte_tecnico",
+      "nearest_similarity": 0.6994,
+      "outros_centroid_similarity": 0.677,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00738",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.7299,
+      "outros_centroid_similarity": 0.7214,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00052",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7014,
+      "outros_centroid_similarity": 0.7252,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00632",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5266,
+      "outros_centroid_similarity": 0.5403,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00308",
+      "nearest_intent": "duvida_produto",
+      "nearest_similarity": 0.5867,
+      "outros_centroid_similarity": 0.5643,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_03497",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.548,
+      "outros_centroid_similarity": 0.5473,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00203",
+      "nearest_intent": "elogio",
+      "nearest_similarity": 0.2344,
+      "outros_centroid_similarity": 0.3059,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00199",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5623,
+      "outros_centroid_similarity": 0.5566,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00205",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.7978,
+      "outros_centroid_similarity": 0.7332,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00525",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6033,
+      "outros_centroid_similarity": 0.6114,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00628",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.6025,
+      "outros_centroid_similarity": 0.6276,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00314",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8081,
+      "outros_centroid_similarity": 0.7279,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00849",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5287,
+      "outros_centroid_similarity": 0.4413,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00744",
+      "nearest_intent": "reclamacao",
+      "nearest_similarity": 0.8123,
+      "outros_centroid_similarity": 0.7495,
+      "category": "B_ambiguous"
+    },
+    {
+      "conversation_id": "conv_00850",
+      "nearest_intent": "duvida_servico",
+      "nearest_similarity": 0.6318,
+      "outros_centroid_similarity": 0.5687,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_02479",
+      "nearest_intent": "compra",
+      "nearest_similarity": 0.5872,
+      "outros_centroid_similarity": 0.5259,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_synth_03430",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.5712,
+      "outros_centroid_similarity": 0.6067,
+      "category": "C_out_of_scope"
+    },
+    {
+      "conversation_id": "conv_00739",
+      "nearest_intent": "saudacao",
+      "nearest_similarity": 0.7384,
+      "outros_centroid_similarity": 0.7394,
+      "category": "C_out_of_scope"
+    }
+  ],
+  "category_summary": {
+    "B_ambiguous": 30,
+    "C_out_of_scope": 100,
+    "A_mislabeled": 1
+  },
+  "clustering_results": {
+    "3": {
+      "inertia": 64.9478,
+      "clusters": [
+        {
+          "cluster_id": 0,
+          "size": 53,
+          "nearest_intent": "reclamacao",
+          "nearest_intent_similarity": 0.9461,
+          "outros_centroid_similarity": 0.9261,
+          "all_intent_similarities": {
+            "cancelamento": 0.7979,
+            "compra": 0.7773,
+            "duvida_produto": 0.6916,
+            "duvida_servico": 0.7421,
+            "elogio": 0.8263,
+            "reclamacao": 0.9461,
+            "saudacao": 0.8856,
+            "suporte_tecnico": 0.8703
+          }
+        },
+        {
+          "cluster_id": 1,
+          "size": 26,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7721,
+          "outros_centroid_similarity": 0.8028,
+          "all_intent_similarities": {
+            "cancelamento": 0.664,
+            "compra": 0.6668,
+            "duvida_produto": 0.5738,
+            "duvida_servico": 0.7005,
+            "elogio": 0.6219,
+            "reclamacao": 0.6595,
+            "saudacao": 0.7721,
+            "suporte_tecnico": 0.5337
+          }
+        },
+        {
+          "cluster_id": 2,
+          "size": 52,
+          "nearest_intent": "compra",
+          "nearest_intent_similarity": 0.9276,
+          "outros_centroid_similarity": 0.8962,
+          "all_intent_similarities": {
+            "cancelamento": 0.6195,
+            "compra": 0.9276,
+            "duvida_produto": 0.8708,
+            "duvida_servico": 0.8452,
+            "elogio": 0.7812,
+            "reclamacao": 0.6462,
+            "saudacao": 0.8951,
+            "suporte_tecnico": 0.6202
+          }
+        }
+      ]
+    },
+    "5": {
+      "inertia": 57.184,
+      "clusters": [
+        {
+          "cluster_id": 0,
+          "size": 35,
+          "nearest_intent": "compra",
+          "nearest_intent_similarity": 0.911,
+          "outros_centroid_similarity": 0.8624,
+          "all_intent_similarities": {
+            "cancelamento": 0.6116,
+            "compra": 0.911,
+            "duvida_produto": 0.878,
+            "duvida_servico": 0.817,
+            "elogio": 0.7512,
+            "reclamacao": 0.6307,
+            "saudacao": 0.855,
+            "suporte_tecnico": 0.605
+          }
+        },
+        {
+          "cluster_id": 1,
+          "size": 10,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7247,
+          "outros_centroid_similarity": 0.6921,
+          "all_intent_similarities": {
+            "cancelamento": 0.49,
+            "compra": 0.7207,
+            "duvida_produto": 0.6435,
+            "duvida_servico": 0.6354,
+            "elogio": 0.6471,
+            "reclamacao": 0.5633,
+            "saudacao": 0.7247,
+            "suporte_tecnico": 0.4396
+          }
+        },
+        {
+          "cluster_id": 2,
+          "size": 24,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7654,
+          "outros_centroid_similarity": 0.7946,
+          "all_intent_similarities": {
+            "cancelamento": 0.6601,
+            "compra": 0.6597,
+            "duvida_produto": 0.5701,
+            "duvida_servico": 0.6964,
+            "elogio": 0.6134,
+            "reclamacao": 0.659,
+            "saudacao": 0.7654,
+            "suporte_tecnico": 0.5302
+          }
+        },
+        {
+          "cluster_id": 3,
+          "size": 48,
+          "nearest_intent": "reclamacao",
+          "nearest_intent_similarity": 0.944,
+          "outros_centroid_similarity": 0.9249,
+          "all_intent_similarities": {
+            "cancelamento": 0.795,
+            "compra": 0.7777,
+            "duvida_produto": 0.6927,
+            "duvida_servico": 0.7416,
+            "elogio": 0.8183,
+            "reclamacao": 0.944,
+            "saudacao": 0.8855,
+            "suporte_tecnico": 0.8636
+          }
+        },
+        {
+          "cluster_id": 4,
+          "size": 14,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.6649,
+          "outros_centroid_similarity": 0.696,
+          "all_intent_similarities": {
+            "cancelamento": 0.5,
+            "compra": 0.6023,
+            "duvida_produto": 0.5166,
+            "duvida_servico": 0.6091,
+            "elogio": 0.5975,
+            "reclamacao": 0.5194,
+            "saudacao": 0.6649,
+            "suporte_tecnico": 0.5665
+          }
+        }
+      ]
+    },
+    "7": {
+      "inertia": 52.3759,
+      "clusters": [
+        {
+          "cluster_id": 0,
+          "size": 30,
+          "nearest_intent": "compra",
+          "nearest_intent_similarity": 0.8994,
+          "outros_centroid_similarity": 0.8514,
+          "all_intent_similarities": {
+            "cancelamento": 0.6108,
+            "compra": 0.8994,
+            "duvida_produto": 0.8623,
+            "duvida_servico": 0.8053,
+            "elogio": 0.7388,
+            "reclamacao": 0.6232,
+            "saudacao": 0.8436,
+            "suporte_tecnico": 0.609
+          }
+        },
+        {
+          "cluster_id": 1,
+          "size": 24,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7654,
+          "outros_centroid_similarity": 0.7946,
+          "all_intent_similarities": {
+            "cancelamento": 0.6601,
+            "compra": 0.6597,
+            "duvida_produto": 0.5701,
+            "duvida_servico": 0.6964,
+            "elogio": 0.6134,
+            "reclamacao": 0.659,
+            "saudacao": 0.7654,
+            "suporte_tecnico": 0.5302
+          }
+        },
+        {
+          "cluster_id": 2,
+          "size": 12,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7463,
+          "outros_centroid_similarity": 0.7705,
+          "all_intent_similarities": {
+            "cancelamento": 0.5614,
+            "compra": 0.6534,
+            "duvida_produto": 0.5809,
+            "duvida_servico": 0.6141,
+            "elogio": 0.7343,
+            "reclamacao": 0.69,
+            "saudacao": 0.7463,
+            "suporte_tecnico": 0.5976
+          }
+        },
+        {
+          "cluster_id": 3,
+          "size": 21,
+          "nearest_intent": "reclamacao",
+          "nearest_intent_similarity": 0.9188,
+          "outros_centroid_similarity": 0.8729,
+          "all_intent_similarities": {
+            "cancelamento": 0.7738,
+            "compra": 0.724,
+            "duvida_produto": 0.6493,
+            "duvida_servico": 0.6816,
+            "elogio": 0.7571,
+            "reclamacao": 0.9188,
+            "saudacao": 0.8246,
+            "suporte_tecnico": 0.8195
+          }
+        },
+        {
+          "cluster_id": 4,
+          "size": 12,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.7429,
+          "outros_centroid_similarity": 0.7132,
+          "all_intent_similarities": {
+            "cancelamento": 0.5137,
+            "compra": 0.7336,
+            "duvida_produto": 0.6594,
+            "duvida_servico": 0.6523,
+            "elogio": 0.667,
+            "reclamacao": 0.5928,
+            "saudacao": 0.7429,
+            "suporte_tecnico": 0.4713
+          }
+        },
+        {
+          "cluster_id": 5,
+          "size": 21,
+          "nearest_intent": "reclamacao",
+          "nearest_intent_similarity": 0.8868,
+          "outros_centroid_similarity": 0.88,
+          "all_intent_similarities": {
+            "cancelamento": 0.7644,
+            "compra": 0.7642,
+            "duvida_produto": 0.6895,
+            "duvida_servico": 0.7469,
+            "elogio": 0.7584,
+            "reclamacao": 0.8868,
+            "saudacao": 0.8452,
+            "suporte_tecnico": 0.8727
+          }
+        },
+        {
+          "cluster_id": 6,
+          "size": 11,
+          "nearest_intent": "saudacao",
+          "nearest_intent_similarity": 0.6377,
+          "outros_centroid_similarity": 0.6589,
+          "all_intent_similarities": {
+            "cancelamento": 0.4489,
+            "compra": 0.5856,
+            "duvida_produto": 0.5011,
+            "duvida_servico": 0.5847,
+            "elogio": 0.5639,
+            "reclamacao": 0.4438,
+            "saudacao": 0.6377,
+            "suporte_tecnico": 0.4714
+          }
+        }
+      ]
+    }
+  },
+  "status": "COMPLETE",
+  "human_review_sample_size": 50
+}

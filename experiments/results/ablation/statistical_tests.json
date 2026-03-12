@@ -1,104 +1,104 @@
 [
   {
-    "comparison": "-Rules vs full_pipeline",
+    "comparison": "full_pipeline vs -Embeddings",
     "test": "Wilcoxon signed-rank",
-    "statistic": 63.0,
-    "p_value": 0.46685427082272546,
-    "significant": false,
-    "effect_size": 0.17647058823529416,
-    "summary": "-Rules > full_pipeline (mean diff=0.0089, p=0.4669, not significant at alpha=0.05)"
-  },
-  {
-    "comparison": "-Rules vs full_pipeline",
-    "test": "Bootstrap CI",
-    "ci_lower": -0.014792899408283988,
-    "ci_upper": 0.03254437869822491,
-    "observed_diff": 0.00887573964497046,
-    "summary": "MRR_diff: observed diff=0.0089, 95% CI=[-0.0148, 0.0325] (contains zero (not significant))"
-  },
-  {
-    "comparison": "-Rules vs -Embeddings",
-    "test": "Wilcoxon signed-rank",
-    "statistic": 750.0,
-    "p_value": 2.701151400697232e-19,
+    "statistic": 1791.0,
+    "p_value": 1.1367394533495746e-30,
     "significant": true,
-    "effect_size": 0.8064516129032258,
-    "summary": "-Rules > -Embeddings (mean diff=0.2959, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.8181818181818181,
+    "summary": "full_pipeline > -Embeddings (mean diff=0.3462, p=0.0000, significant at alpha=0.05)"
   },
   {
-    "comparison": "-Rules vs -Embeddings",
+    "comparison": "full_pipeline vs -Embeddings",
     "test": "Bootstrap CI",
-    "ci_lower": 0.23964497041420119,
-    "ci_upper": 0.3550295857988165,
-    "observed_diff": 0.2958579881656805,
-    "summary": "MRR_diff: observed diff=0.2959, 95% CI=[0.2396, 0.3550] (excludes zero (significant))"
+    "ci_lower": 0.29700854700854695,
+    "ci_upper": 0.39529914529914534,
+    "observed_diff": 0.34615384615384615,
+    "summary": "MRR_diff: observed diff=0.3462, 95% CI=[0.2970, 0.3953] (excludes zero (significant))"
   },
   {
-    "comparison": "-Rules vs -Lexical",
+    "comparison": "full_pipeline vs -Lexical",
     "test": "Wilcoxon signed-rank",
-    "statistic": 32.0,
-    "p_value": 0.07070114486598297,
+    "statistic": 150.0,
+    "p_value": 0.0946707198455088,
     "significant": false,
-    "effect_size": 0.4666666666666667,
-    "summary": "-Rules > -Lexical (mean diff=0.0207, p=0.0707, not significant at alpha=0.05)"
+    "effect_size": 0.31034482758620685,
+    "summary": "full_pipeline > -Lexical (mean diff=0.0192, p=0.0947, not significant at alpha=0.05)"
   },
   {
-    "comparison": "-Rules vs -Lexical",
+    "comparison": "full_pipeline vs -Lexical",
     "test": "Bootstrap CI",
-    "ci_lower": 0.0,
-    "ci_upper": 0.044378698224852076,
-    "observed_diff": 0.020710059171597628,
-    "summary": "MRR_diff: observed diff=0.0207, 95% CI=[0.0000, 0.0444] (contains zero (not significant))"
+    "ci_lower": -0.00213675213675224,
+    "ci_upper": 0.042735042735042694,
+    "observed_diff": 0.019230769230769162,
+    "summary": "MRR_diff: observed diff=0.0192, 95% CI=[-0.0021, 0.0427] (contains zero (not significant))"
   },
   {
-    "comparison": "-Rules vs -Structural",
+    "comparison": "full_pipeline vs -Rules",
     "test": "Wilcoxon signed-rank",
-    "statistic": 45.0,
-    "p_value": 0.0895550744136426,
+    "statistic": 145.0,
+    "p_value": 0.1305700181157362,
     "significant": false,
-    "effect_size": 0.4117647058823529,
-    "summary": "-Rules > -Structural (mean diff=0.0207, p=0.0896, not significant at alpha=0.05)"
+    "effect_size": 0.2857142857142857,
+    "summary": "full_pipeline > -Rules (mean diff=0.0171, p=0.1306, not significant at alpha=0.05)"
   },
   {
-    "comparison": "-Rules vs -Structural",
+    "comparison": "full_pipeline vs -Rules",
     "test": "Bootstrap CI",
-    "ci_lower": -0.00295857988165682,
-    "ci_upper": 0.044378698224852076,
-    "observed_diff": 0.020710059171597628,
-    "summary": "MRR_diff: observed diff=0.0207, 95% CI=[-0.0030, 0.0444] (contains zero (not significant))"
+    "ci_lower": -0.004326923076922696,
+    "ci_upper": 0.03846153846153855,
+    "observed_diff": 0.017094017094017033,
+    "summary": "MRR_diff: observed diff=0.0171, 95% CI=[-0.0043, 0.0385] (contains zero (not significant))"
   },
   {
-    "comparison": "-Rules vs Emb-only",
+    "comparison": "full_pipeline vs -Structural",
     "test": "Wilcoxon signed-rank",
-    "statistic": 125.0,
-    "p_value": 0.4142161782425252,
+    "statistic": 60.0,
+    "p_value": 0.10829365589900902,
     "significant": false,
-    "effect_size": 0.16666666666666663,
-    "summary": "-Rules > Emb-only (mean diff=0.0118, p=0.4142, not significant at alpha=0.05)"
+    "effect_size": 0.368421052631579,
+    "summary": "full_pipeline > -Structural (mean diff=0.0150, p=0.1083, not significant at alpha=0.05)"
   },
   {
-    "comparison": "-Rules vs Emb-only",
+    "comparison": "full_pipeline vs -Structural",
     "test": "Bootstrap CI",
-    "ci_lower": -0.017751479289940808,
-    "ci_upper": 0.041420118343195256,
-    "observed_diff": 0.01183431952662728,
-    "summary": "MRR_diff: observed diff=0.0118, 95% CI=[-0.0178, 0.0414] (contains zero (not significant))"
+    "ci_lower": -0.002136752136752129,
+    "ci_upper": 0.03205128205128205,
+    "observed_diff": 0.014957264957264904,
+    "summary": "MRR_diff: observed diff=0.0150, 95% CI=[-0.0021, 0.0321] (contains zero (not significant))"
   },
   {
-    "comparison": "-Rules vs Lexical-only",
+    "comparison": "full_pipeline vs Emb-only",
     "test": "Wilcoxon signed-rank",
-    "statistic": 792.0,
-    "p_value": 4.572387971178033e-24,
+    "statistic": 204.0,
+    "p_value": 0.11718508719813801,
+    "significant": false,
+    "effect_size": 0.2727272727272727,
+    "summary": "full_pipeline > Emb-only (mean diff=0.0192, p=0.1172, not significant at alpha=0.05)"
+  },
+  {
+    "comparison": "full_pipeline vs Emb-only",
+    "test": "Bootstrap CI",
+    "ci_lower": -0.004273504273504258,
+    "ci_upper": 0.042735042735042805,
+    "observed_diff": 0.019230769230769162,
+    "summary": "MRR_diff: observed diff=0.0192, 95% CI=[-0.0043, 0.0427] (contains zero (not significant))"
+  },
+  {
+    "comparison": "full_pipeline vs Lexical-only",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 1800.0,
+    "p_value": 1.1348309766717102e-37,
     "significant": true,
-    "effect_size": 0.8461538461538461,
-    "summary": "-Rules > Lexical-only (mean diff=0.3580, p=0.0000, significant at alpha=0.05)"
+    "effect_size": 0.8571428571428572,
+    "summary": "full_pipeline > Lexical-only (mean diff=0.4103, p=0.0000, significant at alpha=0.05)"
   },
   {
-    "comparison": "-Rules vs Lexical-only",
+    "comparison": "full_pipeline vs Lexical-only",
     "test": "Bootstrap CI",
-    "ci_lower": 0.2988165680473373,
-    "ci_upper": 0.41715976331360943,
-    "observed_diff": 0.35798816568047337,
-    "summary": "MRR_diff: observed diff=0.3580, 95% CI=[0.2988, 0.4172] (excludes zero (significant))"
+    "ci_lower": 0.358974358974359,
+    "ci_upper": 0.4594017094017094,
+    "observed_diff": 0.41025641025641024,
+    "summary": "MRR_diff: observed diff=0.4103, 95% CI=[0.3590, 0.4594] (excludes zero (significant))"
   }
 ]

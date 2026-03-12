@@ -1,0 +1,288 @@
+{
+  "check": "distribution_analysis",
+  "status": "COMPLETE",
+  "total_records": 2257,
+  "intent_distribution": {
+    "reclamacao": {
+      "count": 368,
+      "pct": 16.3
+    },
+    "duvida_produto": {
+      "count": 342,
+      "pct": 15.15
+    },
+    "duvida_servico": {
+      "count": 334,
+      "pct": 14.8
+    },
+    "suporte_tecnico": {
+      "count": 310,
+      "pct": 13.74
+    },
+    "compra": {
+      "count": 238,
+      "pct": 10.54
+    },
+    "cancelamento": {
+      "count": 215,
+      "pct": 9.53
+    },
+    "saudacao": {
+      "count": 172,
+      "pct": 7.62
+    },
+    "elogio": {
+      "count": 147,
+      "pct": 6.51
+    },
+    "outros": {
+      "count": 131,
+      "pct": 5.8
+    }
+  },
+  "domain_distribution": {
+    "financeiro": {
+      "count": 319,
+      "pct": 14.13
+    },
+    "restaurante": {
+      "count": 294,
+      "pct": 13.03
+    },
+    "saude": {
+      "count": 292,
+      "pct": 12.94
+    },
+    "telecom": {
+      "count": 285,
+      "pct": 12.63
+    },
+    "imobiliario": {
+      "count": 284,
+      "pct": 12.58
+    },
+    "ecommerce": {
+      "count": 280,
+      "pct": 12.41
+    },
+    "educacao": {
+      "count": 257,
+      "pct": 11.39
+    },
+    "tecnologia": {
+      "count": 246,
+      "pct": 10.9
+    }
+  },
+  "sentiment_distribution": {
+    "neutral": {
+      "count": 844,
+      "pct": 37.39
+    },
+    "negative": {
+      "count": 762,
+      "pct": 33.76
+    },
+    "positive": {
+      "count": 651,
+      "pct": 28.84
+    }
+  },
+  "word_count_stats": {
+    "mean": 244.4,
+    "std": 92.2,
+    "min": 86,
+    "max": 848,
+    "q25": 183.0,
+    "q50": 222.0,
+    "q75": 284.0
+  },
+  "turn_count_stats": {
+    "mean": 8.3,
+    "std": 2.7,
+    "min": 4,
+    "max": 22,
+    "q25": 8.0,
+    "q50": 8.0,
+    "q75": 8.0
+  },
+  "source_per_intent": {
+    "reclamacao": {
+      "original": 108,
+      "synthetic": 260
+    },
+    "suporte_tecnico": {
+      "original": 108,
+      "synthetic": 202
+    },
+    "duvida_produto": {
+      "original": 108,
+      "synthetic": 234
+    },
+    "compra": {
+      "original": 107,
+      "synthetic": 131
+    },
+    "duvida_servico": {
+      "original": 108,
+      "synthetic": 226
+    },
+    "cancelamento": {
+      "original": 106,
+      "synthetic": 109
+    },
+    "saudacao": {
+      "original": 108,
+      "synthetic": 64
+    },
+    "outros": {
+      "original": 93,
+      "synthetic": 38
+    },
+    "elogio": {
+      "original": 98,
+      "synthetic": 49
+    }
+  },
+  "intent_x_domain": {
+    "reclamacao": {
+      "telecom": 49,
+      "financeiro": 51,
+      "restaurante": 53,
+      "imobiliario": 47,
+      "saude": 52,
+      "educacao": 40,
+      "ecommerce": 38,
+      "tecnologia": 38
+    },
+    "suporte_tecnico": {
+      "telecom": 31,
+      "ecommerce": 34,
+      "restaurante": 33,
+      "financeiro": 46,
+      "saude": 48,
+      "tecnologia": 37,
+      "educacao": 36,
+      "imobiliario": 45
+    },
+    "duvida_produto": {
+      "tecnologia": 39,
+      "financeiro": 53,
+      "educacao": 37,
+      "restaurante": 50,
+      "telecom": 44,
+      "saude": 38,
+      "imobiliario": 40,
+      "ecommerce": 41
+    },
+    "compra": {
+      "imobiliario": 28,
+      "telecom": 28,
+      "restaurante": 35,
+      "educacao": 27,
+      "saude": 32,
+      "tecnologia": 29,
+      "ecommerce": 31,
+      "financeiro": 28
+    },
+    "duvida_servico": {
+      "telecom": 41,
+      "educacao": 44,
+      "imobiliario": 40,
+      "ecommerce": 43,
+      "restaurante": 44,
+      "tecnologia": 39,
+      "financeiro": 43,
+      "saude": 40
+    },
+    "cancelamento": {
+      "ecommerce": 28,
+      "tecnologia": 26,
+      "financeiro": 31,
+      "educacao": 28,
+      "restaurante": 20,
+      "saude": 29,
+      "imobiliario": 24,
+      "telecom": 29
+    },
+    "saudacao": {
+      "restaurante": 23,
+      "tecnologia": 21,
+      "imobiliario": 25,
+      "saude": 21,
+      "ecommerce": 25,
+      "telecom": 22,
+      "educacao": 14,
+      "financeiro": 21
+    },
+    "outros": {
+      "ecommerce": 21,
+      "imobiliario": 15,
+      "tecnologia": 4,
+      "restaurante": 18,
+      "financeiro": 21,
+      "telecom": 20,
+      "saude": 16,
+      "educacao": 16
+    },
+    "elogio": {
+      "telecom": 21,
+      "ecommerce": 19,
+      "restaurante": 18,
+      "financeiro": 25,
+      "educacao": 15,
+      "imobiliario": 20,
+      "saude": 16,
+      "tecnologia": 13
+    }
+  },
+  "intent_x_sentiment": {
+    "reclamacao": {
+      "neutral": 112,
+      "negative": 220,
+      "positive": 36
+    },
+    "suporte_tecnico": {
+      "neutral": 122,
+      "positive": 69,
+      "negative": 119
+    },
+    "duvida_produto": {
+      "negative": 92,
+      "neutral": 147,
+      "positive": 103
+    },
+    "compra": {
+      "neutral": 77,
+      "positive": 113,
+      "negative": 48
+    },
+    "duvida_servico": {
+      "neutral": 152,
+      "positive": 102,
+      "negative": 80
+    },
+    "cancelamento": {
+      "negative": 89,
+      "neutral": 70,
+      "positive": 56
+    },
+    "saudacao": {
+      "positive": 64,
+      "neutral": 72,
+      "negative": 36
+    },
+    "outros": {
+      "negative": 47,
+      "neutral": 44,
+      "positive": 40
+    },
+    "elogio": {
+      "negative": 31,
+      "positive": 68,
+      "neutral": 48
+    }
+  },
+  "empty_cells_intent_x_domain": [],
+  "imbalance_ratio": 2.81
+}

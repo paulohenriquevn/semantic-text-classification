@@ -8,14 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Phase 2 baseline re-run: all hypotheses (H1-H4 + ablation) re-evaluated on clean post-audit dataset with 5 seeds [13,42,123,2024,999] (no-ticket)
+- Dataset Audit Protocol v1.1 (`docs/dataset-audit-protocol.md`) with 8 audit checks, acceptance criteria, and remediation workflow (no-ticket)
+- Dataset audit script (`experiments/scripts/audit_dataset.py`) executing schema validation, global deduplication (two-tier: 0.92 flag / 0.97 hard), few-shot leakage detection, split integrity, taxonomy coherence, "outros" A/B/C categorization, text quality, and distribution analysis (no-ticket)
+- Dataset remediation script (`experiments/scripts/remediate_dataset.py`) with full traceability: each removal/reclassification documented with evidence in `remediation_decisions.json` (no-ticket)
+- Contamination-aware split builder (`experiments/scripts/build_splits_v2.py`) that assigns synthetics to the same or later split as their few-shot sources, guaranteeing zero train-test leakage (no-ticket)
+- Abstention calibration dataset (`experiments/data/abstention_calibration.jsonl`) with 30 ambiguous "outros" records for future confidence threshold tuning (no-ticket)
 - SOTA roadmap document (`docs/ROADMAP_SOTA.md`) with 6 improvement tracks, A/B testing protocol, promotion gates, and phased execution plan targeting Macro-F1 ≥ 0.850 (no-ticket)
 
 ### Changed
+- Dataset reduced from 2,257 to 2,122 supervised records (6.0% reduction): 5 hard near-duplicates removed, 100 out-of-scope "outros" removed, 30 ambiguous "outros" moved to abstention calibration, 1 mislabeled "outros" reclassified to "reclamacao" (no-ticket)
+- Label space reduced from 9 to 8 intents: "outros" removed from supervised training, replaced by confidence-based abstention mechanism (no-ticket)
+- Experimental seeds standardized to `[13, 42, 123, 2024, 999]` (was `[42, 123, 456, 789, 0]`); all prior results archived as `deprecated_pre_audit` (no-ticket)
+- Train/val/test splits rebuilt with contamination-aware splitting (1250/404/468 records); 445 leakage cases in prior splits eliminated (no-ticket)
+
+### Changed
+- H1 verdict changed from "Refutada" to "Confirmada": Hybrid-LINEAR MRR=0.853 vs BM25 0.835 (p=0.017) after clean dataset (no-ticket)
+- H2 best Macro-F1 updated: 0.722 (was 0.659 pre-audit), +6.3pp improvement from removing noisy "outros" class (no-ticket)
+- H3 verdict changed from "Refutada" to "Inconclusiva": ML+Rules-feature 0.740 > ML-only 0.722 (+1.8pp), but p=0.131 (no-ticket)
+- Ablation updated: Emb +33.0pp (was +25.8pp), Lex +2.9pp (was +2.0pp), Rules +1.8pp (was −0.5pp), Struct +1.3pp (no-ticket)
 - Experiment pipeline now uses real TalkEx modules (TurnSegmenter, SlidingWindowBuilder, ContextWindow) — architecture evaluated ≡ architecture described (no-ticket)
-- H2 results updated: Macro-F1=0.659 (was 0.715) with context window evaluation and window→conversation aggregation (no-ticket)
-- H3 verdict changed from "Inconclusiva" to "Refutada": ML-only (0.659) ≥ ML+Rules-feature (0.654), p=0.467 (no-ticket)
-- H4 results updated: cost ratio ~1.1× (was 1.5×), all cascades cost MORE than uniform baseline with context windows (no-ticket)
-- Ablation updated: embeddings +25.8pp (was +35.0pp), lexical +2.0pp (was +1.5pp), rules −0.5pp (was +0.5pp) (no-ticket)
+
+### Fixed
+- Removed phantom "outros" class references from experiment code: default labels changed to "unknown", H3 rules-only fallback changed to "__no_rule__" sentinel (no-ticket)
+- Fixed ablation results computing Macro-F1 over 9 classes (including phantom "outros") instead of 8 — all ablation values were ~8pp too low (no-ticket)
+
+### Changed (pre-audit, archived)
+- H2 results (pre-audit): Macro-F1=0.659 with context window evaluation and window→conversation aggregation (no-ticket)
+- H3 verdict (pre-audit): "Refutada" — ML-only (0.659) ≥ ML+Rules-feature (0.654), p=0.467 (no-ticket)
+- H4 results (pre-audit): cost ratio ~1.1× (was 1.5×), all cascades cost MORE than uniform baseline with context windows (no-ticket)
+- Ablation (pre-audit): embeddings +25.8pp, lexical +2.0pp, rules −0.5pp (no-ticket)
 - Cap 6 (Resultados): all tables, per-class analysis, verdicts, and discussion updated for context window evaluation (no-ticket)
 - Cap 7 (Conclusão): contributions, limitations (added weak supervision), future work, and final remarks updated to reflect new verdicts (no-ticket)
 - CLAUDE.md experiment results table updated with corrected numbers (no-ticket)
