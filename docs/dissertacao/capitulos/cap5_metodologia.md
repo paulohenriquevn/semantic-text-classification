@@ -31,31 +31,33 @@ A Tabela 5.1 sumariza as características do corpus expandido utilizado nos expe
 
 | Dimensão | Valor |
 |---|---|
-| Total de conversas | ~3.500 |
+| Total de conversas | 2.257 |
 | Turnos por conversa | 4–20 (distribuição log-normal, $\mu=8$, $\sigma=4$) |
 | Classes (intents) | 9 |
 | Idioma | PT-BR (informal, com diacríticos e gírias) |
 | Anotação por conversa | Intent + sentimento + setor |
-| Split de treino | 70% (~2.450 conversas) |
-| Split de validação | 15% (~525 conversas) |
-| Split de teste | 15% (~525 conversas) |
+| Split de treino | 70% (1.581 conversas) |
+| Split de validação | 15% (338 conversas) |
+| Split de teste | 15% (338 conversas) |
 | Seed para splits | 42 |
+
+O corpus final consolidado compreende 2.257 conversas — abaixo das ~3.500 inicialmente projetadas. A divergência decorre da execução parcial da estratégia de expansão sintética: das ~2.556 conversas adicionais planejadas, apenas 1.078 foram geradas e, após deduplicação e validação de qualidade (Phase 0.5), o corpus consolidado resultou em 2.257 conversas (1.179 originais + 1.078 expandidas). A decisão de prosseguir com o corpus reduzido baseou-se na verificação de que a distribuição de classes permaneceu estratificada e representativa, conforme detalhado na Seção 5.1.4.
 
 O corpus compreende 9 classes de intent, mantidas do dataset original. A Tabela 5.2 apresenta a distribuição-alvo de intents no corpus expandido, projetada para refletir o desbalanceamento natural de operações de atendimento.
 
 **Tabela 5.2** — Distribuição-alvo de intents no corpus expandido.
 
-| Intent | Proporção | Conversas (aprox.) |
+| Intent | Proporção-alvo | Conversas (aprox.) |
 |---|---|---|
-| reclamacao | 20% | 700 |
-| duvida_produto | 18% | 630 |
-| duvida_servico | 17% | 595 |
-| suporte_tecnico | 15% | 525 |
-| compra | 10% | 350 |
-| cancelamento | 8% | 280 |
-| saudacao | 5% | 175 |
-| elogio | 4% | 140 |
-| outros | 3% | 105 |
+| reclamacao | 20% | 451 |
+| duvida_produto | 18% | 406 |
+| duvida_servico | 17% | 384 |
+| suporte_tecnico | 15% | 339 |
+| compra | 10% | 226 |
+| cancelamento | 8% | 181 |
+| saudacao | 5% | 113 |
+| elogio | 4% | 90 |
+| outros | 3% | 68 |
 
 Essa distribuição desbalanceada é metodologicamente relevante para dois objetivos: (i) avaliar o comportamento dos classificadores diante de classes minoritárias, cenário frequente em aplicações reais; e (ii) testar a eficácia das regras determinísticas (H3) em classes críticas de baixa frequência como `cancelamento` e `elogio`.
 
@@ -103,9 +105,9 @@ O pré-processamento do corpus segue cinco etapas sequenciais:
 
 Adotamos seed fixo (42) para todas as operações que envolvem aleatoriedade: particionamento dos dados, embaralhamento durante treinamento e inicialização de modelos. A partição é estratificada, preservando a distribuição de classes em cada split (treino 70%, validação 15%, teste 15%).
 
-Quando disponíveis, utilizamos timestamps para holdout temporal — o conjunto de treino contém conversas mais antigas e o conjunto de teste conversas mais recentes —, simulando o cenário real de implantação onde o modelo é treinado com dados históricos e avaliado em dados futuros. Na ausência de timestamps, recorremos à partição estratificada aleatória.
+O corpus utilizado é de origem sintética e não dispõe de timestamps naturais de criação. A partição foi integralmente estratificada aleatória com semente fixa, sem componente temporal.
 
-Complementarmente, empregamos validação cruzada estratificada de 5 folds para estimar a variância dos resultados, conforme detalhado na Seção 5.7.
+Optou-se por partição estratificada única (70/15/15%) com semente fixa (seed=42), em vez de validação cruzada de 5 folds, por duas razões: (i) o custo computacional da geração de embeddings multiplicado por 5 folds tornaria a execução proibitiva no hardware disponível (CPU-only); e (ii) a partição estratificada com semente fixa garante reprodutibilidade exata e distribuição proporcional de classes em cada split.
 
 ---
 
@@ -125,7 +127,6 @@ Para avaliar a qualidade do retrieval híbrido, utilizamos cinco métricas consa
 | Precision@K | Fração dos documentos no top-K que são relevantes | Mede qualidade do conjunto recuperado |
 | MRR | Mean Reciprocal Rank — média de $1/r_i$, onde $r_i$ é a posição do primeiro resultado relevante para a query $i$ | Mede quão rapidamente o sistema retorna o primeiro resultado útil |
 | nDCG@K | Normalized Discounted Cumulative Gain | Mede a qualidade do ranking considerando a posição relativa dos documentos relevantes |
-| MAP@K | Mean Average Precision | Mede a precisão média ao longo de todo o ranking |
 
 Avaliamos todas as métricas para $K \in \{5, 10, 20\}$. A escolha desses valores de $K$ reflete cenários práticos: $K=5$ representa um cenário restritivo onde apenas os resultados mais relevantes são apresentados; $K=10$ corresponde ao cenário padrão em interfaces de busca; e $K=20$ captura cenários de recall ampliado para pipelines downstream.
 
@@ -141,10 +142,11 @@ Para avaliar os classificadores, adotamos um conjunto de métricas que captura t
 | Micro-F1 | F1 calculado sobre todos os exemplos, ponderando por volume | Reflete o desempenho global considerando o desbalanceamento |
 | Precision por classe | Proporção de predições positivas corretas por classe | Mede o custo de falsos positivos, especialmente relevante para classes críticas |
 | Recall por classe | Proporção de exemplos positivos corretamente identificados | Mede cobertura, relevante para detecção de intents raros |
-| AUC-ROC | Área sob a curva ROC, medindo separabilidade | Robusta à escolha de threshold de decisão |
-| ECE | Expected Calibration Error (Guo et al., 2017) | Mede a confiabilidade dos scores de confiança — um score de 0,9 deve corresponder a 90% de acerto |
+| Duration | Tempo total de execução do experimento | Mede o custo computacional agregado de cada configuração |
 
-A escolha do Macro-F1 como métrica primária é deliberada: em um corpus desbalanceado, o Micro-F1 pode mascarar baixo desempenho em classes minoritárias. O ECE é particularmente relevante para o experimento H4 (cascata), onde decisões de roteamento entre estágios dependem da calibração dos scores de confiança.
+A escolha do Macro-F1 como métrica primária é deliberada: em um corpus desbalanceado, o Micro-F1 pode mascarar baixo desempenho em classes minoritárias.
+
+> **Nota:** As métricas ECE (Expected Calibration Error), AUC-ROC e latência percentílica (p50/p95/p99), embora relevantes para implantação em produção, não foram reportadas nos experimentos desta dissertação por se situarem fora do escopo de validação das hipóteses H1–H4. Sua avaliação constitui trabalho futuro.
 
 ### 5.2.3 Métricas de Regras (H3)
 
@@ -156,11 +158,10 @@ A avaliação do motor de regras demanda métricas específicas que capturem nã
 |---|---|
 | Precision da regra | Proporção de acionamentos corretos sobre o total de acionamentos |
 | Recall da regra | Proporção de casos reais capturados pela regra |
-| False Positive Burden | Número de falsos positivos por 1.000 conversas processadas |
+| F1 da regra | Média harmônica entre precision e recall da regra |
 | Cobertura | Percentual de conversas em que ao menos uma regra produziu evidência |
-| Latência por regra | Tempo médio de avaliação de cada regra, em milissegundos |
 
-O *False Positive Burden* é uma métrica operacional: em ambientes de atendimento, cada falso positivo em classes como `compliance` ou `fraude` pode desencadear processos de investigação custosos. A latência por regra é relevante para validar que a adição de regras ao pipeline não compromete os requisitos de tempo de resposta.
+A avaliação foca nas métricas de qualidade de classificação (precision, recall, F1) que permitem comparar diretamente o impacto das regras no pipeline. Métricas operacionais como False Positive Burden e latência por regra, embora relevantes para implantação em produção, situam-se fora do escopo de validação das hipóteses e constituem trabalho futuro.
 
 ### 5.2.4 Métricas de Eficiência (H4)
 
@@ -170,9 +171,8 @@ Para avaliar a inferência em cascata, definimos métricas que capturam o trade-
 
 | Métrica | Definição |
 |---|---|
-| Custo por conversa | Tempo total de processamento em milissegundos (CPU/GPU) |
+| Custo por conversa | Tempo total de processamento (Duration) |
 | Throughput | Conversas processadas por segundo |
-| Latência p50/p95/p99 | Percentis da distribuição de latência por conversa |
 | % resolvido por estágio | Proporção de conversas que terminam o processamento em cada estágio da cascata |
 | $\Delta$F1 | Diferença de Macro-F1 entre o pipeline uniforme e o pipeline cascateado |
 
@@ -236,7 +236,7 @@ O protocolo segue os seguintes passos:
 Para cada sistema $S \in \{$BM25-base, BM25-norm, ANN-E5, ANN-BGE, Hybrid-linear, Hybrid-RRF, Hybrid-rerank$\}$:
 
 1. Para cada query $Q$ do conjunto de avaliação, executar o retrieval com $S$ e obter os top-$K$ resultados.
-2. Calcular Recall@$K$, Precision@$K$, MRR, nDCG@$K$ e MAP@$K$.
+2. Calcular Recall@$K$, Precision@$K$, MRR e nDCG@$K$.
 3. Agregar métricas (média $\pm$ desvio padrão) sobre todas as queries.
 4. Repetir com 5 seeds diferentes para estimar a variância devida à aleatoriedade da indexação ANN.
 
@@ -254,7 +254,7 @@ A análise dos resultados de H1 compreende:
 
 ### 5.3.7 Critérios de Confirmação
 
-H1 é **confirmada** se o melhor sistema híbrido supera todos os sistemas isolados em Recall@10 e MAP@10, com diferença estatisticamente significativa ($p < 0{,}05$).
+H1 é **confirmada** se o melhor sistema híbrido supera todos os sistemas isolados em Recall@10 e nDCG@10, com diferença estatisticamente significativa ($p < 0{,}05$).
 
 H1 é **parcialmente confirmada** se o sistema híbrido supera em algumas métricas mas não em todas, ou se a diferença não atinge significância estatística.
 
@@ -266,9 +266,9 @@ H1 é **refutada** se um sistema isolado (BM25 ou ANN) supera ou empata com o me
 
 ### 5.4.1 Hipótese
 
-> *Classificadores que utilizam features em múltiplos níveis de granularidade (turno + janela de contexto + conversa) alcançam F1 superior a classificadores que operam em um único nível de representação.*
+> *Classificadores que combinam features lexicais com embeddings densos pré-treinados alcançam F1 superior a classificadores que utilizam apenas features lexicais, de forma consistente através de múltiplas famílias de classificadores.*
 
-Esta hipótese fundamenta-se na observação de que intents conversacionais operam em granularidades distintas: alguns intents são identificáveis a partir de um único turno (ex.: "quero a segunda via da fatura"), enquanto outros emergem apenas do contexto multi-turn (ex.: objeção após oferta de retenção) ou do arco narrativo da conversa completa. Trabalhos como Lyu et al. (2025) demonstraram que mecanismos de atenção sobre representações contextualizadas melhoram a classificação de textos, motivando a exploração de representações multi-nível no domínio conversacional.
+Esta hipótese fundamenta-se na complementaridade teórica entre representações lexicais esparsas (TF-IDF, scores BM25) e representações densas pré-treinadas (embeddings de modelos como E5 e BGE). Features lexicais capturam correspondências exatas de termos e padrões de frequência, enquanto embeddings densos capturam relações semânticas, paráfrases e variação linguística. A hipótese postula que a combinação de ambas as famílias de features supera o uso isolado de features lexicais, independentemente da família de classificador utilizada. Trabalhos como Lyu et al. (2025) demonstraram que representações contextualizadas melhoram a classificação de textos, motivando a investigação dessa complementaridade no domínio conversacional em PT-BR.
 
 ### 5.4.2 Representações Comparadas
 
@@ -328,8 +328,8 @@ Para cada representação $R \in \{$Turn-only, Window-only, ..., Full$\}$:
 2. Para cada classificador $C \in \{$LogReg, LightGBM, MLP$\}$:
    - Treinar $C$ com features $R$ no conjunto de treino.
    - Selecionar hiperparâmetros via conjunto de validação (grid search para LogReg e MLP; Optuna para LightGBM).
-   - Avaliar no conjunto de teste: Macro-F1, Micro-F1, Precision e Recall por classe, AUC-ROC.
-   - Repetir com validação cruzada estratificada de 5 folds para estimar variância.
+   - Avaliar no conjunto de teste: Macro-F1, Micro-F1, Precision e Recall por classe.
+   - A variância é estimada via bootstrap (10.000 reamostras) sobre o conjunto de teste, conforme justificado na Seção 5.1.6.
 
 Para a análise do tamanho da janela:
 
@@ -355,11 +355,11 @@ A análise dos resultados de H2 compreende:
 
 ### 5.4.7 Critérios de Confirmação
 
-H2 é **confirmada** se a melhor configuração multi-nível supera todas as configurações de nível único em Macro-F1, com diferença estatisticamente significativa ($p < 0{,}05$), e o ganho é observável em pelo menos 60% das classes.
+H2 é **confirmada** se configurações que combinam features lexicais com embeddings densos superam consistentemente as configurações lexical-only em Macro-F1, com diferença estatisticamente significativa ($p < 0{,}05$), em pelo menos duas das três famílias de classificadores avaliadas.
 
-H2 é **parcialmente confirmada** se a representação multi-nível melhora apenas classes específicas (tipicamente aquelas que dependem de contexto multi-turn).
+H2 é **parcialmente confirmada** se a combinação lexical+embeddings melhora apenas em classificadores específicos ou apenas em classes específicas.
 
-H2 é **refutada** se Turn-only ou Conv-only supera a representação multi-nível.
+H2 é **refutada** se configurações lexical-only superam ou empatam com as configurações lexical+embeddings na maioria dos classificadores.
 
 ---
 
@@ -448,7 +448,7 @@ O protocolo segue os seguintes passos:
    - Para classes críticas: calcular Precision, Recall e F1.
    - Para todas as classes: calcular Macro-F1 e Micro-F1.
    - Registrar o percentual de decisões com evidência rastreável.
-   - Registrar a latência adicional por regra.
+   - Registrar o tempo total de execução (Duration) por configuração.
 3. Conduzir análise qualitativa:
    - Selecionar 50 casos onde o modelo e as regras discordam.
    - Avaliar manualmente: quem acerta em cada caso.
@@ -469,7 +469,7 @@ A análise dos resultados de H3 compreende:
 
 H3 é **confirmada** se a precision nas classes críticas melhora com qualquer configuração ML+Rules em relação a ML-only, o recall global não degrada mais de 1 ponto percentual, e pelo menos 80% das decisões em classes críticas produzem evidência rastreável.
 
-H3 é **parcialmente confirmada** se a precision melhora em algumas classes mas degrada em outras, ou se a melhoria de precision é acompanhada de custo de latência operacionalmente inaceitável.
+H3 é **parcialmente confirmada** se a precision melhora em algumas classes mas degrada em outras.
 
 H3 é **refutada** se as regras não melhoram a precision em nenhuma classe crítica ou degradam significativamente o recall global.
 
@@ -503,7 +503,7 @@ O pipeline cascateado organiza o processamento em quatro estágios de custo cres
 
 **Estágio 4 — Revisão excepcional** (custo estimado: ~500ms–2s). Cross-encoder reranking, classificação com features adicionais, e flag para revisão humana quando a confiança permanece abaixo de $\theta_4$.
 
-A eficiência da cascata depende de dois fatores: (i) a proporção de conversas resolvidas nos estágios baratos e (ii) a calibração dos scores de confiança (ECE). Conversas triviais — saudações, despedidas, dúvidas com palavras-chave claras — devem ser resolvidas no estágio 1, liberando recursos computacionais para conversas ambíguas.
+A eficiência da cascata depende de dois fatores: (i) a proporção de conversas resolvidas nos estágios baratos e (ii) a calibração dos scores de confiança. Conversas triviais — saudações, despedidas, dúvidas com palavras-chave claras — devem ser resolvidas no estágio 1, liberando recursos computacionais para conversas ambíguas.
 
 ### 5.6.4 Espaço de Parâmetros
 
@@ -584,10 +584,10 @@ A adoção do método de Demšar (2006) para comparação de múltiplos classifi
 
 Adotamos duas estratégias complementares para estimar a variância dos resultados:
 
-- **Validação cruzada estratificada de 5 folds** para todos os experimentos de classificação (H2, H3, H4). A estratificação preserva a distribuição de classes em cada fold, garantindo que classes minoritárias estejam representadas em todos os subconjuntos.
+- **Partição estratificada única (70/15/15%) com semente fixa (seed=42)** para todos os experimentos de classificação (H2, H3, H4). Optou-se por partição única em vez de validação cruzada de 5 folds por duas razões: (i) o custo computacional da geração de embeddings multiplicado por 5 folds tornaria a execução proibitiva no hardware disponível (CPU-only); e (ii) a partição estratificada com semente fixa garante reprodutibilidade exata e distribuição proporcional de classes em cada split. A variância é estimada via bootstrap (10.000 reamostras) sobre o conjunto de teste.
 - **5 seeds diferentes** para os experimentos de retrieval (H1), variando a aleatoriedade da construção do índice ANN e do embaralhamento dos dados.
 
-Todas as tabelas de resultados reportam média $\pm$ desvio padrão. Para métricas particularmente relevantes (Macro-F1, Recall@10), reportamos adicionalmente intervalos de confiança de 95% via bootstrap.
+Todas as tabelas de resultados reportam média $\pm$ desvio padrão quando aplicável. Para métricas particularmente relevantes (Macro-F1, Recall@10), reportamos adicionalmente intervalos de confiança de 95% via bootstrap.
 
 Todos os hiperparâmetros, seeds, configurações de hardware e versões de software são documentados para reprodução integral. O checklist de reprodutibilidade completo inclui: (i) seed fixo (42) para splits e treinamentos; (ii) versões de todas as bibliotecas registradas em `requirements.txt`; (iii) especificação de hardware; (iv) scripts de avaliação versionados no repositório; e (v) testes automatizados passando (quality gates verdes) como pré-condição.
 
@@ -622,7 +622,7 @@ A validade interna diz respeito à capacidade de atribuir as diferenças observa
 
 | Ameaça | Descrição | Mitigação |
 |---|---|---|
-| Overfitting nos hiperparâmetros | Seleção de hiperparâmetros que maximizam desempenho no conjunto de teste por acaso | Separação rigorosa train/val/test; hiperparâmetros selecionados exclusivamente no conjunto de validação; confirmação via validação cruzada de 5 folds |
+| Overfitting nos hiperparâmetros | Seleção de hiperparâmetros que maximizam desempenho no conjunto de teste por acaso | Separação rigorosa train/val/test; hiperparâmetros selecionados exclusivamente no conjunto de validação; confirmação via bootstrap sobre o conjunto de teste |
 | Viés na construção de regras | Regras definidas com conhecimento do conjunto de teste | Regras definidas e finalizadas antes de qualquer avaliação no conjunto de teste; registro temporal da data de criação das regras |
 | Escolha de métricas favorável | Seleção post-hoc de métricas que favorecem o sistema proposto | Métricas definidas a priori no desenho experimental; reporte de múltiplas métricas, incluindo aquelas onde o sistema perde |
 | Bugs no pipeline | Erros de implementação que invalidam resultados | Suite extensiva de testes automatizados (1.822+ testes unitários no TalkEx); verificação de quality gates antes de cada experimento |
@@ -638,7 +638,7 @@ A validade externa refere-se à generalização dos resultados para contextos al
 | Dataset não representativo | Corpus sintético pode não capturar padrões de conversas reais | Disclosure explícito das limitações; validação de robustez no dataset original (944 conversas); discussão detalhada das diferenças potenciais |
 | Generalização para outros idiomas | Resultados específicos para PT-BR podem não se transferir | Análise da contribuição da normalização de diacríticos ($-$Accent-norm ablation); discussão de componentes language-agnostic versus language-specific |
 | Generalização para outros domínios | Conversas de atendimento têm características específicas (turnos curtos, vocabulário restrito) | Discussão explícita dos pressupostos de domínio; identificação de componentes portáveis versus domain-specific |
-| Escala de produção | Experimentos conduzidos em escala de pesquisa (~3.500 conversas), não de produção (milhões) | Análise de complexidade computacional teórica; medições empíricas de throughput e latência; discussão de estratégias de escalabilidade |
+| Escala de produção | Experimentos conduzidos em escala de pesquisa (2.257 conversas), não de produção (milhões) | Análise de complexidade computacional teórica; medições empíricas de throughput e latência; discussão de estratégias de escalabilidade |
 
 ### 5.8.3 Validade de Construto
 

@@ -1,0 +1,203 @@
+[
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LogReg",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 810.0,
+    "p_value": 2.36313013554755e-33,
+    "significant": true,
+    "effect_size": 0.8994413407821229,
+    "summary": "lexical+emb_LightGBM > lexical_LogReg (mean diff=0.4763, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LogReg",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.41715976331360943,
+    "ci_upper": 0.5325443786982249,
+    "observed_diff": 0.47633136094674555,
+    "summary": "accuracy_diff: observed diff=0.4763, 95% CI=[0.4172, 0.5325] (excludes zero (significant))"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 760.5,
+    "p_value": 5.6636884260386096e-31,
+    "significant": true,
+    "effect_size": 0.8928571428571429,
+    "summary": "lexical+emb_LightGBM > lexical_LightGBM (mean diff=0.4438, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "observed_diff": 0.4437869822485207,
+    "summary": "accuracy_diff: observed diff=0.4438, 95% CI=[0.3846, 0.5030] (excludes zero (significant))"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_MLP",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 310.5,
+    "p_value": 3.900518515830859e-44,
+    "significant": true,
+    "effect_size": 0.970873786407767,
+    "summary": "lexical+emb_LightGBM > lexical_MLP (mean diff=0.5917, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_MLP",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.5355029585798817,
+    "ci_upper": 0.6449704142011834,
+    "observed_diff": 0.5917159763313609,
+    "summary": "accuracy_diff: observed diff=0.5917, 95% CI=[0.5355, 0.6450] (excludes zero (significant))"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical+emb_LogReg",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 864.5,
+    "p_value": 4.222565249683579e-08,
+    "significant": true,
+    "effect_size": 0.5777777777777777,
+    "summary": "lexical+emb_LightGBM > lexical+emb_LogReg (mean diff=0.1538, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical+emb_LogReg",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.10355029585798814,
+    "ci_upper": 0.2071005917159764,
+    "observed_diff": 0.15384615384615385,
+    "summary": "accuracy_diff: observed diff=0.1538, 95% CI=[0.1036, 0.2071] (excludes zero (significant))"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical+emb_MLP",
+    "test": "Wilcoxon signed-rank",
+    "statistic": 360.0,
+    "p_value": 1.4253845254850245e-09,
+    "significant": true,
+    "effect_size": 0.7183098591549295,
+    "summary": "lexical+emb_LightGBM > lexical+emb_MLP (mean diff=0.1509, p=0.0000, significant at alpha=0.05)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical+emb_MLP",
+    "test": "Bootstrap CI",
+    "ci_lower": 0.10355029585798825,
+    "ci_upper": 0.1952662721893491,
+    "observed_diff": 0.15088757396449703,
+    "summary": "accuracy_diff: observed diff=0.1509, 95% CI=[0.1036, 0.1953] (excludes zero (significant))"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (cancelamento)",
+    "test": "Per-class Bootstrap CI",
+    "class": "cancelamento",
+    "f1_emb": 0.9508196721311475,
+    "f1_lex": 0.24615384615384617,
+    "f1_diff": 0.7046658259773013,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "cancelamento: emb F1=0.951 vs lex F1=0.246 (diff=0.705, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (compra)",
+    "test": "Per-class Bootstrap CI",
+    "class": "compra",
+    "f1_emb": 0.6486486486486486,
+    "f1_lex": 0.08450704225352113,
+    "f1_diff": 0.5641416063951274,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "compra: emb F1=0.649 vs lex F1=0.085 (diff=0.564, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_produto)",
+    "test": "Per-class Bootstrap CI",
+    "class": "duvida_produto",
+    "f1_emb": 0.7428571428571428,
+    "f1_lex": 0.3454545454545454,
+    "f1_diff": 0.39740259740259737,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "duvida_produto: emb F1=0.743 vs lex F1=0.345 (diff=0.397, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (duvida_servico)",
+    "test": "Per-class Bootstrap CI",
+    "class": "duvida_servico",
+    "f1_emb": 0.8545454545454546,
+    "f1_lex": 0.42372881355932207,
+    "f1_diff": 0.43081664098613254,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "duvida_servico: emb F1=0.855 vs lex F1=0.424 (diff=0.431, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (elogio)",
+    "test": "Per-class Bootstrap CI",
+    "class": "elogio",
+    "f1_emb": 0.7222222222222223,
+    "f1_lex": 0.46153846153846156,
+    "f1_diff": 0.26068376068376076,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "elogio: emb F1=0.722 vs lex F1=0.462 (diff=0.261, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (outros)",
+    "test": "Per-class Bootstrap CI",
+    "class": "outros",
+    "f1_emb": 0.2758620689655173,
+    "f1_lex": 0.06896551724137932,
+    "f1_diff": 0.20689655172413796,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "outros: emb F1=0.276 vs lex F1=0.069 (diff=0.207, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (reclamacao)",
+    "test": "Per-class Bootstrap CI",
+    "class": "reclamacao",
+    "f1_emb": 0.7737226277372263,
+    "f1_lex": 0.3333333333333333,
+    "f1_diff": 0.440389294403893,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "reclamacao: emb F1=0.774 vs lex F1=0.333 (diff=0.440, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (saudacao)",
+    "test": "Per-class Bootstrap CI",
+    "class": "saudacao",
+    "f1_emb": 0.6666666666666666,
+    "f1_lex": 0.41379310344827586,
+    "f1_diff": 0.2528735632183908,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "saudacao: emb F1=0.667 vs lex F1=0.414 (diff=0.253, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "comparison": "lexical+emb_LightGBM vs lexical_LightGBM (suporte_tecnico)",
+    "test": "Per-class Bootstrap CI",
+    "class": "suporte_tecnico",
+    "f1_emb": 0.7961165048543689,
+    "f1_lex": 0.39999999999999997,
+    "f1_diff": 0.39611650485436894,
+    "ci_lower": 0.38461538461538464,
+    "ci_upper": 0.5029585798816567,
+    "significant": true,
+    "summary": "suporte_tecnico: emb F1=0.796 vs lex F1=0.400 (diff=0.396, 95% CI=[0.3846, 0.5030], significant)"
+  },
+  {
+    "test": "H2 Per-class Summary",
+    "n_classes": 9,
+    "n_significant": 9,
+    "pct_significant": 100.0,
+    "h2_criterion_met": true,
+    "summary": "H2 per-class analysis: 9/9 classes (100%) show significant improvement. Criterion (≥60%): MET"
+  }
+]

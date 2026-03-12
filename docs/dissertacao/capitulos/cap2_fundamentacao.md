@@ -112,6 +112,8 @@ onde:
 - $k_1$ é o parâmetro de saturação de frequência;
 - $b$ é o parâmetro de normalização por comprimento.
 
+A formulação com saturação de frequência de termos e normalização por comprimento de documento, parametrizada por $k_1$ e $b$, é detalhada em Robertson e Zaragoza (2009), que consolidam o desenvolvimento do BM25 desde os experimentos TREC originais.
+
 O componente IDF é tipicamente calculado como:
 
 $$\text{IDF}(q_i) = \log \frac{N - n(q_i) + 0.5}{n(q_i) + 0.5}$$
@@ -605,6 +607,7 @@ No próximo capítulo, posicionamos este trabalho em relação à literatura exi
 - [Rayo et al., 2025] Rayo, J., de la Rosa, R., Garrido, M. A Hybrid Approach to Information Retrieval and Answer Generation for Regulatory Texts. *COLING 2025*. arXiv:2502.16767v1, 2025.
 - [Reimers e Gurevych, 2019] Reimers, N., Gurevych, I. Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. *EMNLP*, 2019.
 - [Robertson et al., 1996] Robertson, S. E., Walker, S., Jones, S., Hancock-Beaulieu, M., Gatford, M. Okapi at TREC-3. In: *Overview of the Third Text REtrieval Conference*, 1996.
+- [Robertson e Zaragoza, 2009] Robertson, S., Zaragoza, H. The Probabilistic Relevance Framework: BM25 and Beyond. *Foundations and Trends in Information Retrieval*, 3(4):333--389, 2009.
 - [Salton e Buckley, 1988] Salton, G., Buckley, C. Term-Weighting Approaches in Automatic Text Retrieval. *Information Processing & Management*, 24(5):513--523, 1988.
 - [Su et al., 2022] Su, H., Shi, W., Kasber, J., Wang, Y., Hu, Y., Ostendorf, M., Yih, W., Smith, N. A., Zettlemoyer, L., Yu, T. One Embedder, Any Task: Instruction-Finetuned Text Embeddings. arXiv:2212.09741, 2022.
 - [Vaswani et al., 2017] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., Polosukhin, I. Attention Is All You Need. *NeurIPS*, 2017.

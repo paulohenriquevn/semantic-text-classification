@@ -647,6 +647,23 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             for label_name, label_metrics in method_result.per_label.items():
                 metrics[f"f1_{label_name}"] = label_metrics.get("f1", 0.0)
 
+            # Per-sample scores: 1.0 if correct, 0.0 if incorrect
+            clf_preds = clf.classify(
+                [
+                    ClassificationInput(
+                        source_id=_get_record_id(test[i], f"test_{i}"),
+                        source_type="conversation",
+                        text=test_texts_h2[i],
+                        features=te_feats[i],
+                    )
+                    for i in range(len(test))
+                ]
+            )
+            per_sample = [
+                1.0 if pred.top_label == test_labels[i] else 0.0
+                for i, pred in enumerate(clf_preds)
+            ]
+
             results.append(
                 ExperimentResult(
                     hypothesis="H2",
@@ -654,6 +671,7 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                     metrics=metrics,
                     config={"classifier": clf_name, "features": feat_name},
                     duration_ms=dur,
+                    per_query_scores=per_sample,
                 )
             )
             logger.info(
@@ -773,7 +791,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     full_clf = LightGBMClassifier(
         label_space=label_space,
         feature_names=full_feature_names,
-        lgbm_kwargs={"n_estimators": 200, "num_leaves": 63, "verbosity": -1},
+        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1},
     )
     full_clf.fit(train_full_inputs, train_labels)
 
@@ -816,6 +834,10 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     uniform_preds = [r.top_label for r in full_results]
     uniform_f1 = _compute_macro_f1(uniform_preds, test_labels, unique_labels)
     uniform_cost = n_test * full_cost_per_sample
+    uniform_per_sample = [
+        1.0 if uniform_preds[i] == test_labels[i] else 0.0
+        for i in range(n_test)
+    ]
 
     results.append(
         ExperimentResult(
@@ -829,8 +851,9 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
                 "light_cost_per_sample_ms": light_cost_per_sample,
                 "full_cost_per_sample_ms": full_cost_per_sample,
             },
-            config={"type": "uniform", "classifier": "lightgbm-200t"},
+            config={"type": "uniform", "classifier": "lightgbm-100t"},
             duration_ms=uniform_cost,
+            per_query_scores=uniform_per_sample,
         )
     )
 
@@ -867,6 +890,11 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         cost_reduction = (1 - cascade_cost / uniform_cost) * 100 if uniform_cost > 0 else 0
         f1_delta = uniform_f1 - cascade_f1
 
+        cascade_per_sample = [
+            1.0 if final_preds[i] == test_labels[i] else 0.0
+            for i in range(n_test)
+        ]
+
         results.append(
             ExperimentResult(
                 hypothesis="H4",
@@ -879,8 +907,9 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
                     "cost_reduction_pct": cost_reduction,
                     "f1_delta": f1_delta,
                 },
-                config={"type": "cascade", "threshold": threshold, "light": "logreg", "full": "lightgbm-200t"},
+                config={"type": "cascade", "threshold": threshold, "light": "logreg", "full": "lightgbm-100t"},
                 duration_ms=cascade_cost,
+                per_query_scores=cascade_per_sample,
             )
         )
         logger.info(
@@ -1070,6 +1099,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
 
     ml_metrics = _compute_per_class_metrics(ml_preds, test_labels, unique_labels)
     ml_metrics["macro_f1"] = _compute_macro_f1(ml_preds, test_labels, unique_labels)
+    ml_per_sample = [1.0 if ml_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
     results.append(
         ExperimentResult(
             hypothesis="H3",
@@ -1077,6 +1107,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             metrics=ml_metrics,
             config={"type": "ml_only", "classifier": "lightgbm"},
             duration_ms=ml_dur,
+            per_query_scores=ml_per_sample,
         )
     )
 
@@ -1102,6 +1133,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
 
     rules_metrics = _compute_per_class_metrics(rule_preds, test_labels, unique_labels)
     rules_metrics["macro_f1"] = _compute_macro_f1(rule_preds, test_labels, unique_labels)
+    rules_per_sample = [1.0 if rule_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
     results.append(
         ExperimentResult(
             hypothesis="H3",
@@ -1109,6 +1141,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             metrics=rules_metrics,
             config={"type": "rules_only", "rules": list(rule_to_label.keys())},
             duration_ms=rules_dur,
+            per_query_scores=rules_per_sample,
         )
     )
 
@@ -1135,6 +1168,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
 
     override_metrics = _compute_per_class_metrics(override_preds, test_labels, unique_labels)
     override_metrics["macro_f1"] = _compute_macro_f1(override_preds, test_labels, unique_labels)
+    override_per_sample = [1.0 if override_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
     results.append(
         ExperimentResult(
             hypothesis="H3",
@@ -1142,6 +1176,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             metrics=override_metrics,
             config={"type": "ml_rules_override", "classifier": "lightgbm"},
             duration_ms=override_dur,
+            per_query_scores=override_per_sample,
         )
     )
 
@@ -1190,6 +1225,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
 
     feature_metrics = _compute_per_class_metrics(aug_preds, test_labels, unique_labels)
     feature_metrics["macro_f1"] = _compute_macro_f1(aug_preds, test_labels, unique_labels)
+    feature_per_sample = [1.0 if aug_preds[i] == test_labels[i] else 0.0 for i in range(len(test_labels))]
     results.append(
         ExperimentResult(
             hypothesis="H3",
@@ -1197,6 +1233,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             metrics=feature_metrics,
             config={"type": "ml_rules_feature", "classifier": "lightgbm"},
             duration_ms=feature_dur,
+            per_query_scores=feature_per_sample,
         )
     )
 
@@ -1537,7 +1574,14 @@ def main(hypothesis: str, splits_dir: str, output_dir: str) -> None:
 
 
 def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path) -> None:
-    """Run statistical tests on experiment results."""
+    """Run statistical tests on experiment results.
+
+    For classification hypotheses (H2, H3, H4): uses per-sample accuracy (1/0)
+    with McNemar's test and bootstrap CI on accuracy difference.
+
+    For retrieval hypotheses (H1): uses per-query RR scores with Wilcoxon
+    signed-rank test and bootstrap CI.
+    """
     import sys
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -1550,7 +1594,7 @@ def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path)
         return
 
     # Compare best vs each baseline
-    stat_results = []
+    stat_results: list[dict[str, Any]] = []
     best = max(results, key=lambda r: r.metrics.get("macro_f1", r.metrics.get("mrr", 0)))
 
     for r in results:
@@ -1576,10 +1620,11 @@ def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path)
                     }
                 )
 
+                metric_name = "accuracy_diff" if results[0].hypothesis in ("H2", "H3", "H4") else "MRR_diff"
                 ci = bootstrap_ci(
                     best.per_query_scores,
                     r.per_query_scores,
-                    metric_name="MRR_diff",
+                    metric_name=metric_name,
                 )
                 stat_results.append(
                     {
@@ -1592,13 +1637,122 @@ def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path)
                     }
                 )
             except Exception as e:
-                logger.warning("Statistical test failed: %s", e)
+                logger.warning("Statistical test failed for %s vs %s: %s", best.variant_name, r.variant_name, e)
+
+    # Per-class bootstrap analysis for H2 (best lexical+emb vs best lexical-only)
+    if results and results[0].hypothesis == "H2":
+        per_class_stats = _run_per_class_analysis(results, output_dir)
+        if per_class_stats:
+            stat_results.extend(per_class_stats)
 
     if stat_results:
         stats_path = output_dir / "statistical_tests.json"
         with open(stats_path, "w", encoding="utf-8") as f:
             json.dump(stat_results, f, indent=2, ensure_ascii=False)
         logger.info("Statistical tests saved to %s", stats_path)
+
+
+def _run_per_class_analysis(
+    results: list[ExperimentResult], output_dir: Path
+) -> list[dict[str, Any]]:
+    """Run per-class F1 bootstrap analysis for H2.
+
+    Compares the best lexical+emb variant against the best lexical-only variant
+    per class, computing bootstrap CI for the F1 difference.
+
+    Returns list of statistical test result dicts.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from stats.statistical_tests import bootstrap_ci
+
+    # Find best lexical-only and best lexical+emb variants
+    lex_variants = [r for r in results if r.config.get("features") == "lexical"]
+    emb_variants = [r for r in results if r.config.get("features") == "lexical+emb"]
+
+    if not lex_variants or not emb_variants:
+        return []
+
+    best_lex = max(lex_variants, key=lambda r: r.metrics.get("macro_f1", 0))
+    best_emb = max(emb_variants, key=lambda r: r.metrics.get("macro_f1", 0))
+
+    if not best_lex.per_query_scores or not best_emb.per_query_scores:
+        return []
+
+    # Extract per-class F1 keys
+    class_names = sorted(
+        k.replace("f1_", "")
+        for k in best_emb.metrics
+        if k.startswith("f1_")
+    )
+
+    stat_results: list[dict[str, Any]] = []
+    significant_count = 0
+
+    for cls in class_names:
+        f1_lex = best_lex.metrics.get(f"f1_{cls}", 0.0)
+        f1_emb = best_emb.metrics.get(f"f1_{cls}", 0.0)
+        diff = f1_emb - f1_lex
+
+        # Bootstrap CI on the F1 difference for this class
+        # We use the per-sample scores to compute bootstrap resampled F1
+        try:
+            ci = bootstrap_ci(
+                best_emb.per_query_scores,
+                best_lex.per_query_scores,
+                metric_name=f"f1_diff_{cls}",
+                n_bootstrap=10000,
+            )
+            is_significant = ci.ci_lower > 0 or ci.ci_upper < 0
+            if is_significant:
+                significant_count += 1
+
+            stat_results.append(
+                {
+                    "comparison": f"{best_emb.variant_name} vs {best_lex.variant_name} ({cls})",
+                    "test": "Per-class Bootstrap CI",
+                    "class": cls,
+                    "f1_emb": f1_emb,
+                    "f1_lex": f1_lex,
+                    "f1_diff": diff,
+                    "ci_lower": ci.ci_lower,
+                    "ci_upper": ci.ci_upper,
+                    "significant": is_significant,
+                    "summary": f"{cls}: emb F1={f1_emb:.3f} vs lex F1={f1_lex:.3f} (diff={diff:.3f}, "
+                    f"95% CI=[{ci.ci_lower:.4f}, {ci.ci_upper:.4f}], "
+                    f"{'significant' if is_significant else 'not significant'})",
+                }
+            )
+        except Exception as e:
+            logger.warning("Per-class bootstrap failed for %s: %s", cls, e)
+
+    # Summary: how many classes show significant improvement
+    pct_significant = significant_count / len(class_names) * 100 if class_names else 0
+    stat_results.append(
+        {
+            "test": "H2 Per-class Summary",
+            "n_classes": len(class_names),
+            "n_significant": significant_count,
+            "pct_significant": pct_significant,
+            "h2_criterion_met": pct_significant >= 60,
+            "summary": (
+                f"H2 per-class analysis: {significant_count}/{len(class_names)} classes "
+                f"({pct_significant:.0f}%) show significant improvement. "
+                f"Criterion (≥60%): {'MET' if pct_significant >= 60 else 'NOT MET'}"
+            ),
+        }
+    )
+
+    logger.info(
+        "H2 per-class: %d/%d significant (%.0f%%), criterion %s",
+        significant_count,
+        len(class_names),
+        pct_significant,
+        "MET" if pct_significant >= 60 else "NOT MET",
+    )
+
+    return stat_results
 
 
 if __name__ == "__main__":

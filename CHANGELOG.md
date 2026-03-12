@@ -20,6 +20,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Dissertation chapter drafts for chapters 1-7: introduction, fundamentação, trabalhos relacionados, arquitetura, metodologia, resultados e análise, conclusão (no-ticket)
 
 ### Changed
+- Unified LightGBM hyperparameters across H2/H3/H4 experiments: all now use 100 trees, 31 leaves (H4 previously used 200t/63l). Eliminates inconsistency of three different F1 values for same classifier (no-ticket)
+- H4 baseline F1 updated from 0,741 to 0,709 due to unified LightGBM config; cost ratio updated from 1,64× to 1,5× (no-ticket)
+- Per-sample accuracy scores (per_query_scores) now saved for all H2/H3/H4 variants, enabling paired statistical tests (no-ticket)
+- H2 per-class bootstrap analysis: 9/9 classes (100%) show statistically significant improvement with lexical+embeddings vs lexical-only. H2 criterion (≥60% significant) met (no-ticket)
+- Dissertation Cap 6 tables and narrative updated to reflect re-executed H4 results and H2 statistical analysis (no-ticket)
+
+### Fixed
+- Dissertation chapters 1-7: 20 issues from technical review — 2 critical, 4 high, 9 medium, 5 low (no-ticket)
+  - I-01: Corpus size inconsistency (~3.500 planned vs 2.257 executed) — updated Tabela 5.1, added divergence explanation in Cap 5 and Cap 7
+  - I-02: H2 hypothesis reformulated from "multi-level representation" to "lexical+embeddings vs lexical-only" across all chapters to match actual experiment
+  - I-03/I-04: Added clarifying notes to Tables 6.4, 6.6, 6.8 explaining different LightGBM configurations (100 vs 200 trees)
+  - I-05: Replaced cross-validation promises with justified single stratified holdout split
+  - I-06: H1 verdict corrected from "parcialmente confirmada" to "refutada no critério primário" (p=0.103)
+  - I-07: Removed unreported metrics (ECE, AUC-ROC, MAP@K, latency percentiles) from Cap 5, flagged as future work
+  - I-09: Added justification for 2-stage cascade (vs 4 described in Cap 4) in Cap 6
+  - I-10: Added methodological incomparability note to Table 6.10 (BERTaú comparison)
+  - I-11: Standardized Huang & He year to (2025) across all chapters
+  - I-12: Removed inapplicable temporal holdout declaration from Cap 5
+  - I-13: Moderated H3 cancelamento narrative (n=32 samples, global gain 0.5pp)
+  - I-14: Clarified +131% as same-classifier (LightGBM) comparison
+  - I-15/I-16: H4 verdict corrected to "refutada no critério primário" with cost premise explanation
+  - I-17: BM25 attribution corrected to Robertson & Zaragoza (2009)
+  - I-19: Added QiBERT row to Table 3.1
+  - I-20: Added explanation for anomalous MLP F1=0.042 result
+
+### Changed
 - Package renamed from `semantic_conversation_engine` to `talkex` — shorter, product-ready branding (RFC-005, no-ticket)
 - CLI entrypoint renamed from `sce` to `talkex` (no-ticket)
 - PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)

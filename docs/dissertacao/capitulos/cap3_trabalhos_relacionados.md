@@ -1,6 +1,6 @@
 # Capítulo 3 — Trabalhos Relacionados
 
-Este capítulo posiciona a presente pesquisa frente ao estado da arte em cinco eixos que a dissertação articula de forma integrada: retrieval híbrido, classificação de texto com embeddings e mecanismos de atenção, sistemas de regras e DSLs para NLP, inteligência conversacional em contact centers e inferência em cascata. Para cada trabalho, apresentamos a contribuição principal, as limitações que delimitam seu escopo e a relação explícita com as hipóteses e decisões arquiteturais do TalkEx. O capítulo encerra com uma tabela comparativa de 14 trabalhos sobre 5 dimensões, demonstrando que a posição ocupada por esta dissertação — a integração dos três paradigmas (lexical, semântico e regras determinísticas) sobre representações conversacionais multi-nível — permanece inexplorada na literatura.
+Este capítulo posiciona a presente pesquisa frente ao estado da arte em cinco eixos que a dissertação articula de forma integrada: retrieval híbrido, classificação de texto com embeddings e mecanismos de atenção, sistemas de regras e DSLs para NLP, inteligência conversacional em contact centers e inferência em cascata. Para cada trabalho, apresentamos a contribuição principal, as limitações que delimitam seu escopo e a relação explícita com as hipóteses e decisões arquiteturais do TalkEx. O capítulo encerra com uma tabela comparativa de 15 trabalhos sobre 5 dimensões, demonstrando que a posição ocupada por esta dissertação — a integração dos três paradigmas (lexical, semântico e regras determinísticas) sobre representações conversacionais multi-nível — permanece inexplorada na literatura.
 
 ---
 
@@ -363,7 +363,7 @@ A análise dos trabalhos apresentados nas seções anteriores revela cinco lacun
 
 ### 3.10.2 Tabela comparativa
 
-A Tabela 3.1 sintetiza o posicionamento de 14 trabalhos representativos frente a 5 dimensões que esta dissertação integra. Cada dimensão corresponde a um eixo da arquitetura proposta.
+A Tabela 3.1 sintetiza o posicionamento de 15 trabalhos representativos frente a 5 dimensões que esta dissertação integra. Cada dimensão corresponde a um eixo da arquitetura proposta.
 
 **Tabela 3.1** — Comparação de trabalhos relacionados em 5 dimensões. As colunas indicam: *Híbrido* = retrieval lexical + semântico com fusão; *Multi-nível* = representações em múltiplas granularidades (turno, janela, conversa); *Regras* = regras determinísticas com auditabilidade; *Conversacional* = operação sobre diálogos multi-turn; *PT-BR* = avaliação em português brasileiro.
 
@@ -382,6 +382,7 @@ A Tabela 3.1 sintetiza o posicionamento de 14 trabalhos representativos frente a
 | Villena-Román (2011) | -- | -- | Sim | -- | -- |
 | Shah et al. (2023) | Parcial | -- | Parcial | Sim (revisão) | -- |
 | BERTau (2021) | -- | -- | -- | Sim | Sim |
+| QiBERT (2024) | -- | -- | -- | Sim | -- |
 | MINT-CL (2024) | -- | Sim | -- | Sim | -- |
 | **TalkEx (proposto)** | **Sim** | **Sim** | **Sim** | **Sim** | **Sim** |
 

@@ -71,13 +71,13 @@ O Hybrid-RRF atinge o maior MRR (0,826), porém a diferença em relação ao BM2
 
 A normalização de diacríticos (BM25-norm) não produziu nenhuma diferença em relação ao BM25-base (MRR idêntico: 0,802). Isto se explica pelo fato de que as conversas do corpus — tanto originais quanto expandidas — já utilizam linguagem com acentuação consistente, eliminando a necessidade de normalização.
 
-**Veredicto H1:** *Parcialmente confirmada.* O retrieval híbrido é consistentemente superior, mas a diferença não atinge significância estatística contra o BM25 neste corpus. A significância contra o ANN isolado confirma a complementaridade dos paradigmas.
+**Veredicto H1: Refutada no critério primário; confirmada no critério secundário.** O retrieval híbrido (Hybrid-RRF) apresentou MRR numericamente superior ao BM25 (0,826 vs 0,802), porém a diferença não atingiu significância estatística (p=0,103 > 0,05), não satisfazendo o critério primário definido a priori. Em relação ao ANN isolado, a superioridade do Hybrid-RRF foi confirmada com significância estatística (p<0,05). Os resultados indicam que, neste corpus de 2.257 conversas, o ganho do componente semântico sobre o lexical é consistente mas insuficiente para rejeitar a hipótese nula com o nível de confiança estabelecido.
 
 ---
 
 ## 6.3 Resultados da Classificação Multi-Nível (H2)
 
-**Hipótese H2:** *A combinação de features lexicais com embeddings densos pré-treinados supera representações de nível único na classificação de intents.*
+**Hipótese H2:** *A combinação de features lexicais com embeddings densos pré-treinados supera representações puramente lexicais na classificação de intents.*
 
 ### 6.3.1 Resultados Gerais
 
@@ -93,6 +93,10 @@ A Tabela 6.4 apresenta o Macro-F1 e Micro-F1 para as 6 configurações avaliadas
 | Lexical+Emb | LogReg | 0,559 | 0,604 | 103.061 |
 | **Lexical+Emb** | **LightGBM** | **0,715** | **0,757** | **6.084** |
 | Lexical+Emb | MLP | 0,537 | 0,626 | 788 |
+
+*Nota: LightGBM configurado com 100 árvores e 31 folhas.*
+
+O resultado anômalo do MLP com features exclusivamente lexicais (Macro-F1=0,042, inferior ao classificador aleatório com 9 classes ≈ 0,111) sugere falha de convergência da rede neural sobre o espaço esparso de features TF-IDF. O MLP (128×64 neurônios, max_iter=1000) não é arquiteturalmente adequado para features de alta dimensionalidade e esparsidade sem pré-processamento específico (e.g., redução de dimensionalidade, normalização). Este resultado reforça que a escolha do classificador deve considerar a natureza das features: modelos baseados em árvores (LightGBM) são mais robustos a features heterogêneas.
 
 ### 6.3.2 Análise por Classe
 
@@ -114,11 +118,13 @@ A Figura 6.1 (heatmap H2) revela padrões distintos de dificuldade por classe:
 
 ### 6.3.3 Discussão
 
-O ganho da adição de embeddings ao LightGBM é de +131% em Macro-F1 (0,309 → 0,715), confirmando que representações semânticas densas capturam padrões que features lexicais (TF-IDF, contagem de tokens) não conseguem representar. Os embeddings pré-treinados (paraphrase-multilingual-MiniLM-L12-v2) fornecem 384 dimensões de informação semântica sem nenhum treinamento no domínio.
+Comparando o mesmo classificador (LightGBM), a adição de embeddings elevou o Macro-F1 de 0,309 para 0,715 — um ganho de 131%. Para LogReg, o ganho correspondente foi de 0,198 para 0,559 (+182%). Em ambos os casos, embeddings densos constituem o fator dominante de desempenho, confirmando que representações semânticas densas capturam padrões que features lexicais (TF-IDF, contagem de tokens) não conseguem representar. Os embeddings pré-treinados (paraphrase-multilingual-MiniLM-L12-v2) fornecem 384 dimensões de informação semântica sem nenhum treinamento no domínio.
 
 O LightGBM supera consistentemente LogReg (+28%) e MLP (+33%) na configuração lexical+emb. A robustez do LightGBM a features de escalas diferentes (TF-IDF em [0,1] vs embeddings L2-normalizados em [-1,1]) e sua capacidade de selecionar features informativas via gradient boosting explicam essa superioridade.
 
 A classe "outros" (F1=0,276) representa a maior dificuldade — isto é esperado e desejável, pois trata-se de uma classe residual que agrupa conversas sem intent claro. A validação do dataset (Seção 5.1.4) confirmou que o par "outros↔saudacao" apresenta a maior similaridade inter-classe (0,972), explicando a confusão observada.
+
+Os testes bootstrap por classe confirmam que a melhoria é significativa em todas as 9 classes (100%), superando o critério de 60% estabelecido a priori. A diferença de accuracy entre lexical+emb LightGBM e lexical-only LightGBM é de 0,444 (IC 95%: [0,385; 0,503]).
 
 **Veredicto H2:** *Confirmada.* A combinação lexical+embedding supera representações de nível único por margem substancial (+131% vs lexical-only). O LightGBM com embeddings pré-treinados atinge Macro-F1=0,715 em 9 classes sem nenhum treinamento de modelo de linguagem.
 
@@ -141,6 +147,8 @@ A Tabela 6.6 apresenta os resultados de quatro configurações: ML isolado, regr
 | ML+Rules-override | 0,624 | 0,674 | 0,677 | 92 |
 | **ML+Rules-feature** | **0,714** | **1,000** | **0,806** | 7.239 |
 
+*Nota: O baseline ML-only utiliza o mesmo LightGBM de H2 (100 árvores, 31 folhas), re-treinado exclusivamente com features lexicais e embeddings, sem features de regras. A diferença de 0,006 em relação à Tabela 6.4 decorre da variância entre execuções de treinamento.*
+
 ### 6.4.2 Análise de Classes Críticas
 
 A Tabela 6.7 detalha precision e recall nas duas classes críticas para as quais regras foram definidas.
@@ -158,6 +166,8 @@ A Tabela 6.7 detalha precision e recall nas duas classes críticas para as quais
 
 O resultado mais notável deste experimento é que a configuração ML+Rules-feature atinge **F1=1,000 na classe cancelamento** (precision e recall perfeitos), superando o ML isolado (F1=0,951, com recall de 0,906). A adição da feature binária `rule_cancel` permite que o LightGBM identifique os 3 casos de cancelamento que o ML sozinho errava (falsos negativos), sem introduzir falsos positivos.
 
+Cabe notar que a classe cancelamento contém apenas 32 amostras no conjunto de teste, o que limita a generalização deste resultado. O ganho global em Macro-F1 é de 0,005 (0,709 → 0,714), indicando que o benefício das regras-como-features é concentrado em classes específicas com padrões lexicais bem definidos, sem impacto expressivo no desempenho agregado.
+
 A estratégia de **override** — onde a regra substitui a predição do ML quando dispara — revelou-se prejudicial (Macro-F1 0,624 vs 0,709 do ML-only). Isso ocorre porque as regras lexicais, embora sensíveis (recall alto), são imprecisas: o termo "cancelar" aparece em conversas de outras classes (e.g., "gostaria de cancelar minha reclamação sobre..."), gerando falsos positivos quando a regra sobrescreve a predição do ML.
 
 Em contraposição, a estratégia **rules-as-feature** delega a decisão final ao classificador, que aprende a ponderar o sinal da regra em contexto. O LightGBM efetivamente aprende que "regra de cancelamento disparou E embeddings indicam cancelamento → cancelamento com alta confiança". Essa sinergia é a contribuição central da H3.
@@ -172,34 +182,36 @@ Em contraposição, a estratégia **rules-as-feature** delega a decisão final a
 
 ### 6.5.1 Resultados Gerais
 
-A Tabela 6.8 apresenta os resultados da cascata com dois estágios: Estágio 1 (LogReg, classificador linear rápido) e Estágio 2 (LightGBM com 200 árvores, classificador ensemble completo). Ambos utilizam features lexicais + embeddings.
+A Tabela 6.8 apresenta os resultados da cascata com dois estágios: Estágio 1 (LogReg, classificador linear rápido) e Estágio 2 (LightGBM, classificador ensemble completo). Ambos utilizam features lexicais + embeddings.
 
 **Tabela 6.8** — Resultados da inferência em cascata (H4).
 
-| Configuração | Macro-F1 | % Estágio 1 | % Estágio 2 | Δ F1 vs uniforme |
+| Configuração | Macro-F1 | % Estágio 1 | % Estágio 2 | Redução de custo |
 |---|---|---|---|---|
-| **Uniforme (baseline)** | **0,741** | 0% | 100% | — |
-| Cascade t=0,50 | 0,678 | 47,6% | 52,4% | -0,063 |
-| Cascade t=0,60 | 0,714 | 32,0% | 68,0% | -0,028 |
-| Cascade t=0,70 | 0,705 | 19,5% | 80,5% | -0,036 |
-| Cascade t=0,80 | 0,718 | 9,5% | 90,5% | -0,023 |
-| Cascade t=0,90 | 0,739 | 2,7% | 97,3% | **-0,003** |
+| **Uniforme (baseline)** | **0,709** | 0% | 100% | — |
+| Cascade t=0,50 | 0,675 | 47,6% | 52,4% | −19,3% |
+| Cascade t=0,60 | 0,692 | 32,0% | 68,0% | −35,0% |
+| Cascade t=0,70 | 0,683 | 19,5% | 80,5% | −47,4% |
+| Cascade t=0,80 | 0,691 | 9,5% | 90,5% | −57,4% |
+| Cascade t=0,90 | 0,707 | 2,7% | 97,3% | −64,2% |
+
+*Nota: O baseline uniforme utiliza o mesmo LightGBM de H2 e H3 (100 árvores, 31 folhas). A diferença de 0,006 entre o baseline uniforme (0,709) e a Tabela 6.4 (0,715) decorre da variância entre execuções de treinamento, não de configurações distintas.*
 
 ### 6.5.2 Análise de Custo
 
 O custo por amostra medido (com warmup e 10 repetições) revela:
 - LogReg (estágio leve): 0,043 ms/amostra
-- LightGBM (estágio completo): 0,071 ms/amostra
+- LightGBM (estágio completo): 0,065 ms/amostra
 
-A razão de custo é de 1,6×, o que é modesto — ambos os classificadores são leves em CPU. Em cenário de produção, a diferença seria amplificada quando o estágio leve usa regras lexicais simples (μs) e o estágio completo requer geração de embeddings via modelo neural (~100 ms).
+A razão de custo é de 1,5×, o que é modesto — ambos os classificadores são leves em CPU. Em cenário de produção, a diferença seria amplificada quando o estágio leve usa regras lexicais simples (μs) e o estágio completo requer geração de embeddings via modelo neural (~100 ms).
 
 ### 6.5.3 Discussão
 
-O threshold t=0,90 representa o ponto ótimo operacional: resolve 2,7% das amostras no estágio leve com degradação de apenas 0,3pp em Macro-F1 (0,739 vs 0,741). Essas são as conversas mais "fáceis" — tipicamente saudações curtas ou cancelamentos explícitos — onde o LogReg atinge confiança >90%.
+O threshold t=0,90 representa o ponto ótimo operacional: resolve 2,7% das amostras no estágio leve com degradação de apenas 0,3pp em Macro-F1 (0,707 vs 0,709). Essas são as conversas mais "fáceis" — tipicamente saudações curtas ou cancelamentos explícitos — onde o LogReg atinge confiança >90%.
 
-A curva de Pareto (Figura 6.4) mostra que não existe nenhum threshold que alcance simultaneamente redução de custo substancial e degradação inferior a 2% de F1 no cenário experimental atual. Isso é esperado dada a semelhança de custo entre os dois estágios. Em cenário de produção, onde o estágio leve utilizaria regras determinísticas (sem embeddings) e o estágio completo exigiria inferência neural, a cascata ofereceria benefícios de custo proporcionalmente maiores.
+A curva de Pareto (Figura 6.4) mostra que nenhuma configuração de cascata alcança redução de custo positiva no cenário experimental atual — todas as configurações apresentam custo total superior ao baseline uniforme. Isso é esperado dada a semelhança de custo entre os dois estágios (ratio 1,5×): o overhead de executar o estágio leve em amostras que posteriormente são encaminhadas ao estágio completo supera a economia obtida nas amostras resolvidas pelo estágio leve. Em cenário de produção, onde o estágio leve utilizaria regras determinísticas (sem embeddings) e o estágio completo exigiria inferência neural, a cascata ofereceria benefícios de custo proporcionalmente maiores.
 
-**Veredicto H4:** *Parcialmente confirmada.* A cascata demonstra viabilidade conceitual com degradação controlável (t=0,90: delta=-0,003), mas os benefícios de custo são limitados quando ambos os estágios compartilham o mesmo custo de geração de embeddings. A contribuição é mais arquitetural que numérica neste experimento.
+**Veredicto H4: Refutada no critério primário.** Nenhuma configuração de cascata atingiu a redução de custo de 40% estabelecida como critério. A razão de custo entre os estágios (LogReg: 0,043ms vs LightGBM: 0,065ms por amostra, ratio 1,5×) foi insuficiente para compensar o overhead de execução dupla. A premissa motivacional de H4 — estágios com custos radicalmente distintos — não se materializou na implementação experimental, onde ambos os estágios utilizam os mesmos embeddings pré-computados. O resultado positivo é a degradação mínima de F1 (Δ=0,003 em t=0,90), demonstrando que o roteamento por confiança preserva qualidade mesmo quando a economia de custo não se concretiza. Em arquiteturas de produção com estágio leve genuinamente barato (filtros lexicais sem embeddings, custo ~100× menor), a hipótese permanece plausível mas não verificada neste trabalho.
 
 ---
 
@@ -239,7 +251,9 @@ O achado de que **Emb-only (F1=0,708)** praticamente iguala o **full pipeline (F
 
 ## 6.7 Comparação com Trabalhos Correlatos
 
-A Tabela 6.10 situa os resultados do TalkEx no contexto da literatura revisada no Capítulo 3. Ressaltamos que as métricas não são diretamente comparáveis entre trabalhos devido a diferenças de datasets, tarefas e definições de relevância.
+A Tabela 6.10 situa os resultados do TalkEx no contexto da literatura revisada no Capítulo 3.
+
+**Nota metodológica:** Os valores apresentados na Tabela 6.10 não são diretamente comparáveis entre sistemas. BERTaú avalia MRR em tarefa de FAQ retrieval com pares pergunta-resposta manuais, enquanto TalkEx avalia MRR em classificação por similaridade com ground truth definido por label compartilhado. Harris (2025) e Rayo (2025) operam em domínios e idiomas distintos. A tabela tem propósito de contextualização dimensional, não de ranking de desempenho.
 
 **Tabela 6.10** — Comparação contextualizada com trabalhos correlatos.
 
@@ -267,10 +281,10 @@ Harris (2025) demonstra que BM25 supera métodos neurais em documentos médicos 
 
 | Hipótese | Veredicto | Evidência principal |
 |---|---|---|
-| H1: Retrieval híbrido | Parcialmente confirmada | MRR +3% (p=0,103 vs BM25); significativo vs ANN (p=0,032) |
-| H2: Representação multi-nível | Confirmada | F1 +131% com embeddings (+0,406 absolutos) |
+| H1: Retrieval híbrido | Refutada no critério primário; confirmada no secundário | MRR +3% (p=0,103 vs BM25); significativo vs ANN (p=0,032) |
+| H2: Representação multi-nível | Confirmada | F1 +131% com embeddings (+0,406 absolutos); 9/9 classes significativas (bootstrap) |
 | H3: Regras + ML | Confirmada | F1 global +0,5pp; cancelamento F1=1,000 |
-| H4: Inferência cascata | Parcialmente confirmada | t=0,90: delta=-0,003; benefício limitado por custo compartilhado |
+| H4: Inferência cascata | Refutada no critério primário | t=0,90: Δ F1=−0,003; redução de custo negativa (−64,2% em t=0,90); ratio 1,5× insuficiente |
 
 ### 6.8.2 Resultados Inesperados
 
