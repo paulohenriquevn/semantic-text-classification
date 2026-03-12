@@ -76,7 +76,7 @@ class LogisticRegressionClassifier:
         self._is_fitted = False
 
         linear_model = _import_sklearn()
-        kwargs: dict[str, Any] = {"max_iter": 1000}
+        kwargs: dict[str, Any] = {"max_iter": 1000, "random_state": 42}
         if sklearn_kwargs:
             kwargs.update(sklearn_kwargs)
         self._model: Any = linear_model.LogisticRegression(**kwargs)

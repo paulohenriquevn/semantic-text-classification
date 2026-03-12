@@ -77,6 +77,7 @@ class LightGBMClassifier:
             "n_estimators": 100,
             "num_leaves": 31,
             "verbosity": -1,
+            "random_state": 42,
         }
         if lgbm_kwargs:
             kwargs.update(lgbm_kwargs)

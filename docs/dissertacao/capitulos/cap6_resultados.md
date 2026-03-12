@@ -172,7 +172,9 @@ A estratégia de **override** — onde a regra substitui a predição do ML quan
 
 Em contraposição, a estratégia **rules-as-feature** delega a decisão final ao classificador, que aprende a ponderar o sinal da regra em contexto. O LightGBM efetivamente aprende que "regra de cancelamento disparou E embeddings indicam cancelamento → cancelamento com alta confiança". Essa sinergia é a contribuição central da H3.
 
-**Veredicto H3:** *Confirmada.* Regras como features complementam o ML com ganho de +0,5pp no Macro-F1 global e ganhos dramáticos em classes críticas (cancelamento: +4,9pp, atingindo F1 perfeito). A estratégia de override, entretanto, é prejudicial e não recomendada.
+**Teste estatístico:** O teste de Wilcoxon signed-rank entre ML+Rules-feature e ML-only obteve p=0,4669 (não significativo a α=0,05). O intervalo de confiança bootstrap de 95% para a diferença de acurácia é [−0,0148; +0,0325], contendo zero. O tamanho de efeito (r=0,18) é pequeno.
+
+**Veredicto H3:** *Inconclusiva.* A estratégia rules-as-feature apresenta ganho direcional de +0,5pp em Macro-F1 e ganhos expressivos em classes críticas (cancelamento: F1 0,951 → 1,000), mas a diferença global não atinge significância estatística (p=0,4669, IC 95% inclui zero). Não é possível confirmar nem refutar a hipótese com o poder estatístico disponível — o corpus contém apenas 32 amostras de cancelamento no conjunto de teste, limitando a generalização dos ganhos observados. A contribuição qualitativa permanece relevante: a arquitetura rules-as-feature demonstra que regras determinísticas podem ser integradas como sinais adicionais ao classificador sem degradar o desempenho, enquanto a estratégia de override é prejudicial (Macro-F1 0,624) e não recomendada.
 
 ---
 
@@ -283,7 +285,7 @@ Harris (2025) demonstra que BM25 supera métodos neurais em documentos médicos 
 |---|---|---|
 | H1: Retrieval híbrido | Refutada no critério primário; confirmada no secundário | MRR +3% (p=0,103 vs BM25); significativo vs ANN (p=0,032) |
 | H2: Representação multi-nível | Confirmada | F1 +131% com embeddings (+0,406 absolutos); 9/9 classes significativas (bootstrap) |
-| H3: Regras + ML | Confirmada | F1 global +0,5pp; cancelamento F1=1,000 |
+| H3: Regras + ML | Inconclusiva | F1 global +0,5pp (p=0,4669, IC inclui zero); cancelamento F1=1,000 mas n=32 |
 | H4: Inferência cascata | Refutada no critério primário | t=0,90: Δ F1=−0,003; redução de custo negativa (−64,2% em t=0,90); ratio 1,5× insuficiente |
 
 ### 6.8.2 Resultados Inesperados

@@ -51,16 +51,16 @@
     "summary": "MRR_diff: observed diff=0.0268, 95% CI=[0.0010, 0.0531] (excludes zero (significant))"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30",
+    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30 (val-selected)",
     "test": "Wilcoxon signed-rank",
     "statistic": 1420.5,
     "p_value": 0.2570369487833061,
     "significant": false,
     "effect_size": 0.1445347786811202,
-    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.30 (mean diff=0.0132, p=0.2570, not significant at alpha=0.05)"
+    "summary": "Hybrid-RRF > Hybrid-LINEAR-a0.30 (val-selected) (mean diff=0.0132, p=0.2570, not significant at alpha=0.05)"
   },
   {
-    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30",
+    "comparison": "Hybrid-RRF vs Hybrid-LINEAR-a0.30 (val-selected)",
     "test": "Bootstrap CI",
     "ci_lower": -0.009505973152422726,
     "ci_upper": 0.03591904161338347,

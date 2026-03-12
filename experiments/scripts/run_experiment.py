@@ -32,6 +32,7 @@ SPLITS_DIR = Path("experiments/data")
 RESULTS_DIR = Path("experiments/results")
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 EMBEDDING_VERSION = "1.0"
+CURRENT_SEED: int = 42  # Global seed, overridden by multi-seed loop
 
 
 # ---------------------------------------------------------------------------
@@ -216,11 +217,14 @@ def _write_summary_table(results: list[ExperimentResult], path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def run_h1(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
+def run_h1(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
     """Run H1 experiments: hybrid retrieval superiority.
 
     Compares BM25-base, BM25-norm, ANN (NullEmbedding), Hybrid-linear, Hybrid-RRF
     on retrieval metrics (Recall@K, MRR, nDCG).
+
+    Fusion weight alpha for Hybrid-LINEAR is tuned on the validation set.
+    Final metrics are reported on the held-out test set only.
 
     Ground truth: for each test query, relevant documents are training
     conversations with the same intent label.
@@ -251,6 +255,10 @@ def run_h1(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     train_texts = extract_texts(train)
     train_labels = extract_labels(train)
     train_ids = [r.get("conversation_id", r.get("id", f"train_{i}")) for i, r in enumerate(train)]
+
+    val_texts = extract_texts(val)
+    val_labels = extract_labels(val)
+    val_ids = [r.get("conversation_id", r.get("id", f"val_{i}")) for i, r in enumerate(val)]
 
     test_texts = extract_texts(test)
     test_labels = extract_labels(test)
@@ -392,9 +400,23 @@ def run_h1(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         )
     )
 
-    # --- Hybrid-LINEAR at different fusion weights ---
-    for alpha in [0.3, 0.5, 0.65, 0.8]:
-        logger.info("Running Hybrid-LINEAR (alpha=%.2f)...", alpha)
+    # --- Hybrid-LINEAR: tune alpha on validation, report on test ---
+    def _make_linear_search(retriever: SimpleHybridRetriever):
+        def search_fn(query: str, top_k: int) -> list[tuple[str, float]]:
+            q = RetrievalQuery(query_text=query, top_k=top_k, query_type=QueryType.HYBRID)
+            result = retriever.retrieve(q)
+            return [(h.object_id, h.score) for h in result.hits]
+
+        return search_fn
+
+    alpha_candidates = [0.3, 0.5, 0.65, 0.8]
+
+    # Step 1: Evaluate all alphas on validation set to select best
+    best_val_mrr = -1.0
+    best_alpha = alpha_candidates[0]
+    val_mrr_by_alpha: dict[float, float] = {}
+
+    for alpha in alpha_candidates:
         hybrid_lin_config = HybridRetrievalConfig(
             fusion_strategy=FusionStrategy.LINEAR,
             fusion_weight=alpha,
@@ -408,24 +430,51 @@ def run_h1(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
             embedding_generator=emb_gen,
             config=hybrid_lin_config,
         )
+        val_metrics, _, _ = _evaluate_retriever_fn(
+            _make_linear_search(hybrid_lin), val_texts, val_labels, val_ids, intent_to_train_ids
+        )
+        val_mrr = val_metrics["mrr"]
+        val_mrr_by_alpha[alpha] = val_mrr
+        logger.info("  Hybrid-LINEAR alpha=%.2f: val MRR=%.4f", alpha, val_mrr)
+        if val_mrr > best_val_mrr:
+            best_val_mrr = val_mrr
+            best_alpha = alpha
 
-        def _make_linear_search(retriever: SimpleHybridRetriever):
-            def search_fn(query: str, top_k: int) -> list[tuple[str, float]]:
-                q = RetrievalQuery(query_text=query, top_k=top_k, query_type=QueryType.HYBRID)
-                result = retriever.retrieve(q)
-                return [(h.object_id, h.score) for h in result.hits]
+    logger.info("Best alpha=%.2f selected on validation (MRR=%.4f)", best_alpha, best_val_mrr)
 
-            return search_fn
-
+    # Step 2: Evaluate all alphas on test set (for full reporting), marking best
+    for alpha in alpha_candidates:
+        logger.info("Evaluating Hybrid-LINEAR (alpha=%.2f) on test...", alpha)
+        hybrid_lin_config = HybridRetrievalConfig(
+            fusion_strategy=FusionStrategy.LINEAR,
+            fusion_weight=alpha,
+            lexical_top_k=20,
+            vector_top_k=20,
+            final_top_k=20,
+        )
+        hybrid_lin = SimpleHybridRetriever(
+            lexical_index=bm25_base,
+            vector_index=vec_index,
+            embedding_generator=emb_gen,
+            config=hybrid_lin_config,
+        )
         metrics_lin, scores_lin, dur_lin = _evaluate_retriever_fn(
             _make_linear_search(hybrid_lin), test_texts, test_labels, test_ids, intent_to_train_ids
         )
+        variant_name = f"Hybrid-LINEAR-a{alpha:.2f}"
+        if alpha == best_alpha:
+            variant_name += " (val-selected)"
         results.append(
             ExperimentResult(
                 hypothesis="H1",
-                variant_name=f"Hybrid-LINEAR-a{alpha:.2f}",
-                metrics=metrics_lin,
-                config={"type": "hybrid", "fusion": "linear", "alpha": alpha},
+                variant_name=variant_name,
+                metrics={**metrics_lin, "val_mrr": val_mrr_by_alpha[alpha]},
+                config={
+                    "type": "hybrid",
+                    "fusion": "linear",
+                    "alpha": alpha,
+                    "selected_on_val": alpha == best_alpha,
+                },
                 duration_ms=dur_lin,
                 per_query_scores=scores_lin,
             )
@@ -501,6 +550,7 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
 
     Compares lexical-only vs lexical+embedding features
     across LogReg, LightGBM, MLP classifiers.
+    Best configuration is identified on validation set; all metrics reported on test.
     Uses talkex SentenceTransformerGenerator for embedding generation.
     """
     from talkex.classification.labels import LabelSpace
@@ -516,12 +566,15 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     logger.info("=" * 60)
 
     train_labels = extract_labels(train)
+    val_labels = extract_labels(val)
     test_labels = extract_labels(test)
     train_texts = extract_texts(train)
+    val_texts = extract_texts(val)
     test_texts_h2 = extract_texts(test)
     train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
+    val_ids = [_get_record_id(r, f"val_{i}") for i, r in enumerate(val)]
     test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + test_labels))
+    unique_labels = sorted(set(train_labels + val_labels + test_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
     # Feature extraction: lexical + structural
@@ -545,12 +598,14 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
         return all_features, feature_names
 
     train_lex_features, lex_feature_names = make_lexical_features(train)
+    val_lex_features, _ = make_lexical_features(val)
     test_lex_features, _ = make_lexical_features(test)
 
     # Generate embeddings via talkex pipeline
     logger.info("Generating embeddings via talkex SentenceTransformerGenerator (%s)...", EMBEDDING_MODEL)
     emb_gen = _make_embedding_generator()
     train_embeddings = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
+    val_embeddings = generate_embeddings_via_talkex(val_texts, val_ids, emb_gen)
     test_embeddings = generate_embeddings_via_talkex(test_texts_h2, test_ids, emb_gen)
     emb_dims = train_embeddings.shape[1]
     logger.info("Embeddings generated: %d dims (via talkex pipeline)", emb_dims)
@@ -569,17 +624,23 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
         return merged, names
 
     train_full_features, full_feature_names = merge_with_embeddings(train_lex_features, train_embeddings)
+    val_full_features, _ = merge_with_embeddings(val_lex_features, val_embeddings)
     test_full_features, _ = merge_with_embeddings(test_lex_features, test_embeddings)
 
     # Build feature configurations to test
     feature_configs = {
-        "lexical": (train_lex_features, test_lex_features, lex_feature_names),
-        "lexical+emb": (train_full_features, test_full_features, full_feature_names),
+        "lexical": (train_lex_features, val_lex_features, test_lex_features, lex_feature_names),
+        "lexical+emb": (train_full_features, val_full_features, test_full_features, full_feature_names),
     }
 
     results: list[ExperimentResult] = []
 
-    for feat_name, (tr_feats, te_feats, feat_names) in feature_configs.items():
+    # Step 1: Train all configs and evaluate on val to identify best
+    best_val_f1 = -1.0
+    best_val_config = ""
+    val_f1_by_config: dict[str, float] = {}
+
+    for feat_name, (tr_feats, va_feats, te_feats, feat_names) in feature_configs.items():
         # Build inputs for this feature config
         train_inputs = [
             ClassificationInput(
@@ -589,6 +650,16 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                 features=tr_feats[i],
             )
             for i in range(len(train))
+        ]
+
+        val_inputs = [
+            ClassificationInput(
+                source_id=_get_record_id(val[i], f"val_{i}"),
+                source_type="conversation",
+                text=val_texts[i],
+                features=va_feats[i],
+            )
+            for i in range(len(val))
         ]
 
         test_examples = [
@@ -611,38 +682,51 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
         runner = ClassificationBenchmarkRunner(dataset=eval_dataset)
 
         # Define classifiers
-        classifier_configs = {
+        classifier_configs_map = {
             "LogReg": lambda fn=feat_names: LogisticRegressionClassifier(
                 label_space=label_space,
                 feature_names=fn,
                 model_name="logistic-regression",
-                sklearn_kwargs={"max_iter": 2000},
+                sklearn_kwargs={"max_iter": 2000, "random_state": CURRENT_SEED},
             ),
             "LightGBM": lambda fn=feat_names: LightGBMClassifier(
                 label_space=label_space,
                 feature_names=fn,
                 model_name="lightgbm",
-                lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1},
+                lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
             ),
             "MLP": lambda fn=feat_names: MLPClassifier(
                 label_space=label_space,
                 feature_names=fn,
                 model_name="mlp",
                 hidden_layer_sizes=(128, 64),
-                sklearn_kwargs={"max_iter": 1000, "random_state": 42},
+                sklearn_kwargs={"max_iter": 1000, "random_state": CURRENT_SEED},
             ),
         }
 
-        for clf_name, clf_factory in classifier_configs.items():
+        for clf_name, clf_factory in classifier_configs_map.items():
             logger.info("Training %s (%s)...", clf_name, feat_name)
             t0 = time.perf_counter()
             clf = clf_factory()
             clf.fit(train_inputs, train_labels)
 
+            # Evaluate on validation set for config selection
+            val_preds = clf.classify(val_inputs)
+            val_pred_labels = [p.top_label for p in val_preds]
+            val_f1 = _compute_macro_f1(val_pred_labels, val_labels, unique_labels)
+            config_key = f"{feat_name}_{clf_name}"
+            val_f1_by_config[config_key] = val_f1
+            logger.info("  [VAL] %s/%s: macro_f1=%.4f", feat_name, clf_name, val_f1)
+            if val_f1 > best_val_f1:
+                best_val_f1 = val_f1
+                best_val_config = config_key
+
+            # Evaluate on test set for final reporting
             method_result = runner.evaluate(clf, clf_name)
             dur = (time.perf_counter() - t0) * 1000
 
             metrics = method_result.aggregated.copy()
+            metrics["val_macro_f1"] = val_f1
             # Add per-label F1
             for label_name, label_metrics in method_result.per_label.items():
                 metrics[f"f1_{label_name}"] = label_metrics.get("f1", 0.0)
@@ -659,17 +743,17 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                     for i in range(len(test))
                 ]
             )
-            per_sample = [
-                1.0 if pred.top_label == test_labels[i] else 0.0
-                for i, pred in enumerate(clf_preds)
-            ]
+            per_sample = [1.0 if pred.top_label == test_labels[i] else 0.0 for i, pred in enumerate(clf_preds)]
 
             results.append(
                 ExperimentResult(
                     hypothesis="H2",
-                    variant_name=f"{feat_name}_{clf_name}",
+                    variant_name=config_key,
                     metrics=metrics,
-                    config={"classifier": clf_name, "features": feat_name},
+                    config={
+                        "classifier": clf_name,
+                        "features": feat_name,
+                    },
                     duration_ms=dur,
                     per_query_scores=per_sample,
                 )
@@ -682,6 +766,14 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                 metrics.get("micro_f1", 0),
             )
 
+    # Mark val-selected best config after all configs are evaluated
+    logger.info("Best config on validation: %s (val F1=%.4f)", best_val_config, best_val_f1)
+    for r in results:
+        if r.variant_name == best_val_config:
+            r.config["selected_on_val"] = True
+        else:
+            r.config["selected_on_val"] = False
+
     logger.info("H2 complete: %d variants evaluated", len(results))
     return results
 
@@ -691,12 +783,13 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
 # ---------------------------------------------------------------------------
 
 
-def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
+def run_h4(train: list[dict], val: list[dict], test: list[dict]) -> list[ExperimentResult]:
     """Run H4 experiments: cascaded inference efficiency.
 
     Compares uniform pipeline vs cascaded pipeline at different thresholds.
     Stage 1 (lightweight): LogReg with lexical+emb features (cheap linear model).
     Stage 2 (full): LightGBM with lexical+emb features (expensive ensemble).
+    Cascade threshold is tuned on validation set; final metrics on test.
     Uses talkex SentenceTransformerGenerator for embedding generation.
     """
     logger.info("=" * 60)
@@ -710,12 +803,15 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     from talkex.classification.models import ClassificationInput
 
     train_labels = extract_labels(train)
+    val_labels = extract_labels(val)
     test_labels = extract_labels(test)
     train_texts = extract_texts(train)
+    val_texts = extract_texts(val)
     test_texts_h4 = extract_texts(test)
     train_ids = [_get_record_id(r, f"train_{i}") for i, r in enumerate(train)]
+    val_ids = [_get_record_id(r, f"val_{i}") for i, r in enumerate(val)]
     test_ids = [_get_record_id(r, f"test_{i}") for i, r in enumerate(test)]
-    unique_labels = sorted(set(train_labels + test_labels))
+    unique_labels = sorted(set(train_labels + val_labels + test_labels))
     label_space = LabelSpace(labels=unique_labels, default_threshold=0.3)
 
     # Build lexical features (for lightweight classifier)
@@ -745,12 +841,14 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         return inputs, feature_names_ref
 
     train_lex_inputs, _lex_feature_names = build_lex_inputs(train, train_texts)
+    val_lex_inputs, _ = build_lex_inputs(val, val_texts)
     test_lex_inputs, _ = build_lex_inputs(test, test_texts_h4)
 
     # Generate embeddings via talkex pipeline
     logger.info("Generating embeddings via talkex SentenceTransformerGenerator (%s)...", EMBEDDING_MODEL)
     emb_gen = _make_embedding_generator()
     train_embs = generate_embeddings_via_talkex(train_texts, train_ids, emb_gen)
+    val_embs = generate_embeddings_via_talkex(val_texts, val_ids, emb_gen)
     test_embs = generate_embeddings_via_talkex(test_texts_h4, test_ids, emb_gen)
 
     def build_full_inputs(
@@ -775,6 +873,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         return full_inputs, full_names
 
     train_full_inputs, full_feature_names = build_full_inputs(train_lex_inputs, train_embs)
+    val_full_inputs, _ = build_full_inputs(val_lex_inputs, val_embs)
     test_full_inputs, _ = build_full_inputs(test_lex_inputs, test_embs)
 
     # Train lightweight (LogReg with embeddings, fast inference) and full (LightGBM with embeddings, expensive)
@@ -783,7 +882,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     light_clf = LogisticRegressionClassifier(
         label_space=label_space,
         feature_names=full_feature_names,
-        sklearn_kwargs={"max_iter": 2000},
+        sklearn_kwargs={"max_iter": 2000, "random_state": CURRENT_SEED},
     )
     light_clf.fit(train_full_inputs, train_labels)
 
@@ -791,7 +890,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     full_clf = LightGBMClassifier(
         label_space=label_space,
         feature_names=full_feature_names,
-        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1},
+        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
     full_clf.fit(train_full_inputs, train_labels)
 
@@ -834,10 +933,7 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     uniform_preds = [r.top_label for r in full_results]
     uniform_f1 = _compute_macro_f1(uniform_preds, test_labels, unique_labels)
     uniform_cost = n_test * full_cost_per_sample
-    uniform_per_sample = [
-        1.0 if uniform_preds[i] == test_labels[i] else 0.0
-        for i in range(n_test)
-    ]
+    uniform_per_sample = [1.0 if uniform_preds[i] == test_labels[i] else 0.0 for i in range(n_test)]
 
     results.append(
         ExperimentResult(
@@ -857,48 +953,90 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         )
     )
 
-    # --- Cascaded pipeline ---
-    # Thresholds tuned for 9-class problem: LogReg with embeddings can reach ~0.4-0.7 on easy cases
-    for threshold in [0.50, 0.60, 0.70, 0.80, 0.90]:
-        logger.info("Running cascaded pipeline (threshold=%.2f)...", threshold)
+    # --- Cascaded pipeline: tune threshold on val, report on test ---
+    threshold_candidates = [0.50, 0.60, 0.70, 0.80, 0.90]
 
-        # Stage 1: lightweight classifier (LogReg, fast linear inference)
-        light_results = light_clf.classify(test_full_inputs)
+    def _run_cascade(inputs: list, labels: list[str], threshold: float) -> tuple[list[str], float, int]:
+        """Run cascade on given inputs, return (predictions, pct_stage1, n_stage2)."""
+        light_results = light_clf.classify(inputs)
         cascaded_preds = []
         stage2_indices = []
-
         for idx, lr in enumerate(light_results):
             if lr.top_score >= threshold:
                 cascaded_preds.append((idx, lr.top_label))
             else:
                 stage2_indices.append(idx)
-
-        # Stage 2: full classifier on unresolved (LightGBM, expensive ensemble)
         if stage2_indices:
-            stage2_inputs = [test_full_inputs[i] for i in stage2_indices]
+            stage2_inputs = [inputs[i] for i in stage2_indices]
             stage2_results = full_clf.classify(stage2_inputs)
             for i, sr in zip(stage2_indices, stage2_results, strict=True):
                 cascaded_preds.append((i, sr.top_label))
-
         cascaded_preds.sort(key=lambda x: x[0])
         final_preds = [p for _, p in cascaded_preds]
+        n_total = len(inputs)
+        pct_s1 = (n_total - len(stage2_indices)) / n_total * 100
+        return final_preds, pct_s1, len(stage2_indices)
+
+    # Step 1: Select best threshold on validation set
+    n_val = len(val_full_inputs)
+    val_uniform_results = full_clf.classify(val_full_inputs)
+    val_uniform_preds = [r.top_label for r in val_uniform_results]
+    val_uniform_f1 = _compute_macro_f1(val_uniform_preds, val_labels, unique_labels)
+    val_uniform_cost = n_val * full_cost_per_sample
+
+    best_val_threshold = threshold_candidates[0]
+    best_val_f1 = -1.0
+    val_metrics_by_threshold: dict[float, dict[str, float]] = {}
+
+    for threshold in threshold_candidates:
+        val_preds, val_pct_s1, val_n_s2 = _run_cascade(val_full_inputs, val_labels, threshold)
+        val_cascade_f1 = _compute_macro_f1(val_preds, val_labels, unique_labels)
+        val_cascade_cost = n_val * light_cost_per_sample + val_n_s2 * full_cost_per_sample
+        val_cost_reduction = (1 - val_cascade_cost / val_uniform_cost) * 100 if val_uniform_cost > 0 else 0
+        val_f1_delta = val_uniform_f1 - val_cascade_f1
+
+        val_metrics_by_threshold[threshold] = {
+            "val_macro_f1": val_cascade_f1,
+            "val_pct_stage1": val_pct_s1,
+            "val_cost_reduction_pct": val_cost_reduction,
+            "val_f1_delta": val_f1_delta,
+        }
+        logger.info(
+            "  [VAL] threshold=%.2f: F1=%.4f (delta=%.4f), stage1=%.1f%%, cost_reduction=%.1f%%",
+            threshold,
+            val_cascade_f1,
+            val_f1_delta,
+            val_pct_s1,
+            val_cost_reduction,
+        )
+        # Best threshold: maximize F1 while achieving some cost reduction
+        if val_cascade_f1 > best_val_f1:
+            best_val_f1 = val_cascade_f1
+            best_val_threshold = threshold
+
+    logger.info("Best threshold=%.2f selected on validation (F1=%.4f)", best_val_threshold, best_val_f1)
+
+    # Step 2: Evaluate all thresholds on test set, marking val-selected best
+    for threshold in threshold_candidates:
+        logger.info("Evaluating cascaded pipeline (threshold=%.2f) on test...", threshold)
+
+        final_preds, pct_stage1, n_stage2 = _run_cascade(test_full_inputs, test_labels, threshold)
 
         cascade_f1 = _compute_macro_f1(final_preds, test_labels, unique_labels)
-        pct_stage1 = (n_test - len(stage2_indices)) / n_test * 100
-        # Theoretical cost: all samples go through light, only stage2 goes through full
-        cascade_cost = n_test * light_cost_per_sample + len(stage2_indices) * full_cost_per_sample
+        cascade_cost = n_test * light_cost_per_sample + n_stage2 * full_cost_per_sample
         cost_reduction = (1 - cascade_cost / uniform_cost) * 100 if uniform_cost > 0 else 0
         f1_delta = uniform_f1 - cascade_f1
 
-        cascade_per_sample = [
-            1.0 if final_preds[i] == test_labels[i] else 0.0
-            for i in range(n_test)
-        ]
+        cascade_per_sample = [1.0 if final_preds[i] == test_labels[i] else 0.0 for i in range(n_test)]
+
+        variant_name = f"cascade_t{threshold:.2f}"
+        if threshold == best_val_threshold:
+            variant_name += " (val-selected)"
 
         results.append(
             ExperimentResult(
                 hypothesis="H4",
-                variant_name=f"cascade_t{threshold:.2f}",
+                variant_name=variant_name,
                 metrics={
                     "macro_f1": cascade_f1,
                     "cost_ms": cascade_cost,
@@ -906,6 +1044,10 @@ def run_h4(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
                     "pct_stage2": 100 - pct_stage1,
                     "cost_reduction_pct": cost_reduction,
                     "f1_delta": f1_delta,
+                    "light_cost_per_sample_ms": light_cost_per_sample,
+                    "full_cost_per_sample_ms": full_cost_per_sample,
+                    **val_metrics_by_threshold.get(threshold, {}),
+                    "selected_on_val": threshold == best_val_threshold,
                 },
                 config={"type": "cascade", "threshold": threshold, "light": "logreg", "full": "lightgbm-100t"},
                 duration_ms=cascade_cost,
@@ -1022,7 +1164,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     ml_clf = LightGBMClassifier(
         label_space=label_space,
         feature_names=feature_names,
-        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1},
+        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
     ml_clf.fit(train_inputs, train_labels)
 
@@ -1216,7 +1358,7 @@ def run_h3(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
     aug_clf = LightGBMClassifier(
         label_space=label_space,
         feature_names=aug_feature_names,
-        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1},
+        lgbm_kwargs={"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED},
     )
     aug_clf.fit(aug_train, train_labels)
     aug_results_ml = aug_clf.classify(aug_test)
@@ -1460,7 +1602,7 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
         return merged, names
 
     results: list[ExperimentResult] = []
-    lgbm_kwargs = {"n_estimators": 100, "num_leaves": 31, "verbosity": -1}
+    lgbm_kwargs = {"n_estimators": 100, "num_leaves": 31, "verbosity": -1, "random_state": CURRENT_SEED}
 
     for config_name, include in ablation_configs:
         logger.info("Running ablation: %s (features: %s)...", config_name, include)
@@ -1533,44 +1675,160 @@ def run_ablation(train: list[dict], test: list[dict]) -> list[ExperimentResult]:
 @click.option("--hypothesis", required=True, type=click.Choice(["H1", "H2", "H3", "H4", "ablation", "all"]))
 @click.option("--splits-dir", default="experiments/data", help="Directory with train/val/test splits.")
 @click.option("--output-dir", default="experiments/results", help="Base output directory.")
-def main(hypothesis: str, splits_dir: str, output_dir: str) -> None:
-    """Run experiment(s) for a specific hypothesis."""
-    global SPLITS_DIR, RESULTS_DIR
+@click.option(
+    "--seeds",
+    default="42",
+    help="Comma-separated seeds for multi-seed evaluation. Default: '42' (single seed).",
+)
+def main(hypothesis: str, splits_dir: str, output_dir: str, seeds: str) -> None:
+    """Run experiment(s) for a specific hypothesis.
+
+    Multi-seed mode: when multiple seeds are provided (e.g., --seeds 42,123,456,789,0),
+    each experiment runs once per seed with different random_state values. Results are
+    aggregated to report mean +/- std across seeds.
+    """
+    global SPLITS_DIR, RESULTS_DIR, CURRENT_SEED
     SPLITS_DIR = Path(splits_dir)
     RESULTS_DIR = Path(output_dir)
 
+    seed_list = [int(s.strip()) for s in seeds.split(",")]
+    multi_seed = len(seed_list) > 1
+
     hypotheses = [hypothesis] if hypothesis != "all" else ["H1", "H2", "H3", "H4", "ablation"]
+
+    # H1 (retrieval) is fully deterministic — no random components.
+    # Run it once regardless of seed count.
+    deterministic_hypotheses = {"H1"}
 
     for h in hypotheses:
         logger.info("=" * 60)
         logger.info("Starting experiment: %s", h)
+
+        is_deterministic = h in deterministic_hypotheses
+        effective_seeds = [seed_list[0]] if is_deterministic else seed_list
+
+        if multi_seed and not is_deterministic:
+            logger.info("Multi-seed evaluation: %d seeds %s", len(effective_seeds), effective_seeds)
+        elif multi_seed and is_deterministic:
+            logger.info("Deterministic experiment — single run (seed-invariant)")
         logger.info("=" * 60)
 
         train = load_split("train")
         test = load_split("test")
+        val = load_split("val")
 
-        if h == "H1":
-            results = run_h1(train, test)
-        elif h == "H2":
-            val = load_split("val")
-            results = run_h2(train, val, test)
-        elif h == "H3":
-            results = run_h3(train, test)
-        elif h == "H4":
-            results = run_h4(train, test)
-        elif h == "ablation":
-            results = run_ablation(train, test)
-        else:
-            logger.warning("Hypothesis %s not yet implemented in orchestration script", h)
+        all_seed_results: list[list[ExperimentResult]] = []
+
+        for seed in effective_seeds:
+            CURRENT_SEED = seed
+            if multi_seed and not is_deterministic:
+                logger.info("--- Seed %d ---", seed)
+
+            if h == "H1":
+                results = run_h1(train, val, test)
+            elif h == "H2":
+                results = run_h2(train, val, test)
+            elif h == "H3":
+                results = run_h3(train, test)
+            elif h == "H4":
+                results = run_h4(train, val, test)
+            elif h == "ablation":
+                results = run_ablation(train, test)
+            else:
+                logger.warning("Hypothesis %s not yet implemented in orchestration script", h)
+                continue
+
+            all_seed_results.append(results)
+
+        if not all_seed_results:
             continue
 
-        save_results(results, RESULTS_DIR / h)
+        if multi_seed and not is_deterministic:
+            # Aggregate results across seeds: compute mean +/- std for each variant
+            aggregated = _aggregate_multi_seed_results(all_seed_results)
+            save_results(aggregated, RESULTS_DIR / h)
 
-        # Apply statistical tests if multiple variants
-        if len(results) >= 2:
-            _run_statistical_analysis(results, RESULTS_DIR / h)
+            # Also save per-seed details
+            per_seed_data = []
+            for seed, seed_results in zip(seed_list, all_seed_results, strict=True):
+                for r in seed_results:
+                    d = r.to_dict()
+                    d["seed"] = seed
+                    per_seed_data.append(d)
+            per_seed_path = RESULTS_DIR / h / "per_seed_results.json"
+            per_seed_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(per_seed_path, "w", encoding="utf-8") as f:
+                json.dump(per_seed_data, f, indent=2, ensure_ascii=False)
+            logger.info("Per-seed results saved to %s", per_seed_path)
+
+            # Statistical tests on aggregated results
+            if len(aggregated) >= 2:
+                _run_statistical_analysis(aggregated, RESULTS_DIR / h)
+        else:
+            results = all_seed_results[0]
+            save_results(results, RESULTS_DIR / h)
+
+            if len(results) >= 2:
+                _run_statistical_analysis(results, RESULTS_DIR / h)
 
     logger.info("All experiments complete!")
+
+
+def _aggregate_multi_seed_results(
+    all_seed_results: list[list[ExperimentResult]],
+) -> list[ExperimentResult]:
+    """Aggregate experiment results across multiple seeds.
+
+    For each variant, computes mean and std of all numeric metrics across seeds.
+    Returns aggregated results with mean metrics, plus _std and _seeds_n metadata.
+    Uses per_query_scores from the first seed for statistical tests.
+    """
+    # Group by variant name
+    variant_results: dict[str, list[ExperimentResult]] = {}
+    for seed_results in all_seed_results:
+        for r in seed_results:
+            # Normalize variant name (strip "(val-selected)" for grouping)
+            base_name = r.variant_name.replace(" (val-selected)", "")
+            variant_results.setdefault(base_name, []).append(r)
+
+    aggregated: list[ExperimentResult] = []
+    n_seeds = len(all_seed_results)
+
+    for variant_name, variant_runs in variant_results.items():
+        # Collect all numeric metrics across seeds
+        all_metrics: dict[str, list[float]] = {}
+        for r in variant_runs:
+            for key, value in r.metrics.items():
+                if isinstance(value, int | float):
+                    all_metrics.setdefault(key, []).append(float(value))
+
+        # Compute mean +/- std
+        agg_metrics: dict[str, float] = {}
+        for key, values in all_metrics.items():
+            agg_metrics[key] = float(np.mean(values))
+            agg_metrics[f"{key}_std"] = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
+        agg_metrics["n_seeds"] = float(n_seeds)
+
+        # Use config from first run, add seed info
+        config = dict(variant_runs[0].config)
+        config["seeds"] = n_seeds
+        config["aggregation"] = "mean"
+
+        # Use per_query_scores from first seed for statistical tests
+        first_scores = variant_runs[0].per_query_scores
+
+        aggregated.append(
+            ExperimentResult(
+                hypothesis=variant_runs[0].hypothesis,
+                variant_name=variant_name,
+                metrics=agg_metrics,
+                config=config,
+                duration_ms=float(np.mean([r.duration_ms for r in variant_runs])),
+                per_query_scores=first_scores,
+            )
+        )
+
+    return aggregated
 
 
 def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path) -> None:
@@ -1652,9 +1910,7 @@ def _run_statistical_analysis(results: list[ExperimentResult], output_dir: Path)
         logger.info("Statistical tests saved to %s", stats_path)
 
 
-def _run_per_class_analysis(
-    results: list[ExperimentResult], output_dir: Path
-) -> list[dict[str, Any]]:
+def _run_per_class_analysis(results: list[ExperimentResult], output_dir: Path) -> list[dict[str, Any]]:
     """Run per-class F1 bootstrap analysis for H2.
 
     Compares the best lexical+emb variant against the best lexical-only variant
@@ -1681,11 +1937,7 @@ def _run_per_class_analysis(
         return []
 
     # Extract per-class F1 keys
-    class_names = sorted(
-        k.replace("f1_", "")
-        for k in best_emb.metrics
-        if k.startswith("f1_")
-    )
+    class_names = sorted(k.replace("f1_", "") for k in best_emb.metrics if k.startswith("f1_"))
 
     stat_results: list[dict[str, Any]] = []
     significant_count = 0

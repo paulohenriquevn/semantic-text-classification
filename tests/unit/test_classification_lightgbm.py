@@ -70,7 +70,7 @@ def _make_training_data() -> tuple[list[ClassificationInput], list[str]]:
 
 
 FEATURE_NAMES = ["word_count", "question_count"]
-LGBM_KWARGS = {"n_estimators": 50, "num_leaves": 4, "min_child_samples": 1, "verbosity": -1}
+LGBM_KWARGS = {"n_estimators": 50, "num_leaves": 4, "min_child_samples": 1, "verbosity": -1, "random_state": 42}
 
 
 # ---------------------------------------------------------------------------
