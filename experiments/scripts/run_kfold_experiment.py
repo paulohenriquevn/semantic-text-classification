@@ -18,13 +18,18 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 import click
 import numpy as np
-from experiments.scripts.run_experiment import (
+
+# Allow sibling imports when run as script
+sys.path.insert(0, str(Path(__file__).parent))
+
+from run_experiment import (
     EMBEDDING_MODEL,
     WINDOW_SIZE,
     WINDOW_STRIDE,

@@ -410,7 +410,7 @@ def _run_fold(
         n_test_windows=n_test_windows,
         macro_f1=test_metrics["macro_f1"],
         accuracy=test_metrics["accuracy"],
-        per_class_f1=test_metrics.get("per_class_f1", {}),
+        per_class_f1={k.replace("f1_", ""): v for k, v in test_metrics.items() if k.startswith("f1_")},
         val_in_domain_f1=in_domain_f1,
         duration_ms=duration_ms,
     )
