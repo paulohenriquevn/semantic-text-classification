@@ -123,11 +123,12 @@ code(r"""# ---------------------------------------------------------------------
 # §1.0 — Environment Setup: Clone repository and install dependencies
 # ---------------------------------------------------------------------------
 # Detects Google Colab vs local execution automatically.
-# On Colab: clones the repo and installs deps.
+# On Colab: clones the repo, installs deps, and adds src/ to sys.path.
 # Locally: skips (assumes project is already set up).
 # ---------------------------------------------------------------------------
 import os
 import subprocess
+import sys
 
 IS_COLAB = "COLAB_RELEASE_TAG" in os.environ or os.path.exists("/content")
 
@@ -144,15 +145,25 @@ if IS_COLAB:
         subprocess.run(["git", "clone", REPO_URL, REPO_DIR], check=True)
         os.chdir(REPO_DIR)
 
+    # Add source paths BEFORE pip install — ensures talkex is importable
+    # even if pip install is interrupted or slow.
+    for sub in ["src", "experiments/scripts", "experiments"]:
+        p = os.path.join(REPO_DIR, sub)
+        if p not in sys.path:
+            sys.path.insert(0, p)
+
     print(f"Working directory: {os.getcwd()}")
 
     print("\nInstalling TalkEx and dependencies...")
-    subprocess.run(
-        ["pip", "install", "-e", ".[dev]", "-q"],
-        check=True,
+    result = subprocess.run(
+        ["pip", "install", "-e", ".", "-q"],
         cwd=REPO_DIR,
     )
-    print("Installation complete.")
+    if result.returncode == 0:
+        print("Installation complete.")
+    else:
+        print("WARNING: pip install returned non-zero. Continuing with sys.path fallback.")
+        print("Most dependencies (numpy, pandas, sklearn, etc.) are pre-installed on Colab.")
 else:
     print("Local environment detected — skipping clone/install.")
     print(f"Working directory: {os.getcwd()}")
@@ -197,6 +208,7 @@ else:
 os.chdir(PROJECT_ROOT)
 
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(PROJECT_ROOT / "experiments" / "scripts"))
 sys.path.insert(0, str(PROJECT_ROOT / "experiments"))
 
