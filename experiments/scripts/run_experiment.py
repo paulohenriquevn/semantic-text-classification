@@ -878,9 +878,11 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                 best_val_f1 = val_f1
                 best_val_config = config_key
 
-            # --- Test evaluation: aggregate windows → conversations ---
+            # --- Test evaluation: aggregate windows → conversations (with probs for calibration) ---
             test_window_preds = clf.classify(test_inputs)
-            test_conv_preds = _aggregate_windows_to_conversations(test_window_preds, test_cw, unique_labels)
+            test_conv_preds, test_conv_probs = _aggregate_windows_to_conversations_with_probs(
+                test_window_preds, test_cw, unique_labels
+            )
             dur = (time.perf_counter() - t0) * 1000
 
             # Compute conversation-level metrics
@@ -888,6 +890,11 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             metrics["val_macro_f1"] = val_f1
             metrics["n_train_windows"] = len(train_inputs)
             metrics["n_test_windows"] = len(test_inputs)
+
+            # Calibration metrics (Brier score + ECE)
+            cal_metrics = _compute_calibration_metrics(test_conv_probs, test_conv_labels, unique_labels)
+            metrics["brier_score"] = cal_metrics["brier_score"]
+            metrics["ece"] = cal_metrics["ece"]
 
             # Per-conversation scores for statistical tests
             per_sample = [
@@ -905,17 +912,20 @@ def run_h2(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
                         "window_size": WINDOW_SIZE,
                         "window_stride": WINDOW_STRIDE,
                         "aggregation": "avg_confidence_argmax",
+                        "calibration_bins": cal_metrics.get("calibration_bins", []),
                     },
                     duration_ms=dur,
                     per_query_scores=per_sample,
                 )
             )
             logger.info(
-                "  %s/%s: macro_f1=%.4f, accuracy=%.4f",
+                "  %s/%s: macro_f1=%.4f, accuracy=%.4f, brier=%.4f, ece=%.4f",
                 feat_name,
                 clf_name,
                 metrics.get("macro_f1", 0),
                 metrics.get("accuracy", 0),
+                metrics.get("brier_score", 0),
+                metrics.get("ece", 0),
             )
 
     # Mark val-selected best config
@@ -1293,6 +1303,57 @@ def _aggregate_windows_to_conversations(
     return conv_preds
 
 
+def _aggregate_windows_to_conversations_with_probs(
+    window_preds: list,  # list of ClassificationResult
+    conv_windows: list[ConversationWindows],
+    labels: list[str],
+) -> tuple[list[str], list[dict[str, float]]]:
+    """Aggregate window-level predictions to conversation-level labels AND probability distributions.
+
+    Same aggregation as _aggregate_windows_to_conversations but also returns
+    the averaged probability distribution per conversation, needed for
+    calibration metrics (Brier score, ECE).
+
+    Args:
+        window_preds: Flat list of ClassificationResult, one per window.
+        conv_windows: Original windowed data (provides conversation grouping).
+        labels: All possible labels.
+
+    Returns:
+        Tuple of (predicted_labels, probability_dists) where probability_dists
+        is a list of {label: prob} dicts, one per conversation.
+    """
+    conv_preds: list[str] = []
+    conv_probs: list[dict[str, float]] = []
+    offset = 0
+    for cw in conv_windows:
+        n_win = len(cw.windows)
+        window_results = window_preds[offset : offset + n_win]
+
+        if not window_results:
+            conv_preds.append(labels[0] if labels else "unknown")
+            conv_probs.append({label: 1.0 / len(labels) for label in labels} if labels else {})
+            offset += n_win
+            continue
+
+        # Average probabilities per class across all windows
+        class_probs: dict[str, float] = {label: 0.0 for label in labels}
+        for result in window_results:
+            for ls in result.label_scores:
+                if ls.label in class_probs:
+                    class_probs[ls.label] += ls.score
+
+        n_windows = len(window_results)
+        for label in class_probs:
+            class_probs[label] /= n_windows
+
+        best_label = max(class_probs, key=lambda lbl: class_probs[lbl])
+        conv_preds.append(best_label)
+        conv_probs.append(class_probs)
+        offset += n_win
+    return conv_preds, conv_probs
+
+
 def _compute_classification_metrics(
     predictions: list[str],
     ground_truth: list[str],
@@ -1324,6 +1385,493 @@ def _compute_classification_metrics(
     return metrics
 
 
+def _compute_calibration_metrics(
+    prob_dists: list[dict[str, float]],
+    ground_truth: list[str],
+    labels: list[str],
+    n_bins: int = 10,
+) -> dict[str, float]:
+    """Compute calibration metrics: Brier score and Expected Calibration Error (ECE).
+
+    Brier score measures the mean squared difference between predicted probabilities
+    and actual outcomes (lower is better, 0 = perfect). Computed as multi-class Brier
+    score: average over all classes of (predicted_prob - indicator)^2.
+
+    ECE measures how well predicted confidence matches actual accuracy across
+    confidence bins (lower is better, 0 = perfectly calibrated).
+
+    Args:
+        prob_dists: List of {label: probability} dicts, one per sample.
+        ground_truth: True labels for each sample.
+        labels: All possible labels (for consistent indexing).
+        n_bins: Number of bins for ECE computation.
+
+    Returns:
+        Dict with brier_score, ece, and per-bin calibration data.
+    """
+    if not prob_dists or not ground_truth:
+        return {"brier_score": 0.0, "ece": 0.0}
+
+    n_samples = len(prob_dists)
+
+    # --- Brier Score (multi-class) ---
+    # Brier = (1/N) * sum_i sum_c (p_ic - y_ic)^2
+    # where p_ic is predicted prob for class c, y_ic is 1 if true class is c
+    brier_sum = 0.0
+    for probs, true_label in zip(prob_dists, ground_truth, strict=True):
+        for label in labels:
+            p = probs.get(label, 0.0)
+            y = 1.0 if label == true_label else 0.0
+            brier_sum += (p - y) ** 2
+
+    brier_score = brier_sum / n_samples
+
+    # --- Expected Calibration Error (ECE) ---
+    # For each prediction, confidence = max predicted prob
+    # ECE = sum_b (|B_b|/N) * |acc(B_b) - conf(B_b)|
+    confidences = []
+    correct_flags = []
+    for probs, true_label in zip(prob_dists, ground_truth, strict=True):
+        max_prob = max(probs.values()) if probs else 0.0
+        pred_label = max(probs, key=lambda lbl: probs[lbl]) if probs else ""
+        confidences.append(max_prob)
+        correct_flags.append(1.0 if pred_label == true_label else 0.0)
+
+    confidences_arr = np.array(confidences)
+    correct_arr = np.array(correct_flags)
+
+    bin_boundaries = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    bin_data: list[dict[str, float]] = []
+
+    for b in range(n_bins):
+        low, high = bin_boundaries[b], bin_boundaries[b + 1]
+        if b == n_bins - 1:
+            mask = (confidences_arr >= low) & (confidences_arr <= high)
+        else:
+            mask = (confidences_arr >= low) & (confidences_arr < high)
+
+        bin_count = int(mask.sum())
+        if bin_count == 0:
+            bin_data.append(
+                {
+                    "bin_low": float(low),
+                    "bin_high": float(high),
+                    "count": 0,
+                    "avg_confidence": 0.0,
+                    "avg_accuracy": 0.0,
+                    "gap": 0.0,
+                }
+            )
+            continue
+
+        avg_conf = float(confidences_arr[mask].mean())
+        avg_acc = float(correct_arr[mask].mean())
+        gap = abs(avg_acc - avg_conf)
+        ece += (bin_count / n_samples) * gap
+
+        bin_data.append(
+            {
+                "bin_low": float(low),
+                "bin_high": float(high),
+                "count": bin_count,
+                "avg_confidence": round(avg_conf, 4),
+                "avg_accuracy": round(avg_acc, 4),
+                "gap": round(gap, 4),
+            }
+        )
+
+    return {
+        "brier_score": round(brier_score, 6),
+        "ece": round(ece, 6),
+        "n_bins": n_bins,
+        "calibration_bins": bin_data,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Shared rule definitions for H3 and ablation
+# ---------------------------------------------------------------------------
+
+
+def _build_experiment_rules() -> tuple[list, dict[str, str]]:
+    """Build the expanded ruleset covering all 8 intent classes.
+
+    Returns 10 rules using 3 predicate families (LEXICAL, STRUCTURAL, CONTEXTUAL)
+    and a mapping from rule_id to intent label.
+
+    Predicate families exercised:
+        - LEXICAL: contains_any, regex, contains_all, near
+        - STRUCTURAL: gte (numeric comparisons on metadata)
+        - CONTEXTUAL: repeated_in_window, occurs_after
+
+    Returns:
+        Tuple of (rule_definitions, rule_to_label_mapping).
+    """
+    from talkex.rules.ast import AndNode, OrNode, PredicateNode
+    from talkex.rules.config import PredicateType
+    from talkex.rules.models import RuleDefinition
+
+    rules = []
+    rule_to_label = {}
+
+    # --- 1. cancelamento: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_cancel",
+            rule_name="cancelamento_keywords",
+            rule_version="2.0",
+            description="Detects cancellation intent via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "cancelar",
+                            "cancelamento",
+                            "cancela",
+                            "desistir",
+                            "encerrar contrato",
+                            "rescindir",
+                            "cancelei",
+                            "cancele",
+                            "quero cancelar",
+                            "desisto",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["critical", "cancelamento"],
+        )
+    )
+    rule_to_label["rule_cancel"] = "cancelamento"
+
+    # --- 2. reclamacao: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_complaint",
+            rule_name="reclamacao_keywords",
+            rule_version="2.0",
+            description="Detects complaint intent via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "reclamacao",
+                            "reclamar",
+                            "reclamando",
+                            "absurdo",
+                            "inadmissivel",
+                            "procon",
+                            "anatel",
+                            "reclame aqui",
+                            "ouvidoria",
+                            "insatisfeito",
+                            "insatisfeita",
+                            "revoltado",
+                            "revoltada",
+                            "indignado",
+                            "indignada",
+                            "palhaçada",
+                            "vergonha",
+                            "descaso",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["critical", "reclamacao"],
+        )
+    )
+    rule_to_label["rule_complaint"] = "reclamacao"
+
+    # --- 3. suporte_tecnico: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_support",
+            rule_name="suporte_tecnico_keywords",
+            rule_version="1.0",
+            description="Detects technical support intent via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "nao funciona",
+                            "nao esta funcionando",
+                            "problema tecnico",
+                            "erro",
+                            "bug",
+                            "travou",
+                            "travando",
+                            "nao conecta",
+                            "sem sinal",
+                            "caiu a conexao",
+                            "nao carrega",
+                            "tela azul",
+                            "resetar",
+                            "reiniciar",
+                            "configurar",
+                            "instalar",
+                            "atualizar",
+                            "suporte tecnico",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["suporte_tecnico"],
+        )
+    )
+    rule_to_label["rule_support"] = "suporte_tecnico"
+
+    # --- 4. compra: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_purchase",
+            rule_name="compra_keywords",
+            rule_version="1.0",
+            description="Detects purchase intent via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "quero comprar",
+                            "como compro",
+                            "onde compro",
+                            "preco",
+                            "valor",
+                            "quanto custa",
+                            "pagamento",
+                            "parcela",
+                            "desconto",
+                            "promocao",
+                            "carrinho",
+                            "finalizar compra",
+                            "pedido",
+                            "comprei",
+                            "adquirir",
+                            "contratar",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["compra"],
+        )
+    )
+    rule_to_label["rule_purchase"] = "compra"
+
+    # --- 5. duvida_produto: keyword + near proximity (LEXICAL near) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_product_question",
+            rule_name="duvida_produto_keywords",
+            rule_version="1.0",
+            description="Detects product questions via keyword patterns",
+            ast=OrNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "especificacao",
+                            "caracteristica",
+                            "funcionalidade",
+                            "como funciona",
+                            "garantia",
+                            "manual",
+                            "compativel",
+                            "tamanho",
+                            "modelo",
+                            "versao",
+                            "cor disponivel",
+                            "ficha tecnica",
+                            "capacidade",
+                            "dimensao",
+                        ],
+                        cost_hint=1,
+                    ),
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="near",
+                        value="duvida",
+                        cost_hint=2,
+                        metadata={"word2": "produto", "distance": 5},
+                    ),
+                ]
+            ),
+            tags=["duvida_produto"],
+        )
+    )
+    rule_to_label["rule_product_question"] = "duvida_produto"
+
+    # --- 6. duvida_servico: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_service_question",
+            rule_name="duvida_servico_keywords",
+            rule_version="1.0",
+            description="Detects service questions via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "horario de funcionamento",
+                            "prazo de entrega",
+                            "como funciona o servico",
+                            "politica de troca",
+                            "devolver",
+                            "troca",
+                            "reembolso",
+                            "frete",
+                            "entrega",
+                            "disponibilidade",
+                            "agendamento",
+                            "agendar",
+                            "prazo",
+                            "como faco para",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["duvida_servico"],
+        )
+    )
+    rule_to_label["rule_service_question"] = "duvida_servico"
+
+    # --- 7. saudacao: regex pattern (LEXICAL regex) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_greeting",
+            rule_name="saudacao_regex",
+            rule_version="1.0",
+            description="Detects greeting via regex patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="regex",
+                        value=r"\b(oi|ola|bom dia|boa tarde|boa noite|hey|hello|tudo bem|e ai)\b",
+                        cost_hint=2,
+                    ),
+                ]
+            ),
+            tags=["saudacao"],
+        )
+    )
+    rule_to_label["rule_greeting"] = "saudacao"
+
+    # --- 8. elogio: keyword detection (LEXICAL contains_any) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_praise",
+            rule_name="elogio_keywords",
+            rule_version="1.0",
+            description="Detects praise/compliment via keyword patterns",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.LEXICAL,
+                        field_name="text",
+                        operator="contains_any",
+                        value=[
+                            "parabens",
+                            "excelente",
+                            "otimo atendimento",
+                            "muito bom",
+                            "obrigado",
+                            "obrigada",
+                            "agradeco",
+                            "satisfeito",
+                            "satisfeita",
+                            "maravilhoso",
+                            "nota 10",
+                            "recomendo",
+                            "adorei",
+                            "amei",
+                            "impecavel",
+                            "top",
+                        ],
+                        cost_hint=1,
+                    ),
+                ]
+            ),
+            tags=["elogio"],
+        )
+    )
+    rule_to_label["rule_praise"] = "elogio"
+
+    # --- 9. cancelamento + escalation pattern (CONTEXTUAL occurs_after) ---
+    # Detects patterns where complaint precedes cancellation request
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_escalated_cancel",
+            rule_name="escalated_cancellation",
+            rule_version="1.0",
+            description="Detects escalated cancellation: complaint followed by cancellation request",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.CONTEXTUAL,
+                        field_name="text",
+                        operator="occurs_after",
+                        value="problema",
+                        cost_hint=3,
+                        metadata={"second": "cancelar"},
+                    ),
+                ]
+            ),
+            tags=["critical", "cancelamento"],
+        )
+    )
+    rule_to_label["rule_escalated_cancel"] = "cancelamento"
+
+    # --- 10. suporte_tecnico: repeated mention pattern (CONTEXTUAL repeated_in_window) ---
+    rules.append(
+        RuleDefinition(
+            rule_id="rule_repeated_error",
+            rule_name="repeated_error_mentions",
+            rule_version="1.0",
+            description="Detects repeated error mentions indicating technical support need",
+            ast=AndNode(
+                children=[
+                    PredicateNode(
+                        predicate_type=PredicateType.CONTEXTUAL,
+                        field_name="text",
+                        operator="repeated_in_window",
+                        value="erro",
+                        cost_hint=3,
+                        metadata={"count": 2},
+                    ),
+                ]
+            ),
+            tags=["suporte_tecnico"],
+        )
+    )
+    rule_to_label["rule_repeated_error"] = "suporte_tecnico"
+
+    return rules, rule_to_label
+
+
 # ---------------------------------------------------------------------------
 # H3: Rules Complement ML
 # ---------------------------------------------------------------------------
@@ -1333,7 +1881,7 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     """Run H3 experiments: deterministic rules complement ML (with context windows).
 
     Compares ML-only, Rules-only, ML+Rules-override, and ML+Rules-feature
-    on critical classes (cancelamento, reclamacao) using precision/recall/F1.
+    across all 8 intent classes using 10 rules with varied predicate types.
 
     Pipeline aligned with real TalkEx: conversations segmented into context windows
     (window_size=5, stride=2). Features and rules evaluated per window.
@@ -1343,13 +1891,12 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.models import ClassificationInput
-    from talkex.rules.ast import AndNode, PredicateNode
-    from talkex.rules.config import PredicateType, RuleEngineConfig
+    from talkex.rules.config import RuleEngineConfig
     from talkex.rules.evaluator import SimpleRuleEvaluator
-    from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+    from talkex.rules.models import RuleEvaluationInput
 
     logger.info("=" * 60)
-    logger.info("H3: Rules Complement ML Experiment (context windows)")
+    logger.info("H3: Rules Complement ML Experiment (context windows, expanded ruleset)")
     logger.info("=" * 60)
 
     # --- Step 1: Parse conversations into context windows ---
@@ -1429,64 +1976,11 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     )
     ml_clf.fit(train_inputs, train_win_labels)
 
-    # --- Define deterministic rules for critical classes ---
-    cancel_rule = RuleDefinition(
-        rule_id="rule_cancel",
-        rule_name="cancelamento_keywords",
-        rule_version="1.0",
-        description="Detects cancellation intent via keyword patterns",
-        ast=AndNode(
-            children=[
-                PredicateNode(
-                    predicate_type=PredicateType.LEXICAL,
-                    field_name="text",
-                    operator="contains_any",
-                    value=["cancelar", "cancelamento", "cancela", "desistir", "encerrar contrato", "rescindir"],
-                    cost_hint=1,
-                ),
-            ]
-        ),
-        tags=["critical", "cancelamento"],
-    )
-    complaint_rule = RuleDefinition(
-        rule_id="rule_complaint",
-        rule_name="reclamacao_keywords",
-        rule_version="1.0",
-        description="Detects complaint intent via keyword patterns",
-        ast=AndNode(
-            children=[
-                PredicateNode(
-                    predicate_type=PredicateType.LEXICAL,
-                    field_name="text",
-                    operator="contains_any",
-                    value=[
-                        "reclamacao",
-                        "reclamar",
-                        "reclamando",
-                        "absurdo",
-                        "inadmissivel",
-                        "procon",
-                        "anatel",
-                        "reclame aqui",
-                        "ouvidoria",
-                        "insatisfeito",
-                        "insatisfeita",
-                        "revoltado",
-                        "revoltada",
-                        "indignado",
-                        "indignada",
-                    ],
-                    cost_hint=1,
-                ),
-            ]
-        ),
-        tags=["critical", "reclamacao"],
-    )
-
-    rules = [cancel_rule, complaint_rule]
-    rule_to_label = {"rule_cancel": "cancelamento", "rule_complaint": "reclamacao"}
+    # --- Define deterministic rules for all classes ---
+    rules, rule_to_label = _build_experiment_rules()
     evaluator = SimpleRuleEvaluator()
     rule_config = RuleEngineConfig()
+    logger.info("Using %d rules covering %d classes", len(rules), len(set(rule_to_label.values())))
 
     results: list[ExperimentResult] = []
     window_config = {
@@ -1499,17 +1993,27 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     logger.info("Evaluating ML-only (window→conversation aggregation)...")
     t0 = time.perf_counter()
     ml_window_preds = ml_clf.classify(test_inputs)
-    ml_conv_preds = _aggregate_windows_to_conversations(ml_window_preds, test_cw, unique_labels)
+    ml_conv_preds, ml_conv_probs = _aggregate_windows_to_conversations_with_probs(
+        ml_window_preds, test_cw, unique_labels
+    )
     ml_dur = (time.perf_counter() - t0) * 1000
 
     ml_metrics = _compute_classification_metrics(ml_conv_preds, test_conv_labels, unique_labels)
+    ml_cal = _compute_calibration_metrics(ml_conv_probs, test_conv_labels, unique_labels)
+    ml_metrics["brier_score"] = ml_cal["brier_score"]
+    ml_metrics["ece"] = ml_cal["ece"]
     ml_per_sample = [1.0 if pred == true else 0.0 for pred, true in zip(ml_conv_preds, test_conv_labels, strict=False)]
     results.append(
         ExperimentResult(
             hypothesis="H3",
             variant_name="ML-only",
             metrics=ml_metrics,
-            config={"type": "ml_only", "classifier": "lightgbm", **window_config},
+            config={
+                "type": "ml_only",
+                "classifier": "lightgbm",
+                **window_config,
+                "calibration_bins": ml_cal.get("calibration_bins", []),
+            },
             duration_ms=ml_dur,
             per_query_scores=ml_per_sample,
         )
@@ -1663,12 +2167,17 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
     )
     aug_clf.fit(aug_train, train_win_labels)
 
-    # Evaluate on test with window→conversation aggregation
+    # Evaluate on test with window→conversation aggregation (with probs for calibration)
     aug_window_preds = aug_clf.classify(aug_test)
-    aug_conv_preds = _aggregate_windows_to_conversations(aug_window_preds, test_cw, unique_labels)
+    aug_conv_preds, aug_conv_probs = _aggregate_windows_to_conversations_with_probs(
+        aug_window_preds, test_cw, unique_labels
+    )
     feature_dur = (time.perf_counter() - t0) * 1000
 
     feature_metrics = _compute_classification_metrics(aug_conv_preds, test_conv_labels, unique_labels)
+    feature_cal = _compute_calibration_metrics(aug_conv_probs, test_conv_labels, unique_labels)
+    feature_metrics["brier_score"] = feature_cal["brier_score"]
+    feature_metrics["ece"] = feature_cal["ece"]
     feature_per_sample = [
         1.0 if pred == true else 0.0 for pred, true in zip(aug_conv_preds, test_conv_labels, strict=False)
     ]
@@ -1677,7 +2186,12 @@ def run_h3(train: list[dict], val: list[dict], test: list[dict]) -> list[Experim
             hypothesis="H3",
             variant_name="ML+Rules-feature",
             metrics=feature_metrics,
-            config={"type": "ml_rules_feature", "classifier": "lightgbm", **window_config},
+            config={
+                "type": "ml_rules_feature",
+                "classifier": "lightgbm",
+                **window_config,
+                "calibration_bins": feature_cal.get("calibration_bins", []),
+            },
             duration_ms=feature_dur,
             per_query_scores=feature_per_sample,
         )
@@ -1736,13 +2250,12 @@ def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[E
     from talkex.classification.labels import LabelSpace
     from talkex.classification.lightgbm_classifier import LightGBMClassifier
     from talkex.classification.models import ClassificationInput
-    from talkex.rules.ast import AndNode, PredicateNode
-    from talkex.rules.config import PredicateType, RuleEngineConfig
+    from talkex.rules.config import RuleEngineConfig
     from talkex.rules.evaluator import SimpleRuleEvaluator
-    from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+    from talkex.rules.models import RuleEvaluationInput
 
     logger.info("=" * 60)
-    logger.info("Ablation Studies (context windows)")
+    logger.info("Ablation Studies (context windows, expanded ruleset)")
     logger.info("=" * 60)
 
     # --- Step 1: Parse conversations into context windows ---
@@ -1808,62 +2321,11 @@ def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[E
     val_emb_feats = make_embedding_dicts(val_embs)
     test_emb_feats = make_embedding_dicts(test_embs)
 
-    # --- Step 4: Rule features per window ---
-    cancel_rule = RuleDefinition(
-        rule_id="rule_cancel",
-        rule_name="cancelamento_keywords",
-        rule_version="1.0",
-        description="Detects cancellation intent",
-        ast=AndNode(
-            children=[
-                PredicateNode(
-                    predicate_type=PredicateType.LEXICAL,
-                    field_name="text",
-                    operator="contains_any",
-                    value=["cancelar", "cancelamento", "cancela", "desistir", "encerrar contrato", "rescindir"],
-                    cost_hint=1,
-                ),
-            ]
-        ),
-        tags=["critical", "cancelamento"],
-    )
-    complaint_rule = RuleDefinition(
-        rule_id="rule_complaint",
-        rule_name="reclamacao_keywords",
-        rule_version="1.0",
-        description="Detects complaint intent",
-        ast=AndNode(
-            children=[
-                PredicateNode(
-                    predicate_type=PredicateType.LEXICAL,
-                    field_name="text",
-                    operator="contains_any",
-                    value=[
-                        "reclamacao",
-                        "reclamar",
-                        "reclamando",
-                        "absurdo",
-                        "inadmissivel",
-                        "procon",
-                        "anatel",
-                        "reclame aqui",
-                        "ouvidoria",
-                        "insatisfeito",
-                        "insatisfeita",
-                        "revoltado",
-                        "revoltada",
-                        "indignado",
-                        "indignada",
-                    ],
-                    cost_hint=1,
-                ),
-            ]
-        ),
-        tags=["critical", "reclamacao"],
-    )
-    rules = [cancel_rule, complaint_rule]
+    # --- Step 4: Rule features per window (expanded ruleset) ---
+    rules, _rule_to_label = _build_experiment_rules()
     evaluator = SimpleRuleEvaluator()
     rule_config = RuleEngineConfig()
+    logger.info("Using %d rules for ablation rule features", len(rules))
 
     def compute_window_rule_features(win_texts: list[str]) -> list[dict[str, float]]:
         rule_feats = []
@@ -1972,9 +2434,11 @@ def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[E
         val_conv_preds = _aggregate_windows_to_conversations(val_window_preds, val_cw, unique_labels)
         val_f1 = _compute_macro_f1(val_conv_preds, val_conv_labels, unique_labels)
 
-        # Test evaluation: aggregate windows → conversations
+        # Test evaluation: aggregate windows → conversations (with probs for calibration)
         test_window_preds = clf.classify(test_inputs)
-        test_conv_preds = _aggregate_windows_to_conversations(test_window_preds, test_cw, unique_labels)
+        test_conv_preds, test_conv_probs = _aggregate_windows_to_conversations_with_probs(
+            test_window_preds, test_cw, unique_labels
+        )
         dur = (time.perf_counter() - t0) * 1000
 
         metrics = _compute_classification_metrics(test_conv_preds, test_conv_labels, unique_labels)
@@ -1982,6 +2446,11 @@ def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[E
         metrics["n_features"] = len(feat_names)
         metrics["n_train_windows"] = len(train_win_texts)
         metrics["n_test_windows"] = len(test_win_texts)
+
+        # Calibration metrics (Brier score + ECE)
+        cal_metrics = _compute_calibration_metrics(test_conv_probs, test_conv_labels, unique_labels)
+        metrics["brier_score"] = cal_metrics["brier_score"]
+        metrics["ece"] = cal_metrics["ece"]
 
         # Per-conversation scores for statistical tests
         per_sample = [
@@ -2000,16 +2469,19 @@ def run_ablation(train: list[dict], val: list[dict], test: list[dict]) -> list[E
                     "window_size": WINDOW_SIZE,
                     "window_stride": WINDOW_STRIDE,
                     "aggregation": "avg_confidence_argmax",
+                    "calibration_bins": cal_metrics.get("calibration_bins", []),
                 },
                 duration_ms=dur,
                 per_query_scores=per_sample,
             )
         )
         logger.info(
-            "  %s: macro_f1=%.4f (val=%.4f), n_features=%d",
+            "  %s: macro_f1=%.4f (val=%.4f), brier=%.4f, ece=%.4f, n_features=%d",
             config_name,
             metrics.get("macro_f1", 0),
             val_f1,
+            metrics.get("brier_score", 0),
+            metrics.get("ece", 0),
             len(feat_names),
         )
 

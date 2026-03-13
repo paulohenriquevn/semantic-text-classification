@@ -120,6 +120,19 @@ Dataset: 2,122 records, 8 intents, contamination-aware splits, 5 seeds [13,42,12
 
 LightGBM unified config: `n_estimators=100, num_leaves=31`.
 
+**Note:** H3/ablation results above will change — the experiment code was updated with an expanded ruleset (10 rules, 3 predicate families). Results above are from the 2-rule baseline. Re-run required.
+
+### Extended Experiment Scripts (pending execution)
+
+| Script | Purpose | Status |
+|---|---|---|
+| `run_kfold_experiment.py` | Stratified 5-fold CV (real confidence intervals) | Implemented, pending run |
+| `run_lodo_experiment.py` | Leave-One-Domain-Out cross-domain eval | Implemented, pending run |
+| `finetune_baseline.py` | Fine-tuned vs frozen encoder comparison | Implemented, pending run |
+| `error_analysis.py` | Per-class error analysis + confusion matrices | Implemented, pending run |
+
+### Calibration metrics added to H2/H3/ablation: Brier score + ECE (pending re-run).
+
 ## Architecture Decisions
 
 | ADR | Decision |
