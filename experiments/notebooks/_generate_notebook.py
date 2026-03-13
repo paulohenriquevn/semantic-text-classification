@@ -17,7 +17,7 @@ import nbformat as nbf
 nb = nbf.v4.new_notebook()
 nb.metadata = {
     "kernelspec": {
-        "display_name": "Python 3 (TalkEx)",
+        "display_name": "Python 3",
         "language": "python",
         "name": "python3",
     },
@@ -26,6 +26,10 @@ nb.metadata = {
         "version": "3.11.0",
         "mimetype": "text/x-python",
         "file_extension": ".py",
+    },
+    "colab": {
+        "provenance": [],
+        "toc_visible": True,
     },
 }
 
@@ -76,7 +80,8 @@ Every result in this notebook is deterministic given:
 - The random seeds `[13, 42, 123, 2024, 999]`
 - The package versions logged in §1
 
-To reproduce: `cd <project_root> && jupyter notebook experiments/notebooks/dissertation_experiments.ipynb`
+**Designed for Google Colab.** The first cell clones the repository and installs all dependencies.
+No local setup required — just click "Run All".
 
 ---
 
@@ -111,6 +116,48 @@ All experiments use the same embedding model, classifier configurations, and ran
 every number in this notebook by running it end-to-end.*
 """)
 
+# ---------------------------------------------------------------------------
+# §1.0 — COLAB SETUP (clone repo + install deps)
+# ---------------------------------------------------------------------------
+code(r"""# ---------------------------------------------------------------------------
+# §1.0 — Environment Setup: Clone repository and install dependencies
+# ---------------------------------------------------------------------------
+# Detects Google Colab vs local execution automatically.
+# On Colab: clones the repo and installs deps.
+# Locally: skips (assumes project is already set up).
+# ---------------------------------------------------------------------------
+import os
+import subprocess
+
+IS_COLAB = "COLAB_RELEASE_TAG" in os.environ or os.path.exists("/content")
+
+if IS_COLAB:
+    REPO_URL = "https://github.com/paulohenriquevn/semantic-text-classification.git"
+    REPO_DIR = "/content/semantic-text-classification"
+
+    if os.path.exists(REPO_DIR):
+        print(f"Repository already cloned at {REPO_DIR}")
+        os.chdir(REPO_DIR)
+        subprocess.run(["git", "pull", "--ff-only"], check=False)
+    else:
+        print(f"Cloning {REPO_URL} ...")
+        subprocess.run(["git", "clone", REPO_URL, REPO_DIR], check=True)
+        os.chdir(REPO_DIR)
+
+    print(f"Working directory: {os.getcwd()}")
+
+    print("\nInstalling TalkEx and dependencies...")
+    subprocess.run(
+        ["pip", "install", "-e", ".[dev]", "-q"],
+        check=True,
+        cwd=REPO_DIR,
+    )
+    print("Installation complete.")
+else:
+    print("Local environment detected — skipping clone/install.")
+    print(f"Working directory: {os.getcwd()}")
+""")
+
 code(r"""import json
 import os
 import platform
@@ -132,16 +179,22 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning, module="lightgbm")
 
 # ---------------------------------------------------------------------------
-# Path setup — notebook must be run from project root
+# Path setup — resolve PROJECT_ROOT from cloned repo
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path.cwd()
-if not (PROJECT_ROOT / "src" / "talkex").exists():
-    # Try navigating up if run from notebooks dir
+# On Google Colab the repo is cloned to /content/semantic-text-classification
+# by the setup cell above. Locally, fall back to cwd heuristics.
+_COLAB_ROOT = Path("/content/semantic-text-classification")
+if _COLAB_ROOT.exists() and (_COLAB_ROOT / "src" / "talkex").exists():
+    PROJECT_ROOT = _COLAB_ROOT
+elif (Path.cwd() / "src" / "talkex").exists():
+    PROJECT_ROOT = Path.cwd()
+else:
     PROJECT_ROOT = Path.cwd().parent.parent
     assert (PROJECT_ROOT / "src" / "talkex").exists(), (
-        "Run this notebook from the project root: cd <project_root> && jupyter notebook"
+        "Could not find project root. Clone the repo or run from the project directory."
     )
-    os.chdir(PROJECT_ROOT)
+
+os.chdir(PROJECT_ROOT)
 
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "experiments" / "scripts"))

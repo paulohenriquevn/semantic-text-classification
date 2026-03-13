@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-03-13T09:34:37.084864",
+  "python": "3.11.15 (main, Mar  3 2026, 09:26:23) [GCC 11.4.0]",
+  "platform": "Linux-6.8.0-101-generic-x86_64-with-glibc2.35",
+  "cpu": "x86_64",
+  "git_commit": "ec3fc1b1dd81",
+  "seeds": [
+    13,
+    42,
+    123,
+    2024,
+    999
+  ],
+  "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_dims": 384,
+  "classifier": "LightGBM (n_estimators=100, num_leaves=31)",
+  "window_config": "5-turn windows, stride=2",
+  "packages": {
+    "numpy": "2.4.3",
+    "pandas": "3.0.1",
+    "scikit-learn": "not installed",
+    "lightgbm": "4.6.0",
+    "matplotlib": "3.10.8",
+    "seaborn": "0.13.2",
+    "scipy": "1.17.1",
+    "sentence_transformers": "3.4.1",
+    "torch": "2.10.0+cu128",
+    "pydantic": "2.12.5"
+  }
+}
