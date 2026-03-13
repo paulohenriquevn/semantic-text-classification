@@ -369,7 +369,7 @@ def _build_feature_dicts(win_texts, struct_feats, embeddings, rules):
         # Rule match features
         rule_input = RuleEvaluationInput(
             source_id=f"w_{i}", source_type="window",
-            turn_text=text, window_text=text,
+            text=text,
         )
         for rule in rules:
             try:
@@ -1218,7 +1218,12 @@ def main():
     original_count = len(cells)
     print(f"Original notebook: {original_count} cells")
 
-    # ===== MODIFICATIONS (by original cell index) =====
+    if original_count != 53:
+        print(f"WARNING: Expected 53-cell clean notebook (c45b790), got {original_count}.")
+        print("This patch is designed for the clean 53-cell version.")
+        return
+
+    # ===== MODIFICATIONS (53-cell indices) =====
 
     # Cell 3: Append warning audit trail (MN-1)
     cells[3]["source"] = to_src("".join(cells[3]["source"]) + "\n" + CELL_3_APPEND.strip() + "\n")
@@ -1226,67 +1231,66 @@ def main():
     # Cell 14: Append statistical helpers (CF-2, MJ-2, MN-3)
     cells[14]["source"] = to_src("".join(cells[14]["source"]) + "\n" + CELL_14_APPEND.strip() + "\n")
 
-    # Cell 17: Replace H1 visualization (MJ-3)
-    cells[17]["source"] = to_src(CELL_17_REPLACE.strip())
+    # Cell 15: Replace H1 visualization (MJ-3) — was §4.2 H1 Viz
+    cells[15]["source"] = to_src(CELL_17_REPLACE.strip())
 
-    # Cell 18: Replace H1 stats (CF-3)
-    cells[18]["source"] = to_src(CELL_18_REPLACE.strip())
+    # Cell 16: Replace H1 stats (CF-3) — was §4.3 H1 Stats
+    cells[16]["source"] = to_src(CELL_18_REPLACE.strip())
 
-    # Cell 19: Replace H1 verdict (CF-3)
-    cells[19]["source"] = to_src(CELL_19_REPLACE.strip())
+    # Cell 17: Replace H1 verdict (CF-3) — markdown cell
+    cells[17]["source"] = to_src(CELL_19_REPLACE.strip())
 
-    # Cell 22: Replace std=0.000 note (CF-2)
-    cells[22]["source"] = to_src(CELL_22_REPLACE.strip())
+    # Cell 20: Replace std=0.000 note (CF-2) — already markdown
+    cells[20]["source"] = to_src(CELL_22_REPLACE.strip())
 
-    # Cell 28: Replace robustness check (CF-5)
-    cells[28]["source"] = to_src(CELL_28_REPLACE.strip())
+    # Cell 30: Replace H3 verdict (CF-4)
+    cells[30]["source"] = to_src(CELL_33_REPLACE.strip())
 
-    # Cell 33: Replace H3 verdict (CF-4)
-    cells[33]["source"] = to_src(CELL_33_REPLACE.strip())
+    # Cell 33: Append cost model notes to H4 viz (MJ-5)
+    cells[33]["source"] = to_src("".join(cells[33]["source"]) + "\n" + CELL_35_APPEND.strip() + "\n")
 
-    # Cell 35: Append cost model notes (MJ-5)
-    cells[35]["source"] = to_src("".join(cells[35]["source"]) + "\n" + CELL_35_APPEND.strip() + "\n")
+    # Cell 38: Replace ablation findings (MJ-4)
+    cells[38]["source"] = to_src(CELL_41_REPLACE.strip())
 
-    # Cell 41: Replace ablation findings (MJ-4)
-    cells[41]["source"] = to_src(CELL_41_REPLACE.strip())
+    # Cell 40: Replace k-fold run (CF-1)
+    cells[40]["source"] = to_src(CELL_43_REPLACE.strip())
 
-    # Cell 43: Replace k-fold run (CF-1)
-    cells[43]["source"] = to_src(CELL_43_REPLACE.strip())
+    # Cell 41: Replace k-fold results (MN-3)
+    cells[41]["source"] = to_src(CELL_44_REPLACE.strip())
 
-    # Cell 44: Replace k-fold results (MN-3)
-    cells[44]["source"] = to_src(CELL_44_REPLACE.strip())
+    # Cell 43: Replace LODO run (CF-1)
+    cells[43]["source"] = to_src(CELL_46_REPLACE.strip())
 
-    # Cell 46: Replace LODO run (CF-1)
-    cells[46]["source"] = to_src(CELL_46_REPLACE.strip())
+    # Cell 47: Replace error analysis run (CF-1)
+    cells[47]["source"] = to_src(CELL_50_REPLACE.strip())
 
-    # Cell 50: Replace error analysis run (CF-1)
-    cells[50]["source"] = to_src(CELL_50_REPLACE.strip())
+    # Cell 51: Replace summary viz (MJ-6)
+    cells[51]["source"] = to_src(CELL_54_REPLACE.strip())
 
-    # Cell 54: Replace summary viz (MJ-6)
-    cells[54]["source"] = to_src(CELL_54_REPLACE.strip())
-
-    # Cell 55: Replace limitations (MN-4)
-    cells[55]["source"] = to_src(CELL_55_REPLACE.strip())
+    # Cell 52: Replace limitations (MN-4) — markdown cell
+    cells[52]["source"] = to_src(CELL_55_REPLACE.strip())
 
     # ===== INSERTIONS (REVERSE order to preserve indices) =====
+    # Insert from highest index to lowest so earlier indices remain stable.
 
-    # After original cell 31 → H3 per-class (MN-5)
-    cells.insert(32, code(H3_PER_CLASS_CELL.strip()))
-    print("  Inserted: H3 per-class analysis after cell 31")
+    # After cell 30 (H3 Verdict) → H3 per-class analysis (MN-5)
+    cells.insert(31, code(H3_PER_CLASS_CELL.strip()))
+    print("  Inserted: H3 per-class analysis after cell 30")
 
-    # After original cell 28 → MLP seed sensitivity (MN-2)
-    # Note: cell 28 was already modified above. After the insert at 32,
-    # cell 28 is still at index 28 (insert was after it).
-    cells.insert(29, code(MLP_SEED_CELL.strip()))
-    print("  Inserted: MLP seed sensitivity after cell 28")
+    # Before cell 25 (H2 Verdict) — insert analyses BEFORE the verdict.
+    # Final order: §5.5 Stats → Bootstrap CI → Robustness → MLP Seed → H2 Verdict
+    # Insert in reverse order at index 25 so each pushes the next one forward.
 
-    # After original cell 25 → Bootstrap CI (CF-2)
-    cells.insert(26, code(BOOTSTRAP_CI_CELL.strip()))
-    print("  Inserted: Bootstrap CI after cell 25")
+    cells.insert(25, code(MLP_SEED_CELL.strip()))
+    print("  Inserted: MLP seed sensitivity before H2 Verdict")
+    cells.insert(25, code(CELL_28_REPLACE.strip()))
+    print("  Inserted: §5.6 Robustness check before H2 Verdict")
+    cells.insert(25, code(BOOTSTRAP_CI_CELL.strip()))
+    print("  Inserted: Bootstrap CI after §5.5 H2 Stats")
 
-    # After original cell 21 → Baselines (MJ-1)
-    cells.insert(22, code(BASELINES_CELL.strip()))
-    print("  Inserted: TF-IDF/kNN baselines after cell 21")
+    # After cell 19 (§5.1 Load H2) → TF-IDF/kNN baselines (MJ-1)
+    cells.insert(20, code(BASELINES_CELL.strip()))
+    print("  Inserted: TF-IDF/kNN baselines after cell 19")
 
     nb["cells"] = cells
     with open(NB_PATH, "w") as f:
