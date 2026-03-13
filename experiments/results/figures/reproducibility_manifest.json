@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-03-13T09:34:37.084864",
+  "timestamp": "2026-03-13T09:46:57.956917",
   "python": "3.11.15 (main, Mar  3 2026, 09:26:23) [GCC 11.4.0]",
   "platform": "Linux-6.8.0-101-generic-x86_64-with-glibc2.35",
   "cpu": "x86_64",
-  "git_commit": "ec3fc1b1dd81",
+  "git_commit": "356adeb8797a",
   "seeds": [
     13,
     42,
@@ -18,12 +18,12 @@
   "packages": {
     "numpy": "2.4.3",
     "pandas": "3.0.1",
-    "scikit-learn": "not installed",
+    "scikit-learn": "1.8.0",
     "lightgbm": "4.6.0",
     "matplotlib": "3.10.8",
     "seaborn": "0.13.2",
     "scipy": "1.17.1",
-    "sentence_transformers": "3.4.1",
+    "sentence-transformers": "3.4.1",
     "torch": "2.10.0+cu128",
     "pydantic": "2.12.5"
   }

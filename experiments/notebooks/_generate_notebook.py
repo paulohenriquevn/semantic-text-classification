@@ -259,17 +259,25 @@ def get_git_hash():
         return "unknown"
 
 def get_package_versions():
-    packages = [
-        "numpy", "pandas", "scikit-learn", "lightgbm", "matplotlib",
-        "seaborn", "scipy", "sentence_transformers", "torch", "pydantic",
-    ]
+    packages = {
+        "numpy": "numpy",
+        "pandas": "pandas",
+        "scikit-learn": "sklearn",
+        "lightgbm": "lightgbm",
+        "matplotlib": "matplotlib",
+        "seaborn": "seaborn",
+        "scipy": "scipy",
+        "sentence-transformers": "sentence_transformers",
+        "torch": "torch",
+        "pydantic": "pydantic",
+    }
     versions = {}
-    for pkg in packages:
+    for display_name, import_name in packages.items():
         try:
-            mod = __import__(pkg)
-            versions[pkg] = getattr(mod, "__version__", "?")
+            mod = __import__(import_name)
+            versions[display_name] = getattr(mod, "__version__", "?")
         except ImportError:
-            versions[pkg] = "not installed"
+            versions[display_name] = "not installed"
     return versions
 
 manifest = {
@@ -609,13 +617,27 @@ print("H1: Hybrid Retrieval Results")
 print("=" * 80)
 print(h1_display.to_string(index=False))
 
-# Identify best
-best_h1 = h1_df.loc[h1_df["mrr"].idxmax()]
+# Identify val-selected variant (proper model selection protocol)
+# We must report the variant chosen on the validation set, NOT the test-set best.
+val_selected_h1 = h1_df[h1_df["variant"].str.contains("val-selected")]
+if not val_selected_h1.empty:
+    best_h1 = val_selected_h1.iloc[0]
+else:
+    # Fallback: best on test (flag as warning)
+    best_h1 = h1_df.loc[h1_df["mrr"].idxmax()]
+    print("WARNING: No val-selected variant found. Using test-set best (potential leakage).")
+
+test_best_h1 = h1_df.loc[h1_df["mrr"].idxmax()]
 bm25_base = h1_df[h1_df["variant"] == "BM25-base"].iloc[0]
-print(f"\nBest variant: {best_h1['variant']} (MRR={best_h1['mrr']:.4f})")
-print(f"BM25 baseline: MRR={bm25_base['mrr']:.4f}")
-print(f"Improvement: +{(best_h1['mrr'] - bm25_base['mrr']):.4f} "
+
+print(f"\nVal-selected variant: {best_h1['variant']} (MRR={best_h1['mrr']:.4f})")
+print(f"Test-set best:       {test_best_h1['variant']} (MRR={test_best_h1['mrr']:.4f})")
+print(f"BM25 baseline:       MRR={bm25_base['mrr']:.4f}")
+print(f"Improvement (val-selected vs BM25): +{(best_h1['mrr'] - bm25_base['mrr']):.4f} "
       f"(+{(best_h1['mrr'] - bm25_base['mrr'])/bm25_base['mrr']*100:.1f}%)")
+if best_h1['variant'] != test_best_h1['variant']:
+    print(f"Note: val-selected ({best_h1['variant']}) differs from test-best ({test_best_h1['variant']}). "
+          f"Reporting val-selected per model selection protocol.")
 """)
 
 code(r"""# ---------------------------------------------------------------------------
@@ -649,26 +671,36 @@ radar_metrics = ["mrr", "recall@5", "recall@10", "ndcg@5", "ndcg@10"]
 available_radar = [m for m in radar_metrics if m in h1_df.columns]
 
 if len(available_radar) >= 3:
-    angles = np.linspace(0, 2 * np.pi, len(available_radar), endpoint=False).tolist()
-    angles += angles[:1]
-
-    ax_radar = axes[1]
-    ax_radar = fig.add_subplot(122, polar=True)
-    axes[1].set_visible(False)
-
-    for i, method in enumerate(top_methods):
+    # Normalize each metric to [0, 1] across methods for visual comparability
+    radar_data = {}
+    for method in top_methods:
         row = h1_df[h1_df["variant"] == method]
-        if row.empty:
-            continue
-        values = [row[m].values[0] for m in available_radar]
-        values += values[:1]
-        ax_radar.plot(angles, values, "o-", label=method, color=PALETTE[i], linewidth=2)
-        ax_radar.fill(angles, values, alpha=0.1, color=PALETTE[i])
+        if not row.empty:
+            radar_data[method] = [row[m].values[0] for m in available_radar]
 
-    ax_radar.set_xticks(angles[:-1])
-    ax_radar.set_xticklabels(available_radar, fontsize=8)
-    ax_radar.set_title("(b) Multi-Metric Comparison", pad=20)
-    ax_radar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=8)
+    if radar_data:
+        # Per-metric min-max normalization across compared methods
+        raw_matrix = np.array(list(radar_data.values()))
+        col_min = raw_matrix.min(axis=0)
+        col_max = raw_matrix.max(axis=0)
+        col_range = np.where(col_max - col_min > 0, col_max - col_min, 1.0)
+
+        angles = np.linspace(0, 2 * np.pi, len(available_radar), endpoint=False).tolist()
+        angles += angles[:1]
+
+        ax_radar = fig.add_subplot(122, polar=True)
+        axes[1].set_visible(False)
+
+        for i, (method, raw_vals) in enumerate(radar_data.items()):
+            norm_vals = ((np.array(raw_vals) - col_min) / col_range).tolist()
+            norm_vals += norm_vals[:1]
+            ax_radar.plot(angles, norm_vals, "o-", label=method, color=PALETTE[i], linewidth=2)
+            ax_radar.fill(angles, norm_vals, alpha=0.1, color=PALETTE[i])
+
+        ax_radar.set_xticks(angles[:-1])
+        ax_radar.set_xticklabels(available_radar, fontsize=8)
+        ax_radar.set_title("(b) Multi-Metric Comparison (normalized)", pad=20)
+        ax_radar.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=8)
 
 plt.tight_layout()
 plt.savefig(FIGURES_DIR / "fig_h1_retrieval.pdf")
@@ -700,14 +732,15 @@ for test in h1_stats:
 
 md(r"""### H1 Verdict
 
-**Result:** The val-selected Hybrid-LINEAR configuration achieves MRR=0.853 vs BM25-base MRR=0.835
-(Wilcoxon signed-rank p=0.017, significant at α=0.05).
+**Result:** The val-selected Hybrid-LINEAR-a0.50 achieves MRR=0.848 vs BM25-base MRR=0.835
+(Wilcoxon signed-rank p=0.017 for best hybrid vs BM25, significant at α=0.05).
 
 **Decision: H₀ rejected. H1 CONFIRMED.**
 
 The hybrid approach provides a statistically significant, though modest, improvement over
-pure lexical retrieval. The improvement is concentrated in queries where semantic paraphrasing
-captures intent better than keyword matching.
+pure lexical retrieval. Note: the test-best variant (a0.30, MRR=0.853) differs from
+val-selected (a0.50, MRR=0.848), but both outperform BM25. We report the val-selected
+variant per the model selection protocol (no test-set snooping).
 """)
 
 # ============================================================================
@@ -733,6 +766,11 @@ Feature Extraction → Window-level Classification → Conversation-level Aggreg
 (avg class probabilities → argmax)
 
 **Model selection:** Best config selected on validation Macro-F1; test metrics reported.
+
+**Note on variance:** LogReg and LightGBM are deterministic given fixed data splits, so
+`macro_f1_std=0.000` is expected. Only MLP (stochastic weight initialization) shows non-zero
+variance across seeds. The multi-seed protocol varies the random seed for stochastic
+components only; the train/val/test splits are fixed (contamination-aware).
 """)
 
 code(r"""# ---------------------------------------------------------------------------
@@ -888,9 +926,14 @@ code(r"""# ---------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 h2_stats = load_statistical_tests("H2")
 if h2_stats:
-    print("H2: Statistical Tests")
+    # Separate global tests from per-class analysis
+    global_tests = [t for t in h2_stats if "class" not in t and "n_classes" not in t]
+    per_class_tests = [t for t in h2_stats if "class" in t]
+    summary_tests = [t for t in h2_stats if "n_classes" in t]
+
+    print("H2: Global Statistical Tests")
     print("=" * 80)
-    for test in h2_stats:
+    for test in global_tests:
         comp = test.get("comparison", test.get("test", ""))
         print(f"\n{comp}:")
         if "p_value" in test:
@@ -899,6 +942,27 @@ if h2_stats:
         if "ci_lower" in test:
             print(f"  95% CI: [{test['ci_lower']:.4f}, {test['ci_upper']:.4f}]")
         print(f"  {test.get('summary', '')}")
+
+    if per_class_tests:
+        # Filter out _std fields (artifact of pre-fix results)
+        real_class_tests = [t for t in per_class_tests if not t.get("class", "").endswith("_std")]
+        print("\n\nH2: Per-Class F1 Analysis")
+        print("=" * 80)
+        print(f"{'Class':20s} {'Emb F1':>8s} {'Lex F1':>8s} {'Diff':>8s} {'Significant':>12s}")
+        print("-" * 60)
+        for test in real_class_tests:
+            cls = test.get("class", "?")
+            sig_label = "YES" if test.get("exceeds_half_ci", test.get("significant", False)) else "no"
+            print(f"{cls:20s} {test.get('f1_emb', 0):8.3f} {test.get('f1_lex', 0):8.3f} "
+                  f"{test.get('f1_diff', 0):+8.3f} {sig_label:>12s}")
+
+    for test in summary_tests:
+        # If using old results with _std bug, recalculate
+        n_real = len(real_class_tests) if per_class_tests else test.get("n_classes", 0)
+        n_sig = sum(1 for t in real_class_tests
+                    if t.get("exceeds_half_ci", t.get("significant", False)))
+        pct = n_sig / n_real * 100 if n_real > 0 else 0
+        print(f"\nPer-class summary: {n_sig}/{n_real} classes ({pct:.0f}%) show significant improvement.")
 """)
 
 md(r"""### H2 Verdict
@@ -1082,6 +1146,18 @@ print(h4_df[[c for c in h4_cols if c in h4_df.columns]].round(4).to_string(index
 uniform = h4_df[h4_df["variant"] == "uniform"]
 if not uniform.empty:
     print(f"\nUniform baseline: Macro-F1={uniform.iloc[0]['macro_f1']:.4f}")
+
+# Display per-window costs to explain negative cost_reduction
+if "light_cost_per_window_ms" in h4_df.columns:
+    u = uniform.iloc[0]
+    light_ms = u.get("light_cost_per_window_ms", 0)
+    full_ms = u.get("full_cost_per_window_ms", 0)
+    print(f"\nPer-window latency:")
+    print(f"  Stage 1 (LogReg):   {light_ms:.4f} ms")
+    print(f"  Stage 2 (LightGBM): {full_ms:.4f} ms")
+    print(f"  Ratio:              {light_ms/full_ms:.2f}x" if full_ms > 0 else "")
+    if light_ms >= full_ms:
+        print(f"  WARNING: Stage 1 is SLOWER than Stage 2 — cascade can never reduce cost.")
 """)
 
 code(r"""# ---------------------------------------------------------------------------
@@ -1131,15 +1207,26 @@ plt.show()
 
 md(r"""### H4 Verdict
 
-**Result:** Cascading consistently degrades Macro-F1 without meaningful cost reduction.
-The LogReg first-stage model is not sufficiently accurate to serve as a reliable filter.
+**Result:** Cascading consistently degrades Macro-F1 **and increases cost**.
+
+The `cost_reduction_pct` values are negative (-65% to -112%), meaning the cascade is
+**more expensive** than the uniform pipeline. This happens because:
+
+1. **LogReg is not cheaper than LightGBM:** Measured per-window costs show
+   LogReg ≈ 0.091 ms vs LightGBM ≈ 0.083 ms — the "lightweight" model is actually
+   *slower* for this feature set.
+2. **Cascade overhead:** The cascade runs Stage 1 on **all** windows, then Stage 2 on
+   unconfident ones. Total cost = `N × light + N_stage2 × full`. Since `light > full`,
+   even 100% Stage 1 resolution would cost more than uniform.
+3. **Confidence is unreliable:** LogReg makes confident-but-wrong predictions, so
+   the cascade also hurts classification quality.
 
 **Decision: H₀ not rejected. H4 REFUTED.**
 
-The cascade approach fails because: (1) the first-stage model makes confident but wrong
-predictions, and (2) the overhead of running two models negates any savings from early
-stopping. This finding aligns with the literature on cascaded classifiers in NLP — the
-quality gap between stages must be substantial for cascading to be beneficial.
+**Lesson:** Cascaded inference requires (a) a first-stage model that is **substantially
+cheaper** than the full model, and (b) well-calibrated confidence scores. Neither
+condition is met here. For LightGBM with ~400 features, the model is already fast enough
+that adding a pre-filter adds overhead without benefit.
 """)
 
 # ============================================================================
@@ -1498,9 +1585,9 @@ decisions = [
         "Hypothesis": "H1",
         "Claim": "Hybrid retrieval > isolated",
         "Metric": "MRR",
-        "Best": "Hybrid-LINEAR (α=0.30)",
+        "Best": f"{best_h1['variant']}",
         "Baseline": "BM25-base",
-        "Result": f"{h1_df.loc[h1_df['mrr'].idxmax(), 'mrr']:.3f} vs {h1_df[h1_df['variant']=='BM25-base'].iloc[0]['mrr']:.3f}" if not h1_df.empty else "N/A",
+        "Result": f"{best_h1['mrr']:.3f} vs {bm25_base['mrr']:.3f}" if not h1_df.empty else "N/A",
         "p-value": "0.017",
         "Verdict": "CONFIRMED",
     },

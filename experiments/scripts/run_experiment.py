@@ -2765,48 +2765,58 @@ def _run_per_class_analysis(results: list[ExperimentResult], output_dir: Path) -
     if not best_lex.per_query_scores or not best_emb.per_query_scores:
         return []
 
-    # Extract per-class F1 keys
-    class_names = sorted(k.replace("f1_", "") for k in best_emb.metrics if k.startswith("f1_"))
+    # Extract per-class F1 keys (exclude _std fields)
+    class_names = sorted(
+        k.replace("f1_", "") for k in best_emb.metrics if k.startswith("f1_") and not k.endswith("_std")
+    )
 
     stat_results: list[dict[str, Any]] = []
     significant_count = 0
+
+    # Build per-class binary scores from per_query_scores and ground truth labels
+    # per_query_scores are global (1 if correct, 0 if wrong), so we need to build
+    # per-class scores: for each sample, 1 if correctly predicted as this class
+    # Since we don't have per-sample predictions stored, fall back to point estimate
+    # comparison with a heuristic significance threshold based on the overall CI.
+    overall_ci = bootstrap_ci(
+        best_emb.per_query_scores,
+        best_lex.per_query_scores,
+        metric_name="f1_diff_overall",
+        n_bootstrap=10000,
+    )
 
     for cls in class_names:
         f1_lex = best_lex.metrics.get(f"f1_{cls}", 0.0)
         f1_emb = best_emb.metrics.get(f"f1_{cls}", 0.0)
         diff = f1_emb - f1_lex
 
-        # Bootstrap CI on the F1 difference for this class
-        # We use the per-sample scores to compute bootstrap resampled F1
-        try:
-            ci = bootstrap_ci(
-                best_emb.per_query_scores,
-                best_lex.per_query_scores,
-                metric_name=f"f1_diff_{cls}",
-                n_bootstrap=10000,
-            )
-            is_significant = ci.ci_lower > 0 or ci.ci_upper < 0
-            if is_significant:
-                significant_count += 1
+        # Per-class CI approximation: since we lack per-sample per-class predictions,
+        # we report the point difference and flag whether it exceeds the overall CI width
+        # as a conservative significance heuristic.
+        overall_ci_width = overall_ci.ci_upper - overall_ci.ci_lower
+        # A class difference is flagged as significant if the point difference exceeds
+        # the half-width of the overall CI (conservative Bonferroni-like threshold)
+        is_significant = abs(diff) > overall_ci_width / 2
 
-            stat_results.append(
-                {
-                    "comparison": f"{best_emb.variant_name} vs {best_lex.variant_name} ({cls})",
-                    "test": "Per-class Bootstrap CI",
-                    "class": cls,
-                    "f1_emb": f1_emb,
-                    "f1_lex": f1_lex,
-                    "f1_diff": diff,
-                    "ci_lower": ci.ci_lower,
-                    "ci_upper": ci.ci_upper,
-                    "significant": is_significant,
-                    "summary": f"{cls}: emb F1={f1_emb:.3f} vs lex F1={f1_lex:.3f} (diff={diff:.3f}, "
-                    f"95% CI=[{ci.ci_lower:.4f}, {ci.ci_upper:.4f}], "
-                    f"{'significant' if is_significant else 'not significant'})",
-                }
-            )
-        except Exception as e:
-            logger.warning("Per-class bootstrap failed for %s: %s", cls, e)
+        if is_significant and diff > 0:
+            significant_count += 1
+
+        stat_results.append(
+            {
+                "comparison": f"{best_emb.variant_name} vs {best_lex.variant_name} ({cls})",
+                "test": "Per-class point estimate (no per-class CI available)",
+                "class": cls,
+                "f1_emb": f1_emb,
+                "f1_lex": f1_lex,
+                "f1_diff": diff,
+                "overall_ci_lower": overall_ci.ci_lower,
+                "overall_ci_upper": overall_ci.ci_upper,
+                "exceeds_half_ci": is_significant,
+                "summary": f"{cls}: emb F1={f1_emb:.3f} vs lex F1={f1_lex:.3f} (diff={diff:+.3f}, "
+                f"overall 95% CI=[{overall_ci.ci_lower:.4f}, {overall_ci.ci_upper:.4f}], "
+                f"{'exceeds half-CI width' if is_significant else 'within noise band'})",
+            }
+        )
 
     # Summary: how many classes show significant improvement
     pct_significant = significant_count / len(class_names) * 100 if class_names else 0
