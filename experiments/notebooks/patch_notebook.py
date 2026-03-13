@@ -309,6 +309,16 @@ print("=" * 80)
 
 from sklearn.metrics import f1_score as sk_f1
 
+def _is_synthetic(rec):
+    """Detect synthetic records by conversation_id prefix or source_file."""
+    cid = rec.get("conversation_id", "")
+    if "synth" in cid:
+        return True
+    sf = rec.get("source_file", "")
+    if "synthetic" in sf.lower():
+        return True
+    return False
+
 # Import TalkEx pipeline infrastructure
 _scripts_dir = str(PROJECT_ROOT / "experiments" / "scripts")
 if _scripts_dir not in sys.path:
@@ -624,13 +634,12 @@ else:
 
     # Call with default parameters (standalone_mode=False for Click)
     try:
-        run_kfold_experiment.main(
-            splits_dir=str(PROJECT_ROOT / "experiments" / "data"),
-            output_dir=str(PROJECT_ROOT / "experiments" / "results" / "kfold"),
-            n_folds=5,
-            seed=42,
-            standalone_mode=False,
-        )
+        run_kfold_experiment.main([
+            "--splits-dir", str(PROJECT_ROOT / "experiments" / "data"),
+            "--output-dir", str(PROJECT_ROOT / "experiments" / "results" / "kfold"),
+            "--n-folds", "5",
+            "--seed", "42",
+        ], standalone_mode=False)
         print("\nK-fold experiment completed successfully.")
     except SystemExit:
         # Click may raise SystemExit; check if results were written
@@ -757,12 +766,11 @@ else:
     importlib.reload(run_lodo_experiment)
 
     try:
-        run_lodo_experiment.main(
-            splits_dir=Path(PROJECT_ROOT / "experiments" / "data"),
-            output_dir=Path(PROJECT_ROOT / "experiments" / "results" / "LODO"),
-            seed=42,
-            standalone_mode=False,
-        )
+        run_lodo_experiment.main([
+            "--splits-dir", str(PROJECT_ROOT / "experiments" / "data"),
+            "--output-dir", str(PROJECT_ROOT / "experiments" / "results" / "LODO"),
+            "--seed", "42",
+        ], standalone_mode=False)
         print("\nLODO experiment completed successfully.")
     except SystemExit:
         if lodo_results_path.exists():
@@ -801,11 +809,10 @@ else:
         importlib.reload(_ea_mod)
 
         try:
-            _ea_mod.main(
-                splits_dir=Path(PROJECT_ROOT / "experiments" / "data"),
-                output_dir=Path(PROJECT_ROOT / "experiments" / "results" / "error_analysis"),
-                standalone_mode=False,
-            )
+            _ea_mod.main([
+                "--splits-dir", str(PROJECT_ROOT / "experiments" / "data"),
+                "--output-dir", str(PROJECT_ROOT / "experiments" / "results" / "error_analysis"),
+            ], standalone_mode=False)
             print("\nError analysis completed successfully.")
         except SystemExit:
             if error_results_path.exists():
