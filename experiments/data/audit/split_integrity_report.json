@@ -1,0 +1,16 @@
+{
+  "check": "split_integrity",
+  "status": "PASS",
+  "split_sizes": {
+    "train": 1581,
+    "val": 338,
+    "test": 338
+  },
+  "consolidated_size": 2257,
+  "overlap_count": 0,
+  "missing_from_splits": 0,
+  "extra_in_splits": 0,
+  "intent_deviations": {},
+  "domain_deviations": {},
+  "issues": []
+}
