@@ -12,8 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - CLI entrypoint renamed from `sce` to `talkex` (no-ticket)
 - PyPI package name changed from `semantic-conversation-engine` to `talkex-engine` (no-ticket)
 - Demo frontend: ~400 linhas de código duplicado extraídas em 7 módulos compartilhados — `HighlightedText`, `EvidenceBadge`, `ModeTab` (componentes), `dsl.ts` (tipos), `condition-config.ts` (configuração de condições), `dsl-generator.ts` (geração de DSL), `evidence.ts` (parsing de evidências) — eliminando duplicação entre SearchBuilderPanel, CategoriesPanel, DSLGuidePanel, ResultCard e ConversationView (no-ticket)
+- Tipagem reforçada (sem mudança de comportamento): `PredicateResult.to_evidence_item()` agora retorna o `EvidenceItem` (TypedDict) em vez de `dict[str, Any]`, e `PipelineRunner.run_file()` embrulha o id da conversa em `ConversationId` — alinha os tipos ao domínio para verificação do mypy (no-ticket)
 
 ### Added
+- Pipeline de experimentos reprodutível em `experiments/scripts/`: auditoria e remediação do dataset, construção de splits versionados, índice de busca, execução de experimento único, k-fold e leave-one-domain-out, análise de erro e geração de gráficos (no-ticket)
+- Dataset de conversas sintético versionado (`experiments/data/`) com splits `train`/`val`/`test`, manifesto de split, calibração de abstenção e trilha de auditoria — dados gerados, sem PII real (no-ticket)
+- ADR-005: armazenamento online e monitoramento em tempo real (no-ticket)
+- Documentação de banca: diagrama de arquitetura, explicação dos resultados, stage 2 revisado e personas de revisão do pipeline de voz (no-ticket)
 - Extended Rule Engine DSL with `RULE...WHEN...THEN` block syntax, dotted namespace predicates (`semantic.intent()`, `lexical.contains_any()`, `context.turn_window().count()`), infix comparison operators (`speaker == "customer"`, `semantic.intent("x") > 0.82`), list arguments, keyword arguments, and THEN action blocks (`tag()`, `score()`, `priority()`) — fully backward compatible with existing inline function-call syntax (no-ticket)
 - `contains_any` predicate: matches if text contains any word from a list, with proportional scoring and matched-word evidence (no-ticket)
 - `parse_rule_block()` API for parsing full RULE blocks into `ParsedRuleBlock` with rule name, AST, and actions (no-ticket)
