@@ -1,0 +1,9 @@
+{
+  "embedding_model": "text-embedding-3-small",
+  "classifier": "LogisticRegression",
+  "macro_f1": 0.6588,
+  "baseline_majority_macro_f1": 0.1675,
+  "dod_pass": false,
+  "n_train": 1654,
+  "n_test": 468
+}

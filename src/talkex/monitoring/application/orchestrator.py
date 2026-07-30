@@ -12,10 +12,12 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from talkex.classification.sentiment import SentimentDetector
 from talkex.context.builder import SlidingWindowBuilder
 from talkex.context.config import ContextWindowConfig
 from talkex.models.conversation import Conversation
 from talkex.models.enums import Channel
+from talkex.models.rule_execution import EvidenceItem
 from talkex.models.turn import Turn
 from talkex.monitoring.domain.models import Alert, AlertId
 from talkex.monitoring.domain.ports import AlertBroadcaster, AlertRepository, TurnRepository
@@ -44,15 +46,24 @@ class TurnOrchestrator:
         broadcaster: AlertBroadcaster,
         rule: RuleDefinition,
         channel: Channel = Channel.VOICE,
+        sentiment_detector: SentimentDetector | None = None,
     ) -> None:
         self._turn_repo = turn_repo
         self._alert_repo = alert_repo
         self._broadcaster = broadcaster
         self._rule = rule
         self._channel = channel
+        self._sentiment = sentiment_detector
         self._builder = SlidingWindowBuilder()
         self._evaluator = SimpleRuleEvaluator()
         self._buffers: dict[str, list[Turn]] = {}
+
+    def _sentiment_evidence(self, window_text: str) -> list[EvidenceItem]:
+        """Compute sentiment on the window as cascade evidence (M2), when a detector is present."""
+        if self._sentiment is None or not self._sentiment.is_fitted:
+            return []
+        pred = self._sentiment.predict(window_text)
+        return [EvidenceItem(predicate_type="sentiment", matched_text=pred.label, score=pred.score)]
 
     async def handle(self, turn: Turn) -> None:
         """Persist the turn, window the conversation, evaluate the rule, alert on match."""
@@ -84,12 +95,14 @@ class TurnOrchestrator:
         if not result.matched:
             return
 
+        evidence = [pr.to_evidence_item() for pr in result.predicate_results]
+        evidence.extend(self._sentiment_evidence(window.window_text))  # M2 cascade feature
         alert = Alert(
             alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
             conversation_id=turn.conversation_id,
             window_id=window.window_id,
             rule_name=result.rule_name,
-            evidence=[pr.to_evidence_item() for pr in result.predicate_results],
+            evidence=evidence,
         )
         await self._alert_repo.save(alert)  # commit first ...
         await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)

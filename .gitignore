@@ -61,3 +61,7 @@ docs/pesquisas/*
 !docs/pesquisa/TCC_TalkEx_Banca_v3.ipynb
 !docs/pesquisas/stage1_5_coraa_mupe.ipynb
 !docs/pesquisas/voice-pipeline-reviewer-personas.md
+
+# M2 model + embedding artifacts (large, regenerable) — keep the metrics JSONs as evidence
+experiments/results/**/*.joblib
+experiments/results/**/*.npz

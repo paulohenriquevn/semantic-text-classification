@@ -1,0 +1,11 @@
+{
+  "task": "binary_negative_detection",
+  "model": "tfidf_word_char + LinearSVC",
+  "macro_f1": 0.8562,
+  "negative_f1": 0.8123,
+  "dod_threshold": 0.7,
+  "dod_pass": true,
+  "n_train": 1654,
+  "n_test": 468,
+  "model_path": "experiments/results/M2/sentiment_negative_detector.joblib"
+}

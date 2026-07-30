@@ -1,0 +1,8 @@
+{
+  "pooled_embedding_only": 0.6047,
+  "lexical_only": 0.6722,
+  "hybrid": 0.6716,
+  "best": "pooled_embedding_only",
+  "best_macro_f1": 0.6722,
+  "dod_pass": false
+}

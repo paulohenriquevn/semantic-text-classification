@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Real-time monitoring M2 (online sentiment) — a CPU-first, efficient traditional-ML sentiment detector (`SentimentDetector`: TF-IDF word+char + LinearSVC) for negative-sentiment detection, wired into the monitoring cascade (each fired alert now carries per-window sentiment evidence). **Evidence-driven design:** 3-class sentiment (pos/neg/neu) caps at macro-F1 ≈ 0.68 across 8 methods (lexical, multilingual MiniLM, chunk-pooled, hybrid, customer-only, LinearSVC, and OpenAI `text-embedding-3-small`) — a *label* ceiling on the ambiguous `neutral` class (F1 0.57), not a model limit (a strong commercial embedding did not beat the lexical). For the monitoring context (alerting on dissatisfied customers), the meaningful binary negative-detection reaches **macro-F1 0.856** (>> the 0.70 DoD), proven by an automated test on the held-out set. Ships `experiments/scripts/train_sentiment.py` + the comparison scripts; model/embedding artifacts are gitignored (no-ticket)
+
 ## [0.3.0] - 2026-07-30
 
 ### Added

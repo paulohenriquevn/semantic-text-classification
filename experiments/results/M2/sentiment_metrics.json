@@ -1,0 +1,8 @@
+{
+  "model": "paraphrase-multilingual-MiniLM-L12-v2",
+  "baseline_macro_f1": 0.1675,
+  "embedding_logreg_macro_f1": 0.6037,
+  "dod_pass": false,
+  "n_train": 1654,
+  "n_test": 468
+}
