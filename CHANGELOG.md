@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Tipagem reforçada (sem mudança de comportamento): `PredicateResult.to_evidence_item()` agora retorna o `EvidenceItem` (TypedDict) em vez de `dict[str, Any]`, e `PipelineRunner.run_file()` embrulha o id da conversa em `ConversationId` — alinha os tipos ao domínio para verificação do mypy (no-ticket)
 
 ### Added
+- Real-time monitoring M0 (walking skeleton) — foundation: `talkex.monitoring` layered package (interface/application/domain/infrastructure per ADR-005 + `.claude/rules/architecture.md`), a bounded `TurnChannel` with awaiting-`put` backpressure, `Alert`/`SessionState` domain models reusing the rules-engine `EvidenceItem`, DIP ports (`TurnRepository`/`AlertRepository`/`AlertBroadcaster`), `MonitoringConfig`, a `timescale/timescaledb-ha:pg16` dev/test compose (port 5433) with a `turns`/`alerts` hypertable migration, and a `[monitoring]` optional extra (no-ticket)
 - Pipeline de experimentos reprodutível em `experiments/scripts/`: auditoria e remediação do dataset, construção de splits versionados, índice de busca, execução de experimento único, k-fold e leave-one-domain-out, análise de erro e geração de gráficos (no-ticket)
 - Dataset de conversas sintético versionado (`experiments/data/`) com splits `train`/`val`/`test`, manifesto de split, calibração de abstenção e trilha de auditoria — dados gerados, sem PII real (no-ticket)
 - ADR-005: armazenamento online e monitoramento em tempo real (no-ticket)
