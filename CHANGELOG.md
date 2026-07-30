@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-29
+
 ### Changed
 - Package renamed from `semantic_conversation_engine` to `talkex` — shorter, product-ready branding (RFC-005, no-ticket)
 - CLI entrypoint renamed from `sce` to `talkex` (no-ticket)
