@@ -1,0 +1,10 @@
+{
+  "p95_ms": 160.95,
+  "mean_ms": 64.33,
+  "samples": 100,
+  "hybrid_mrr": 1.0,
+  "bm25_mrr": 0.8333,
+  "hybrid_beats_bm25": true,
+  "corpus_size": 15,
+  "p95_under_200ms": true
+}
