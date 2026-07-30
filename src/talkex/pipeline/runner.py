@@ -33,6 +33,7 @@ from talkex.embeddings.preprocessing import PreprocessingConfig
 from talkex.ingestion.enums import SourceFormat
 from talkex.ingestion.inputs import TranscriptInput
 from talkex.models.enums import Channel
+from talkex.models.types import ConversationId
 from talkex.pipeline.config import PipelineConfig
 from talkex.pipeline.pipeline import TextProcessingPipeline
 from talkex.pipeline.system_pipeline import (
@@ -171,7 +172,7 @@ class PipelineRunner:
         format_enum = SourceFormat(source_format.lower())
 
         transcript = TranscriptInput(
-            conversation_id=conv_id,
+            conversation_id=ConversationId(conv_id),
             raw_text=raw_text,
             source_format=format_enum,
             channel=channel_enum,

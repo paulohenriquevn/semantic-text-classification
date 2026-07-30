@@ -14,6 +14,11 @@ build/
 venv/
 ENV/
 
+# Cloned SOTA reference repos (study material, not source — each carries its own .git).
+# Keep the catalog and the grill records tracked; ignore the clones themselves.
+knowledge-base/references/*/
+!knowledge-base/references/_catalog.md
+
 # Testing
 .pytest_cache/
 .coverage
@@ -43,3 +48,16 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Zona de estudo — material de TERCEIROS lido para pesquisa, nunca versionado.
+# São ~1.9 GB: 11 repositórios clonados (livekit, pipecat, docker-asterisk,
+# Liquid4All/cookbook, aryamtos/accent-classification-audio-cnns, ...), 37 PDFs
+# de papers com copyright, checkpoints .pt de modelo e caches de build alheios.
+# Dois pack files passam do limite de 100 MB do GitHub. Padrão `dir/*` (não
+# `dir/`) para que as exceções abaixo possam ser re-incluídas.
+docs/pesquisa/*
+docs/pesquisas/*
+# ...exceto os documentos próprios que moram nessa zona
+!docs/pesquisa/TCC_TalkEx_Banca_v3.ipynb
+!docs/pesquisas/stage1_5_coraa_mupe.ipynb
+!docs/pesquisas/voice-pipeline-reviewer-personas.md

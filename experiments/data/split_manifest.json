@@ -1,0 +1,27 @@
+{
+  "created_date": "2026-03-12",
+  "script": "build_splits_v2.py",
+  "input": "experiments/data/consolidated_clean.jsonl",
+  "seed": 42,
+  "train_ratio": 0.7,
+  "val_ratio": 0.15,
+  "test_ratio": 0.15,
+  "total_records": 2122,
+  "train_count": 1250,
+  "val_count": 404,
+  "test_count": 468,
+  "n_originals": 847,
+  "n_synthetics": 1275,
+  "leakage_check": "PASS",
+  "overlap_check": "PASS",
+  "intent_distribution": {
+    "reclamacao": 368,
+    "duvida_produto": 340,
+    "duvida_servico": 334,
+    "suporte_tecnico": 310,
+    "compra": 238,
+    "cancelamento": 213,
+    "saudacao": 172,
+    "elogio": 147
+  }
+}

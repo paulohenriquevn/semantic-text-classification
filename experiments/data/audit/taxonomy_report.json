@@ -1,0 +1,65 @@
+{
+  "check": "taxonomy_audit",
+  "label_consistency": {
+    "status": "PASS",
+    "invalid_labels": [],
+    "label_distribution": {
+      "reclamacao": 368,
+      "duvida_produto": 342,
+      "duvida_servico": 334,
+      "suporte_tecnico": 310,
+      "compra": 238,
+      "cancelamento": 215,
+      "saudacao": 172,
+      "elogio": 147,
+      "outros": 131
+    }
+  },
+  "class_coherence": {
+    "cohesion_per_class": {
+      "reclamacao": 0.5064,
+      "suporte_tecnico": 0.5516,
+      "duvida_produto": 0.319,
+      "compra": 0.3569,
+      "duvida_servico": 0.386,
+      "cancelamento": 0.6343,
+      "saudacao": 0.479,
+      "outros": 0.3878,
+      "elogio": 0.502
+    },
+    "flagged_below_threshold": [
+      "reclamacao",
+      "suporte_tecnico",
+      "duvida_produto",
+      "compra",
+      "duvida_servico",
+      "saudacao",
+      "outros",
+      "elogio"
+    ],
+    "threshold": 0.6
+  },
+  "class_separability": {
+    "overlapping_pairs": [
+      {
+        "pair": "outros↔saudacao",
+        "centroid_similarity": 0.9728
+      },
+      {
+        "pair": "compra↔saudacao",
+        "centroid_similarity": 0.9249
+      },
+      {
+        "pair": "compra↔duvida_produto",
+        "centroid_similarity": 0.9102
+      },
+      {
+        "pair": "compra↔outros",
+        "centroid_similarity": 0.9083
+      }
+    ],
+    "threshold": 0.9
+  },
+  "status": "FAIL",
+  "issues": []
+}

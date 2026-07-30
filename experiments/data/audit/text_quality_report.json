@@ -1,0 +1,8 @@
+{
+  "check": "text_quality",
+  "status": "PASS",
+  "total_records": 2257,
+  "failures": 0,
+  "failure_rate_pct": 0.0,
+  "details": []
+}

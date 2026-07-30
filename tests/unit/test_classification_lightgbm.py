@@ -67,6 +67,19 @@ def _make_training_data() -> tuple[list[ClassificationInput], list[str]]:
 
 FEATURE_NAMES = ["word_count", "question_count"]
 
+# LightGBM's default ``min_child_samples=20`` cannot split this 30-row toy
+# fixture (10 rows/class) into 3 classes: every leaf would need 20 samples, so
+# no split is ever taken and the model degenerates to a constant prediction.
+# These small-data params let the trees learn the (linearly separable) fixture,
+# so the behavioural assertions below test a model that actually learned rather
+# than one that guessed. Production keeps LightGBM's safe large-data defaults;
+# only these scale-specific unit tests override them via the public lgbm_kwargs.
+SMALL_DATA_KWARGS = {
+    "min_child_samples": 1,
+    "min_child_weight": 1e-3,
+    "min_split_gain": 0.0,
+}
+
 
 # ---------------------------------------------------------------------------
 # Construction
@@ -180,6 +193,7 @@ class TestLightGBMClassification:
         cls = LightGBMClassifier(
             label_space=_make_label_space(),
             feature_names=FEATURE_NAMES,
+            lgbm_kwargs=SMALL_DATA_KWARGS,
         )
         inputs, labels = _make_training_data()
         cls.fit(inputs, labels)
@@ -197,6 +211,7 @@ class TestLightGBMClassification:
         cls = LightGBMClassifier(
             label_space=_make_label_space(),
             feature_names=FEATURE_NAMES,
+            lgbm_kwargs=SMALL_DATA_KWARGS,
         )
         inputs, labels = _make_training_data()
         cls.fit(inputs, labels)

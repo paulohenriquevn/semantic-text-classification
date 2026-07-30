@@ -1,0 +1,1516 @@
+{
+  "remediation_date": "2026-03-12",
+  "source_dataset": "consolidated.jsonl",
+  "output_dataset": "consolidated_clean.jsonl",
+  "total_decisions": 136,
+  "summary": {
+    "removed_duplicate": 5,
+    "reclassified": 1,
+    "moved_to_abstention": 30,
+    "removed_out_of_scope": 100
+  },
+  "decisions": [
+    {
+      "conversation_id": "conv_00003",
+      "action": "removed_duplicate",
+      "reason": "Hard near-duplicate of conv_00119 (cosine similarity=0.9822, intent=duvida_produto)",
+      "source_evidence": {
+        "kept_id": "conv_00119",
+        "removed_id": "conv_00003",
+        "similarity": 0.9822,
+        "same_intent": true
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00036",
+      "action": "removed_duplicate",
+      "reason": "Hard near-duplicate of conv_00246 (cosine similarity=0.9786, intent=reclamacao)",
+      "source_evidence": {
+        "kept_id": "conv_00246",
+        "removed_id": "conv_00036",
+        "similarity": 0.9786,
+        "same_intent": true
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00116",
+      "action": "removed_duplicate",
+      "reason": "Hard near-duplicate of conv_00117 (cosine similarity=0.9783, intent=duvida_produto)",
+      "source_evidence": {
+        "kept_id": "conv_00117",
+        "removed_id": "conv_00116",
+        "similarity": 0.9783,
+        "same_intent": true
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00930",
+      "action": "removed_duplicate",
+      "reason": "Hard near-duplicate of conv_00928 (cosine similarity=0.9715, intent=cancelamento)",
+      "source_evidence": {
+        "kept_id": "conv_00928",
+        "removed_id": "conv_00930",
+        "similarity": 0.9715,
+        "same_intent": true
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00177",
+      "action": "removed_duplicate",
+      "reason": "Hard near-duplicate of conv_00176 (cosine similarity=0.971, intent=cancelamento)",
+      "source_evidence": {
+        "kept_id": "conv_00176",
+        "removed_id": "conv_00177",
+        "similarity": 0.971,
+        "same_intent": true
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00204",
+      "action": "reclassified",
+      "reason": "Mislabeled as 'outros', nearest intent is 'reclamacao' (cosine similarity=0.8582)",
+      "source_evidence": {
+        "original_label": "outros",
+        "new_label": "reclamacao",
+        "nearest_similarity": 0.8582,
+        "outros_centroid_similarity": 0.75
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00206",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=suporte_tecnico, similarity=0.7694). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7694,
+        "outros_centroid_similarity": 0.6921
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02472",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=suporte_tecnico, similarity=0.7737). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7737,
+        "outros_centroid_similarity": 0.6471
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00422",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=suporte_tecnico, similarity=0.7629). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7629,
+        "outros_centroid_similarity": 0.6669
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00529",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7593). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7593,
+        "outros_centroid_similarity": 0.713
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00420",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.8109). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.8109,
+        "outros_centroid_similarity": 0.8066
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00312",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7842). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7842,
+        "outros_centroid_similarity": 0.6609
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02487",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.777). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.777,
+        "outros_centroid_similarity": 0.7847
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00415",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=compra, similarity=0.8273). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.8273,
+        "outros_centroid_similarity": 0.7814
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00309",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7989). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7989,
+        "outros_centroid_similarity": 0.6964
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00313",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7961). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7961,
+        "outros_centroid_similarity": 0.7547
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02458",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7502). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7502,
+        "outros_centroid_similarity": 0.6773
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00746",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.783). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.783,
+        "outros_centroid_similarity": 0.7078
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00528",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7561). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7561,
+        "outros_centroid_similarity": 0.7183
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00079",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=compra, similarity=0.77). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.77,
+        "outros_centroid_similarity": 0.7093
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00414",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=compra, similarity=0.8203). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.8203,
+        "outros_centroid_similarity": 0.7806
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00846",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=elogio, similarity=0.8215). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.8215,
+        "outros_centroid_similarity": 0.655
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00053",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.8229). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.8229,
+        "outros_centroid_similarity": 0.6768
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00080",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=suporte_tecnico, similarity=0.8335). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.8335,
+        "outros_centroid_similarity": 0.6585
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00418",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7938). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7938,
+        "outros_centroid_similarity": 0.8217
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00207",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7864). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7864,
+        "outros_centroid_similarity": 0.7392
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00527",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7856). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7856,
+        "outros_centroid_similarity": 0.7418
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02500",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=saudacao, similarity=0.7687). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7687,
+        "outros_centroid_similarity": 0.7691
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00197",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=elogio, similarity=0.7836). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.7836,
+        "outros_centroid_similarity": 0.7776
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00411",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.8098). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.8098,
+        "outros_centroid_similarity": 0.8211
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00026",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.79). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.79,
+        "outros_centroid_similarity": 0.738
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00051",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=saudacao, similarity=0.8174). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.8174,
+        "outros_centroid_similarity": 0.8194
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00852",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7702). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7702,
+        "outros_centroid_similarity": 0.6979
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00205",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.7978). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7978,
+        "outros_centroid_similarity": 0.7332
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00314",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.8081). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.8081,
+        "outros_centroid_similarity": 0.7279
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00744",
+      "action": "moved_to_abstention",
+      "reason": "Ambiguous 'outros' record near intent boundary (nearest=reclamacao, similarity=0.8123). Retained for abstention threshold calibration.",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.8123,
+        "outros_centroid_similarity": 0.7495
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00851",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.5999)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.5999,
+        "outros_centroid_similarity": 0.5138
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00200",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5973)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5973,
+        "outros_centroid_similarity": 0.5104
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02488",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6809)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6809,
+        "outros_centroid_similarity": 0.7229
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02467",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6504)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6504,
+        "outros_centroid_similarity": 0.6835
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02475",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6937)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6937,
+        "outros_centroid_similarity": 0.7189
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00741",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6853)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6853,
+        "outros_centroid_similarity": 0.6534
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_03499",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.674)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.674,
+        "outros_centroid_similarity": 0.7025
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00421",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.7274)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7274,
+        "outros_centroid_similarity": 0.664
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02493",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6885)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6885,
+        "outros_centroid_similarity": 0.654
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00522",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.7321)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.7321,
+        "outros_centroid_similarity": 0.6306
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02460",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.58)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.58,
+        "outros_centroid_similarity": 0.6179
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02485",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.7147)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7147,
+        "outros_centroid_similarity": 0.7094
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00845",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.747)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.747,
+        "outros_centroid_similarity": 0.6009
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00523",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.4467)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.4467,
+        "outros_centroid_similarity": 0.404
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00634",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.4844)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.4844,
+        "outros_centroid_similarity": 0.5078
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00635",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.7155)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7155,
+        "outros_centroid_similarity": 0.5687
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00737",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.667)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.667,
+        "outros_centroid_similarity": 0.6629
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00304",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.5)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.5,
+        "outros_centroid_similarity": 0.5068
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00078",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.6927)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.6927,
+        "outros_centroid_similarity": 0.538
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00854",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.7249)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7249,
+        "outros_centroid_similarity": 0.6834
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_03455",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.674)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.674,
+        "outros_centroid_similarity": 0.6305
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00305",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.6686)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.6686,
+        "outros_centroid_similarity": 0.5721
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00853",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5335)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5335,
+        "outros_centroid_similarity": 0.4543
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00201",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6086)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6086,
+        "outros_centroid_similarity": 0.6385
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00303",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.6664)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.6664,
+        "outros_centroid_similarity": 0.541
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00198",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.3586)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.3586,
+        "outros_centroid_similarity": 0.4155
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00740",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6818)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6818,
+        "outros_centroid_similarity": 0.6291
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02482",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5491)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5491,
+        "outros_centroid_similarity": 0.5959
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02483",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.669)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.669,
+        "outros_centroid_similarity": 0.6911
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00745",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.7163)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7163,
+        "outros_centroid_similarity": 0.6395
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_03429",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.7386)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7386,
+        "outros_centroid_similarity": 0.634
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02490",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.7235)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7235,
+        "outros_centroid_similarity": 0.728
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02491",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6635)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6635,
+        "outros_centroid_similarity": 0.6747
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02455",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.4371)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.4371,
+        "outros_centroid_similarity": 0.3717
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00631",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.4833)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.4833,
+        "outros_centroid_similarity": 0.4805
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00630",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6393)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6393,
+        "outros_centroid_similarity": 0.6296
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02481",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5051)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5051,
+        "outros_centroid_similarity": 0.5374
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00742",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.6208)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.6208,
+        "outros_centroid_similarity": 0.6027
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00524",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.6149)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.6149,
+        "outros_centroid_similarity": 0.5478
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02457",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.668)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.668,
+        "outros_centroid_similarity": 0.6972
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00307",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.5351)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.5351,
+        "outros_centroid_similarity": 0.4167
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00024",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.6314)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.6314,
+        "outros_centroid_similarity": 0.6162
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00306",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.6365)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.6365,
+        "outros_centroid_similarity": 0.6167
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02465",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5303)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5303,
+        "outros_centroid_similarity": 0.557
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00413",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.6937)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.6937,
+        "outros_centroid_similarity": 0.6624
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00530",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.733)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.733,
+        "outros_centroid_similarity": 0.694
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02474",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6514)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6514,
+        "outros_centroid_similarity": 0.6779
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00848",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6615)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6615,
+        "outros_centroid_similarity": 0.584
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00637",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.6991)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.6991,
+        "outros_centroid_similarity": 0.614
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00025",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.429)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.429,
+        "outros_centroid_similarity": 0.3793
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00633",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.4942)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.4942,
+        "outros_centroid_similarity": 0.4784
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00310",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5431)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5431,
+        "outros_centroid_similarity": 0.5503
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02492",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.6065)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.6065,
+        "outros_centroid_similarity": 0.6087
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02478",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.7053)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7053,
+        "outros_centroid_similarity": 0.7288
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02494",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.6713)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.6713,
+        "outros_centroid_similarity": 0.6469
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00419",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.7204)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7204,
+        "outros_centroid_similarity": 0.7119
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00843",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5631)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5631,
+        "outros_centroid_similarity": 0.5605
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02484",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6107)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6107,
+        "outros_centroid_similarity": 0.638
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02486",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5394)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5394,
+        "outros_centroid_similarity": 0.5519
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02473",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=cancelamento, similarity=0.5821)",
+      "source_evidence": {
+        "nearest_intent": "cancelamento",
+        "nearest_similarity": 0.5821,
+        "outros_centroid_similarity": 0.6037
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02497",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.7116)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7116,
+        "outros_centroid_similarity": 0.7276
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00412",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.7077)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.7077,
+        "outros_centroid_similarity": 0.5023
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02495",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5423)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5423,
+        "outros_centroid_similarity": 0.5438
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00736",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.7043)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.7043,
+        "outros_centroid_similarity": 0.695
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00847",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.617)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.617,
+        "outros_centroid_similarity": 0.5277
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00629",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.4699)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.4699,
+        "outros_centroid_similarity": 0.4559
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00627",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5252)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5252,
+        "outros_centroid_similarity": 0.5268
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02477",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.667)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.667,
+        "outros_centroid_similarity": 0.7103
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00526",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.5327)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.5327,
+        "outros_centroid_similarity": 0.4842
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02464",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5867)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5867,
+        "outros_centroid_similarity": 0.6078
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00519",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.5828)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.5828,
+        "outros_centroid_similarity": 0.5984
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00311",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.7068)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.7068,
+        "outros_centroid_similarity": 0.685
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00521",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6039)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6039,
+        "outros_centroid_similarity": 0.6285
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02468",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6608)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6608,
+        "outros_centroid_similarity": 0.6861
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00743",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.7059)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.7059,
+        "outros_centroid_similarity": 0.7169
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02476",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.4194)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.4194,
+        "outros_centroid_similarity": 0.3869
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02462",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=reclamacao, similarity=0.6366)",
+      "source_evidence": {
+        "nearest_intent": "reclamacao",
+        "nearest_similarity": 0.6366,
+        "outros_centroid_similarity": 0.6143
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00417",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.693)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.693,
+        "outros_centroid_similarity": 0.619
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00202",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.6)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.6,
+        "outros_centroid_similarity": 0.4695
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00416",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6786)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6786,
+        "outros_centroid_similarity": 0.6289
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00520",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.5621)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.5621,
+        "outros_centroid_similarity": 0.5707
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00196",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6403)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6403,
+        "outros_centroid_similarity": 0.6505
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00844",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5874)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5874,
+        "outros_centroid_similarity": 0.5309
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00636",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.5503)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.5503,
+        "outros_centroid_similarity": 0.5615
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00735",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.6538)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.6538,
+        "outros_centroid_similarity": 0.6498
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00638",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=suporte_tecnico, similarity=0.6994)",
+      "source_evidence": {
+        "nearest_intent": "suporte_tecnico",
+        "nearest_similarity": 0.6994,
+        "outros_centroid_similarity": 0.677
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00738",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.7299)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.7299,
+        "outros_centroid_similarity": 0.7214
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00052",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.7014)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7014,
+        "outros_centroid_similarity": 0.7252
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00632",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5266)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5266,
+        "outros_centroid_similarity": 0.5403
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00308",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_produto, similarity=0.5867)",
+      "source_evidence": {
+        "nearest_intent": "duvida_produto",
+        "nearest_similarity": 0.5867,
+        "outros_centroid_similarity": 0.5643
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_03497",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.548)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.548,
+        "outros_centroid_similarity": 0.5473
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00203",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=elogio, similarity=0.2344)",
+      "source_evidence": {
+        "nearest_intent": "elogio",
+        "nearest_similarity": 0.2344,
+        "outros_centroid_similarity": 0.3059
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00199",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5623)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5623,
+        "outros_centroid_similarity": 0.5566
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00525",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6033)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6033,
+        "outros_centroid_similarity": 0.6114
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00628",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.6025)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.6025,
+        "outros_centroid_similarity": 0.6276
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00849",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5287)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5287,
+        "outros_centroid_similarity": 0.4413
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00850",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=duvida_servico, similarity=0.6318)",
+      "source_evidence": {
+        "nearest_intent": "duvida_servico",
+        "nearest_similarity": 0.6318,
+        "outros_centroid_similarity": 0.5687
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_02479",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=compra, similarity=0.5872)",
+      "source_evidence": {
+        "nearest_intent": "compra",
+        "nearest_similarity": 0.5872,
+        "outros_centroid_similarity": 0.5259
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_synth_03430",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.5712)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.5712,
+        "outros_centroid_similarity": 0.6067
+      },
+      "review_type": "automatic"
+    },
+    {
+      "conversation_id": "conv_00739",
+      "action": "removed_out_of_scope",
+      "reason": "Out-of-scope 'outros' record, not close to any intent (nearest=saudacao, similarity=0.7384)",
+      "source_evidence": {
+        "nearest_intent": "saudacao",
+        "nearest_similarity": 0.7384,
+        "outros_centroid_similarity": 0.7394
+      },
+      "review_type": "automatic"
+    }
+  ]
+}

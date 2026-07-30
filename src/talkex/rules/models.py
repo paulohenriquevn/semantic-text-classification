@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from talkex.models.rule_execution import EvidenceItem
 from talkex.rules.ast import ASTNode
 from talkex.rules.config import PredicateType
 
@@ -97,17 +98,17 @@ class PredicateResult:
     execution_time_ms: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_evidence_item(self) -> dict[str, Any]:
-        """Convert to EvidenceItem-compatible dict for RuleExecution mapping.
+    def to_evidence_item(self) -> EvidenceItem:
+        """Convert to EvidenceItem for RuleExecution mapping.
 
         Returns:
-            Dict compatible with the EvidenceItem TypedDict structure.
+            EvidenceItem with predicate evaluation evidence.
         """
-        evidence: dict[str, Any] = {
-            "predicate_type": self.predicate_type.value,
-            "score": self.score,
-            "threshold": self.threshold,
-        }
+        evidence = EvidenceItem(
+            predicate_type=self.predicate_type.value,
+            score=self.score,
+            threshold=self.threshold,
+        )
         if self.matched_text is not None:
             evidence["matched_text"] = self.matched_text
         if self.metadata:

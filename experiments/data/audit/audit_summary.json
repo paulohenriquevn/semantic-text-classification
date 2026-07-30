@@ -1,0 +1,66 @@
+{
+  "audit_date": "2026-03-12",
+  "dataset_version": "v1.0-pre-audit",
+  "total_records": 2257,
+  "checks": {
+    "schema_validation": {
+      "status": "PASS",
+      "violations": 0
+    },
+    "deduplication": {
+      "status": "FAIL",
+      "exact_dupes": 0,
+      "hard_near_dupes": 5,
+      "flagged_near_dupes": 306,
+      "cross_intent_flags": 54
+    },
+    "leakage_detection": {
+      "status": "FAIL",
+      "contaminated_records": 445
+    },
+    "split_integrity": {
+      "status": "PASS",
+      "overlap_count": 0
+    },
+    "taxonomy_coherence": {
+      "status": "PASS_WITH_NOTES",
+      "flagged_classes": [
+        "reclamacao",
+        "suporte_tecnico",
+        "duvida_produto",
+        "compra",
+        "duvida_servico",
+        "saudacao",
+        "outros",
+        "elogio"
+      ],
+      "note": "Low cohesion (<0.60) across 8/9 classes reflects synthetic dataset characteristics and MiniLM embedding behavior on long conversational texts, not mislabeling. Labels are consistent and separability is moderate (ratio=0.86). Does not block audit."
+    },
+    "outros_analysis": {
+      "status": "COMPLETE",
+      "category_summary": {
+        "B_ambiguous": 30,
+        "C_out_of_scope": 100,
+        "A_mislabeled": 1
+      }
+    },
+    "text_quality": {
+      "status": "PASS",
+      "failure_rate": 0.0
+    },
+    "distribution_analysis": {
+      "status": "COMPLETE",
+      "empty_cells": 0
+    }
+  },
+  "overall": "FAIL",
+  "blocking_issues": [
+    "deduplication",
+    "leakage_detection"
+  ],
+  "recommendations": [
+    "Update build_splits.py with contamination-aware splitting",
+    "Review 54 cross-intent near-duplicates for mislabeling",
+    "Reclassify 'outros' Category A records after human review"
+  ]
+}

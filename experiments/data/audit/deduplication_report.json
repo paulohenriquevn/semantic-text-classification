@@ -1,0 +1,703 @@
+{
+  "check": "deduplication",
+  "status": "FAIL",
+  "embedding_check_performed": true,
+  "exact_id_duplicates": 0,
+  "exact_id_details": {},
+  "exact_text_duplicates": 0,
+  "exact_text_details": {},
+  "near_duplicates_hard": 5,
+  "near_duplicates_hard_details": [
+    {
+      "id_a": "conv_00119",
+      "id_b": "conv_00003",
+      "similarity": 0.9822,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00246",
+      "id_b": "conv_00036",
+      "similarity": 0.9786,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00117",
+      "id_b": "conv_00116",
+      "similarity": 0.9783,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00928",
+      "id_b": "conv_00930",
+      "similarity": 0.9715,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00176",
+      "id_b": "conv_00177",
+      "similarity": 0.971,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    }
+  ],
+  "near_duplicates_flagged": 306,
+  "near_duplicates_flagged_details": [
+    {
+      "id_a": "conv_00352",
+      "id_b": "conv_00355",
+      "similarity": 0.9693,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00119",
+      "id_b": "conv_00117",
+      "similarity": 0.9674,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00003",
+      "id_b": "conv_00116",
+      "similarity": 0.9673,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00418",
+      "id_b": "conv_00411",
+      "similarity": 0.967,
+      "topic_a": "outros",
+      "topic_b": "outros",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00063",
+      "id_b": "conv_00354",
+      "similarity": 0.9662,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00710",
+      "id_b": "conv_00744",
+      "similarity": 0.9655,
+      "topic_a": "compra",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00119",
+      "id_b": "conv_00116",
+      "similarity": 0.9642,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00117",
+      "id_b": "conv_00003",
+      "similarity": 0.9638,
+      "topic_a": "duvida_produto",
+      "topic_b": "duvida_produto",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_01577",
+      "id_b": "conv_synth_01733",
+      "similarity": 0.9626,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00147",
+      "id_b": "conv_00157",
+      "similarity": 0.9626,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00346",
+      "id_b": "conv_00345",
+      "similarity": 0.962,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_01893",
+      "id_b": "conv_synth_01953",
+      "similarity": 0.962,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_02553",
+      "id_b": "conv_synth_02419",
+      "similarity": 0.9609,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00373",
+      "id_b": "conv_00372",
+      "similarity": 0.9602,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00464",
+      "id_b": "conv_00090",
+      "similarity": 0.9599,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00097",
+      "id_b": "conv_00486",
+      "similarity": 0.9593,
+      "topic_a": "compra",
+      "topic_b": "compra",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00131",
+      "id_b": "conv_00130",
+      "similarity": 0.9576,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00105",
+      "id_b": "conv_00106",
+      "similarity": 0.9575,
+      "topic_a": "saudacao",
+      "topic_b": "saudacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00930",
+      "id_b": "conv_00927",
+      "similarity": 0.9572,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00666",
+      "id_b": "conv_00664",
+      "similarity": 0.9571,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00822",
+      "id_b": "conv_00819",
+      "similarity": 0.9562,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00377",
+      "id_b": "conv_00375",
+      "similarity": 0.9558,
+      "topic_a": "compra",
+      "topic_b": "compra",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00668",
+      "id_b": "conv_00664",
+      "similarity": 0.9556,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_02184",
+      "id_b": "conv_synth_02382",
+      "similarity": 0.9555,
+      "topic_a": "duvida_servico",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00176",
+      "id_b": "conv_00018",
+      "similarity": 0.9554,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00216",
+      "id_b": "conv_00029",
+      "similarity": 0.955,
+      "topic_a": "saudacao",
+      "topic_b": "saudacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00010",
+      "id_b": "conv_00157",
+      "similarity": 0.9549,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00093",
+      "id_b": "conv_00471",
+      "similarity": 0.9544,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00715",
+      "id_b": "conv_00018",
+      "similarity": 0.9543,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_02229",
+      "id_b": "conv_synth_01726",
+      "similarity": 0.9533,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_01581",
+      "id_b": "conv_synth_02085",
+      "similarity": 0.9532,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00019",
+      "id_b": "conv_00177",
+      "similarity": 0.9523,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00663",
+      "id_b": "conv_00665",
+      "similarity": 0.9518,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_01756",
+      "id_b": "conv_synth_01726",
+      "similarity": 0.9515,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00284",
+      "id_b": "conv_00280",
+      "similarity": 0.9513,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_02150",
+      "id_b": "conv_synth_02059",
+      "similarity": 0.951,
+      "topic_a": "compra",
+      "topic_b": "compra",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00683",
+      "id_b": "conv_00744",
+      "similarity": 0.951,
+      "topic_a": "reclamacao",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00669",
+      "id_b": "conv_00670",
+      "similarity": 0.9508,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00005",
+      "id_b": "conv_00023",
+      "similarity": 0.9499,
+      "topic_a": "duvida_produto",
+      "topic_b": "elogio",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00157",
+      "id_b": "conv_00136",
+      "similarity": 0.9498,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_02085",
+      "id_b": "conv_synth_01661",
+      "similarity": 0.9489,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00900",
+      "id_b": "conv_00909",
+      "similarity": 0.9489,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00245",
+      "id_b": "conv_00249",
+      "similarity": 0.948,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_01634",
+      "id_b": "conv_synth_01776",
+      "similarity": 0.9478,
+      "topic_a": "duvida_servico",
+      "topic_b": "duvida_servico",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00592",
+      "id_b": "conv_00538",
+      "similarity": 0.9476,
+      "topic_a": "compra",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00508",
+      "id_b": "conv_00513",
+      "similarity": 0.9474,
+      "topic_a": "elogio",
+      "topic_b": "elogio",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_synth_02184",
+      "id_b": "conv_synth_02326",
+      "similarity": 0.9467,
+      "topic_a": "duvida_servico",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00284",
+      "id_b": "conv_00286",
+      "similarity": 0.9466,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00283",
+      "id_b": "conv_00047",
+      "similarity": 0.9465,
+      "topic_a": "cancelamento",
+      "topic_b": "cancelamento",
+      "cross_intent": false
+    },
+    {
+      "id_a": "conv_00147",
+      "id_b": "conv_00136",
+      "similarity": 0.9461,
+      "topic_a": "reclamacao",
+      "topic_b": "reclamacao",
+      "cross_intent": false
+    }
+  ],
+  "near_duplicate_pct": 13.78,
+  "cross_intent_flags": 54,
+  "cross_intent_details": [
+    {
+      "id_a": "conv_00710",
+      "id_b": "conv_00744",
+      "similarity": 0.9655,
+      "topic_a": "compra",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00147",
+      "id_b": "conv_00157",
+      "similarity": 0.9626,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_02184",
+      "id_b": "conv_synth_02382",
+      "similarity": 0.9555,
+      "topic_a": "duvida_servico",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00010",
+      "id_b": "conv_00157",
+      "similarity": 0.9549,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00683",
+      "id_b": "conv_00744",
+      "similarity": 0.951,
+      "topic_a": "reclamacao",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00005",
+      "id_b": "conv_00023",
+      "similarity": 0.9499,
+      "topic_a": "duvida_produto",
+      "topic_b": "elogio",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00157",
+      "id_b": "conv_00136",
+      "similarity": 0.9498,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00900",
+      "id_b": "conv_00909",
+      "similarity": 0.9489,
+      "topic_a": "reclamacao",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00592",
+      "id_b": "conv_00538",
+      "similarity": 0.9476,
+      "topic_a": "compra",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_02184",
+      "id_b": "conv_synth_02326",
+      "similarity": 0.9467,
+      "topic_a": "duvida_servico",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00157",
+      "id_b": "conv_00143",
+      "similarity": 0.946,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00228",
+      "id_b": "conv_00256",
+      "similarity": 0.9447,
+      "topic_a": "duvida_produto",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_01929",
+      "id_b": "conv_synth_01166",
+      "similarity": 0.9439,
+      "topic_a": "suporte_tecnico",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00710",
+      "id_b": "conv_00683",
+      "similarity": 0.9413,
+      "topic_a": "compra",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00629",
+      "id_b": "conv_00535",
+      "similarity": 0.9399,
+      "topic_a": "outros",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00685",
+      "id_b": "conv_00731",
+      "similarity": 0.9397,
+      "topic_a": "reclamacao",
+      "topic_b": "elogio",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_02076",
+      "id_b": "conv_synth_01265",
+      "similarity": 0.9381,
+      "topic_a": "compra",
+      "topic_b": "duvida_produto",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00193",
+      "id_b": "conv_00144",
+      "similarity": 0.9381,
+      "topic_a": "elogio",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00309",
+      "id_b": "conv_00243",
+      "similarity": 0.938,
+      "topic_a": "outros",
+      "topic_b": "duvida_servico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00206",
+      "id_b": "conv_00157",
+      "similarity": 0.9366,
+      "topic_a": "outros",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00206",
+      "id_b": "conv_00145",
+      "similarity": 0.9365,
+      "topic_a": "outros",
+      "topic_b": "reclamacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00228",
+      "id_b": "conv_00259",
+      "similarity": 0.9363,
+      "topic_a": "duvida_produto",
+      "topic_b": "suporte_tecnico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_01406",
+      "id_b": "conv_synth_02167",
+      "similarity": 0.9358,
+      "topic_a": "duvida_produto",
+      "topic_b": "compra",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00249",
+      "id_b": "conv_00217",
+      "similarity": 0.9351,
+      "topic_a": "reclamacao",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00594",
+      "id_b": "conv_00627",
+      "similarity": 0.9346,
+      "topic_a": "compra",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_02326",
+      "id_b": "conv_synth_01726",
+      "similarity": 0.9337,
+      "topic_a": "saudacao",
+      "topic_b": "duvida_servico",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_synth_01756",
+      "id_b": "conv_synth_02326",
+      "similarity": 0.9331,
+      "topic_a": "duvida_servico",
+      "topic_b": "saudacao",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00594",
+      "id_b": "conv_00632",
+      "similarity": 0.9305,
+      "topic_a": "compra",
+      "topic_b": "outros",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00748",
+      "id_b": "conv_00807",
+      "similarity": 0.9304,
+      "topic_a": "saudacao",
+      "topic_b": "compra",
+      "cross_intent": true
+    },
+    {
+      "id_a": "conv_00379",
+      "id_b": "conv_00331",
+      "similarity": 0.9298,
+      "topic_a": "compra",
+      "topic_b": "duvida_produto",
+      "cross_intent": true
+    }
+  ],
+  "thresholds": {
+    "flag": 0.92,
+    "hard": 0.97
+  }
+}
