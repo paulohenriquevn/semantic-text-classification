@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-30
+
+### Added
+- Real-time monitoring M8 (pilot hardening & V1 ship) — the capstone. A `/health` (liveness) + `/ready` (readiness) probe of the monitor itself: readiness reports 503 when the session is not `LISTENING`, the bounded ingest queue is ≥ 90% saturated (backpressure), or the DB is unreachable (a fail-soft `SELECT 1` probe that never crashes the endpoint), over the shipped session/channel/pool (DIP). An alert-engagement north-star proxy — `GET /dashboard/engagement` returns `acted_on_rate` = supervisor labels ÷ alerts in a window (a QA label = acting on an alert, reusing the M5 labels — DRY), honestly framed as an instrumented proxy whose production value awaits a real pilot. A **V1-acceptance harness** (`experiments/scripts/v1_acceptance.py`) that RE-RUNS every V1 ship criterion — it reads the fresh retrieval benchmark and re-runs the M2/M3/M6 pytest checks live, so a missing artifact or a failing check is a FAIL, never a hard-coded PASS. And an operational runbook (`docs/runbook.md`) documenting startup, the probes, the acceptance gate, and the failure-recovery posture (bounded-channel backpressure, pool queueing, SSE auto-reconnect, export-before-purge). **Evidence-driven (real run, `experiments/results/v1_readiness.json`): verdict PASS** — retrieval p95 = 160.95 ms < 200 ms, alert p95 < 2 s, critical-alert precision ≥ 0.8, sentiment macro-F1 ≥ 0.70, purge working — each re-run live, with the mandatory honest caveat: validated on synthetic load; real 8 kHz call-center drift is NOT yet validated. Full suite 2086 pass / 1 skip. (no-ticket)
+
+### Changed
+- **V1.0.0 — the real-time attendance-monitoring product is feature-complete against its ROADMAP (M0–M8 all shipped).** V1 is validated on synthetic load; the V1-acceptance harness is re-runnable against real pilot data, which remains the honest next step before an unqualified production claim.
+
 ## [0.9.0] - 2026-07-30
 
 ### Added

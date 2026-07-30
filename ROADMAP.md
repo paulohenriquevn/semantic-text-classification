@@ -275,7 +275,7 @@ storage before purge, and retrain the sentiment/intent models on accumulated lab
 
 ---
 
-### M8 — [ ] Pilot hardening & V1 ship
+### M8 — [x] Pilot hardening & V1 ship
 
 **Objective:** Run the production pilot on one queue/domain and prove every V1 ship criterion under
 real load; harden for operation.
