@@ -10,7 +10,12 @@ import re
 import psycopg
 import pytest
 from psycopg.types.json import Jsonb
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
+from talkex.classification.retraining_pipeline import RetrainingPipeline
+from talkex.classification.sentiment import SentimentDetector
 from talkex.monitoring.application.lifecycle_exporter import DataLifecycleExporter
 from talkex.monitoring.config import MonitoringConfig
 from talkex.monitoring.infrastructure.lifecycle_repo import TimescaleLifecycleRepository
@@ -116,3 +121,50 @@ class TestLifecycleExport:
         await conn.commit()
         cur = await conn.execute("SELECT count(*) FROM turns WHERE turn_id = 'lc_keep'")
         assert (await cur.fetchone())[0] == 1  # raw intact — a failed export never purges
+
+    async def test_end_to_end_export_then_retrain(self, conn: psycopg.AsyncConnection, tmp_path) -> None:
+        # Seed labeled PII turns, export an anonymized Parquet, then retrain from it end-to-end.
+        from datetime import UTC, datetime, timedelta
+
+        rows = [
+            ("e2e_1", "meu CPF 123.456.789-09 péssimo serviço quero cancelar", "negative"),
+            ("e2e_2", "horrível atendimento ana@x.com quero cancelar", "negative"),
+            ("e2e_3", "ruim demais nao aguento cancelar", "negative"),
+            ("e2e_4", "ótimo atendimento muito obrigado", "positive"),
+            ("e2e_5", "excelente tudo perfeito adorei", "positive"),
+            ("e2e_6", "adorei o suporte obrigado", "positive"),
+        ]
+        for turn_id, text, label in rows:
+            await _seed_turn(conn, turn_id, text, days_ago=1)
+            await conn.execute(
+                "INSERT INTO labels (label_id, turn_id, conversation_id, label) VALUES (%s, %s, %s, %s)",
+                (f"lbl_{turn_id}", turn_id, "conv_lc", label),
+            )
+        await conn.commit()
+
+        pool = MonitoringPool(DSN, min_size=1, max_size=2)
+        await pool.open()
+        try:
+            exporter = DataLifecycleExporter(
+                TimescaleLifecycleRepository(pool), RegexRedactor(), ParquetSampleStore(str(tmp_path))
+            )
+            result = await exporter.export_window(datetime.now(UTC) - timedelta(days=2), datetime.now(UTC), "m7_e2e")
+        finally:
+            await pool.close()
+
+        samples = read_samples(result.path)
+        assert _CPF.search(" ".join(s.redacted_text for s in samples)) is None  # LGPD gate end-to-end
+
+        def _tiny(version: str) -> SentimentDetector:
+            pipe = Pipeline([("tfidf", TfidfVectorizer(ngram_range=(1, 1), min_df=1)), ("clf", LinearSVC(C=1.0))])
+            return SentimentDetector(pipe, model_version=version)
+
+        _, bench = RetrainingPipeline(detector_factory=_tiny).retrain_and_benchmark(
+            samples,
+            ["péssimo quero cancelar", "ótimo obrigado"],
+            ["negative", "positive"],
+            new_version="sentiment-2026.07.30",
+            deployed=None,
+        )
+        assert bench.new_model_version == "sentiment-2026.07.30"
+        assert bench.promoted is True  # first model promoted; benchmark recorded (new_f1 vs deployed None)

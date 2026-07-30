@@ -1,0 +1,9 @@
+{
+  "export_path": "experiments/results/m7_samples/retrain_sentiment-2026.07.30.parquet",
+  "export_rows": 8,
+  "labeled_rows": 8,
+  "new_model_version": "sentiment-2026.07.30",
+  "new_f1": 1.0,
+  "deployed_f1": null,
+  "promoted": true
+}

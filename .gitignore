@@ -65,3 +65,4 @@ docs/pesquisas/*
 # M2 model + embedding artifacts (large, regenerable) — keep the metrics JSONs as evidence
 experiments/results/**/*.joblib
 experiments/results/**/*.npz
+experiments/results/m7_samples/

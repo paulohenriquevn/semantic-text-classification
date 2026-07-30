@@ -40,10 +40,14 @@ def to_binary_label(sentiment: str) -> str:
 
 @dataclass(frozen=True)
 class SentimentPrediction:
-    """A sentiment prediction: the label plus a signed margin (higher = more negative)."""
+    """A sentiment prediction: the label, a signed margin (higher = more negative), and the model version.
+
+    `model_version` honors the evidence axiom — every prediction records which model produced it (M7 D6).
+    """
 
     label: str
     score: float
+    model_version: str = "v0"
 
 
 def _default_pipeline() -> Pipeline:
@@ -64,13 +68,18 @@ def _default_pipeline() -> Pipeline:
 class SentimentDetector:
     """Binary negative-sentiment detector over lexical features (traditional ML)."""
 
-    def __init__(self, pipeline: Pipeline | None = None) -> None:
+    def __init__(self, pipeline: Pipeline | None = None, model_version: str = "v0") -> None:
         self._pipeline = pipeline if pipeline is not None else _default_pipeline()
         self._fitted = False
+        self._model_version = model_version
 
     @property
     def is_fitted(self) -> bool:
         return self._fitted
+
+    @property
+    def model_version(self) -> str:
+        return self._model_version
 
     def train(self, texts: list[str], sentiments: list[str]) -> None:
         """Fit on raw texts + 3-class sentiment labels (mapped to binary internally)."""
@@ -89,7 +98,7 @@ class SentimentDetector:
         label = str(self._pipeline.predict(x)[0])
         clf: Any = self._pipeline.named_steps["clf"]
         margin = float(self._pipeline.decision_function(x)[0]) if hasattr(clf, "decision_function") else 0.0
-        return SentimentPrediction(label=label, score=margin)
+        return SentimentPrediction(label=label, score=margin, model_version=self._model_version)
 
     def evaluate(self, texts: list[str], sentiments: list[str]) -> float:
         """Return the macro-F1 of the binary negative-detection task on held-out data."""
