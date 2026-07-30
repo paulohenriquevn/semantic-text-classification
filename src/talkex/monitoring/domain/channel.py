@@ -37,6 +37,11 @@ class TurnChannel:
     def qsize(self) -> int:
         return self._queue.qsize()
 
+    @property
+    def maxsize(self) -> int:
+        """The bounded capacity — the readiness probe compares qsize against this (M8)."""
+        return self._queue.maxsize
+
     async def put(self, turn: Turn) -> None:
         """Enqueue a turn, awaiting when the channel is full (backpressure)."""
         if self._closed:

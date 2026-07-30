@@ -16,7 +16,7 @@ from typing import Any
 from uuid import uuid4
 
 import psycopg
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
@@ -25,6 +25,7 @@ from talkex.ingestion.enums import SourceFormat
 from talkex.ingestion.inputs import TranscriptInput
 from talkex.models.enums import Channel
 from talkex.models.types import ConversationId
+from talkex.monitoring.application.health_service import HealthService
 from talkex.monitoring.application.orchestrator import TurnOrchestrator
 from talkex.monitoring.application.search_service import SearchService
 from talkex.monitoring.application.session import MonitoringSession
@@ -35,6 +36,7 @@ from talkex.monitoring.domain.dashboard import KpiQuery
 from talkex.monitoring.domain.models import AlertId
 from talkex.monitoring.domain.ports import TurnEmbedder
 from talkex.monitoring.domain.search import Criterion, Label, SearchQuery
+from talkex.monitoring.infrastructure.db_probe import PoolDbProbe
 from talkex.monitoring.infrastructure.embedder import SentenceTransformerEmbedder
 from talkex.monitoring.infrastructure.kpi_repo import TimescaleKpiRepository
 from talkex.monitoring.infrastructure.label_repo import TimescaleLabelRepository
@@ -119,6 +121,7 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         app.state.search_service = SearchService(TimescaleReadRepository(read_pool), turn_embedder)
         app.state.label_repo = TimescaleLabelRepository(read_pool)
         app.state.kpi_repo = TimescaleKpiRepository(read_pool)  # M6 manager-dashboard read
+        app.state.health = HealthService(session, channel, PoolDbProbe(read_pool))  # M8 readiness probe
         try:
             yield
         finally:
@@ -128,6 +131,19 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
             await notify_conn.close()
 
     app = FastAPI(title="TalkEx Monitoring (M0)", lifespan=lifespan)
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        # M8 liveness — the process is up and serving (readiness is a separate, deeper probe).
+        return {"status": "alive"}
+
+    @app.get("/ready")
+    async def ready(response: Response) -> dict[str, object]:
+        # M8 readiness — session LISTENING + queue not saturated + DB reachable, else 503.
+        report = await app.state.health.readiness()
+        if not report.ready:
+            response.status_code = 503
+        return report.model_dump()
 
     @app.post("/ingest", status_code=202)
     async def ingest(req: IngestRequest) -> dict[str, int]:
