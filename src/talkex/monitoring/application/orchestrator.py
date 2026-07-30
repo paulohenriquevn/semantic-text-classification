@@ -1,10 +1,10 @@
-"""Turn orchestrator — the online 'decide' step (blueprint D1/D4).
+"""Turn orchestrator — the online 'decide' step (blueprint M0 D1/D4, M3 catalogue).
 
 For each ingested Turn: persist it (per-Turn insert, D5), rebuild the conversation's
-context windows (reusing SlidingWindowBuilder), evaluate ONE DSL rule on the latest
-window (reusing the rules engine — the decide step is the DSL, NOT an LLM, rejecting
-the ai-call-center online-LLM anti-pattern), and on a match emit an evidence-backed
-Alert, persist it, then notify AFTER persistence (commit-then-notify, D3).
+context windows (reusing SlidingWindowBuilder), evaluate the CRITICAL-RULE CATALOGUE on the
+customer-scoped window text (M3 — the decide step is the DSL, NOT an LLM), attach optional M2
+sentiment evidence, and emit one evidence-backed Alert PER matched rule — persist then notify
+AFTER persistence (commit-then-notify, D3).
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from talkex.monitoring.domain.models import Alert, AlertId
 from talkex.monitoring.domain.ports import AlertBroadcaster, AlertRepository, TurnRepository
 from talkex.rules.config import RuleEngineConfig
 from talkex.rules.evaluator import SimpleRuleEvaluator
-from talkex.rules.models import RuleDefinition, RuleEvaluationInput
+from talkex.rules.models import RuleDefinition, RuleEvaluationInput, RuleResult
 
 # A window forms as soon as the first turn lands (M0 needs immediacy, not a full 5-turn window).
 _M0_WINDOW_CONFIG = ContextWindowConfig(
@@ -106,16 +106,21 @@ class TurnOrchestrator:
         )
         sentiment = self._sentiment_evidence(window.window_text)  # M2 cascade feature, shared
         for result in results:  # M3: one evidence-backed alert per matched critical rule
-            if not result.matched:
-                continue
-            evidence = [pr.to_evidence_item() for pr in result.predicate_results]
-            evidence.extend(sentiment)
-            alert = Alert(
-                alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
-                conversation_id=turn.conversation_id,
-                window_id=window.window_id,
-                rule_name=result.rule_name,
-                evidence=evidence,
-            )
-            await self._alert_repo.save(alert)  # commit first ...
-            await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)
+            if result.matched:
+                await self._emit_alert(turn, window, result, sentiment)
+
+    async def _emit_alert(
+        self, turn: Turn, window: ContextWindow, result: RuleResult, sentiment: list[EvidenceItem]
+    ) -> None:
+        """Build the evidence-backed alert, persist it, then notify (commit-then-notify, D3)."""
+        evidence = [pr.to_evidence_item() for pr in result.predicate_results]
+        evidence.extend(sentiment)
+        alert = Alert(
+            alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
+            conversation_id=turn.conversation_id,
+            window_id=window.window_id,
+            rule_name=result.rule_name,
+            evidence=evidence,
+        )
+        await self._alert_repo.save(alert)  # commit first ...
+        await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)
