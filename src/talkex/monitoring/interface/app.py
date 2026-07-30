@@ -54,6 +54,7 @@ class IngestRequest(BaseModel):
 
     conversation_id: str
     raw_text: str
+    queue: str = "default"  # M6 KPI dimension — the service queue/domain this conversation belongs to
 
 
 class CriterionRequest(BaseModel):
@@ -135,7 +136,9 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         )
         turns = segmenter.segment(transcript, _SEG_CONFIG)
         for turn in turns:
-            await app.state.channel.put(turn)
+            # M6: carry the queue on each turn's metadata so the alert (and its KPI rollup) is scoped.
+            queued = turn.model_copy(update={"metadata": {**turn.metadata, "queue": req.queue}})
+            await app.state.channel.put(queued)
         return {"enqueued": len(turns)}
 
     @app.post("/search")

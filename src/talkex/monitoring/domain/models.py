@@ -46,6 +46,10 @@ class Alert(BaseModel):
         window_id: The context window that triggered the match.
         rule_name: Name of the DSL rule that fired.
         evidence: Per-predicate evidence items (reuses the rules-engine EvidenceItem).
+        queue: The service queue/domain the conversation belongs to (M6 KPI dimension; 'default' when
+            not captured at ingest).
+        sentiment: The window's sentiment label promoted from the cascade evidence (M6 KPI dimension;
+            None when no sentiment detector is wired).
     """
 
     model_config = ConfigDict(frozen=True, strict=True)
@@ -55,3 +59,5 @@ class Alert(BaseModel):
     window_id: str
     rule_name: str
     evidence: list[EvidenceItem] = Field(default_factory=list)
+    queue: str = "default"
+    sentiment: str | None = None

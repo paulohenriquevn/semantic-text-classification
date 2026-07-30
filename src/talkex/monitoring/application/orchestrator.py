@@ -115,12 +115,18 @@ class TurnOrchestrator:
         """Build the evidence-backed alert, persist it, then notify (commit-then-notify, D3)."""
         evidence = [pr.to_evidence_item() for pr in result.predicate_results]
         evidence.extend(sentiment)
+        # M6: promote queue (from the turn's metadata) + the sentiment label into first-class KPI
+        # dimensions so the alerts_kpi_5min continuous aggregate can group by them.
+        queue = str(turn.metadata.get("queue", "default"))
+        sentiment_label = sentiment[0].get("matched_text") if sentiment else None
         alert = Alert(
             alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
             conversation_id=turn.conversation_id,
             window_id=window.window_id,
             rule_name=result.rule_name,
             evidence=evidence,
+            queue=queue,
+            sentiment=sentiment_label,
         )
         await self._alert_repo.save(alert)  # commit first ...
         await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)

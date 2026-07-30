@@ -61,21 +61,24 @@ class TimescaleAlertRepository:
 
     async def save(self, alert: Alert) -> None:
         await self._conn.execute(
-            "INSERT INTO alerts (alert_id, conversation_id, window_id, rule_name, evidence) "
-            "VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO alerts (alert_id, conversation_id, window_id, rule_name, evidence, queue, sentiment) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (
                 alert.alert_id,
                 alert.conversation_id,
                 alert.window_id,
                 alert.rule_name,
                 Jsonb(alert.evidence),
+                alert.queue,
+                alert.sentiment,
             ),
         )
         await self._conn.commit()
 
     async def get(self, alert_id: AlertId) -> Alert | None:
         cur = await self._conn.execute(
-            "SELECT alert_id, conversation_id, window_id, rule_name, evidence FROM alerts WHERE alert_id = %s",
+            "SELECT alert_id, conversation_id, window_id, rule_name, evidence, queue, sentiment "
+            "FROM alerts WHERE alert_id = %s",
             (alert_id,),
         )
         row = await cur.fetchone()
@@ -87,4 +90,6 @@ class TimescaleAlertRepository:
             window_id=row[2],
             rule_name=row[3],
             evidence=row[4],
+            queue=row[5],
+            sentiment=row[6],
         )
