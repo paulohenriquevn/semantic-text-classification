@@ -38,6 +38,7 @@ from talkex.monitoring.domain.ports import TurnEmbedder
 from talkex.monitoring.domain.search import Criterion, Label, SearchQuery
 from talkex.monitoring.infrastructure.db_probe import PoolDbProbe
 from talkex.monitoring.infrastructure.embedder import SentenceTransformerEmbedder
+from talkex.monitoring.infrastructure.engagement_repo import TimescaleEngagementRepository
 from talkex.monitoring.infrastructure.kpi_repo import TimescaleKpiRepository
 from talkex.monitoring.infrastructure.label_repo import TimescaleLabelRepository
 from talkex.monitoring.infrastructure.notify_broadcaster import NotifyAlertBroadcaster
@@ -122,6 +123,7 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         app.state.label_repo = TimescaleLabelRepository(read_pool)
         app.state.kpi_repo = TimescaleKpiRepository(read_pool)  # M6 manager-dashboard read
         app.state.health = HealthService(session, channel, PoolDbProbe(read_pool))  # M8 readiness probe
+        app.state.engagement_repo = TimescaleEngagementRepository(read_pool)  # M8 engagement proxy
         try:
             yield
         finally:
@@ -182,6 +184,13 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         query = KpiQuery(from_time=from_time, to_time=to_time, queue=queue, rule_name=rule_name)
         buckets = await app.state.kpi_repo.kpi_rollups(query)
         return [b.model_dump(mode="json") for b in buckets]
+
+    @app.get("/dashboard/engagement")
+    async def engagement(from_time: datetime, to_time: datetime) -> dict[str, Any]:
+        # M8 north-star proxy — the supervisor acted-on-alert rate (labels ÷ alerts) over a window.
+        metric = await app.state.engagement_repo.engagement(from_time, to_time)
+        result: dict[str, Any] = metric.model_dump()
+        return result
 
     @app.post("/label", status_code=201)
     async def label(req: LabelRequest) -> dict[str, str]:
