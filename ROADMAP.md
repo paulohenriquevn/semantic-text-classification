@@ -215,7 +215,7 @@ into the conversation with highlighted evidence, and a prioritized alert inbox.
 
 ---
 
-### M5 — [ ] Hybrid search & QA over 30 days
+### M5 — [x] Hybrid search & QA over 30 days
 
 **Objective:** Give QA 100% coverage — hybrid BM25 + semantic search over the 30-day window with
 metadata filters, plus an audit/label workflow.

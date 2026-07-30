@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-30
+
+### Added
+- Real-time monitoring M5 (hybrid search & QA over 30 days) — DB-side hybrid retrieval over the 30-day Timescale window: a `TurnSearchPort` whose adapter fetches lexical candidates (`ts_rank` over the GIN(`search_vector`)) and semantic candidates (pgvector cosine `<=>` over the HNSW index), fused by the shipped `reciprocal_rank_fusion` in an application `SearchService` (DIP: fusion in the app layer, SQL in infrastructure — unit-testable). QA searches by criterion (compiled to **bound** parameterized SQL over a fixed column whitelist — injection-safe by construction, unknown fields fail fast) and opens matched windows with evidence, via `POST /search`; a `POST /label` action persists QA labels to a new `labels` table (a plain table, so labels survive the 30-day raw-data purge for retraining). **Closes a critical baseline gap:** the `embedding vector(384)` column shipped empty in M1 (nothing wrote it) — M5 populates it (backfill script + ingest-path write, multilingual-MiniLM 384-dim) so the ANN half is genuinely live, not BM25-in-disguise. **Evidence-driven (real multilingual-MiniLM benchmark against a real TimescaleDB):** search **p95 = 160.95 ms < 200 ms** under concurrent ingest, and **hybrid MRR = 1.0 vs BM25-only MRR = 0.833** — the ANN half catches paraphrase queries (e.g. "encerrar assinatura", "transferir para o gerente") that BM25 misses (`experiments/scripts/bench_hybrid_search.py` + metrics JSON; always benchmarked against the BM25 baseline per `docs/KB.md`). Migration `0003` (labels table). (no-ticket)
+
 ## [0.6.0] - 2026-07-30
 
 ### Added
