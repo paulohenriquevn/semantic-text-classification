@@ -1,0 +1,36 @@
+{
+  "criteria": [
+    {
+      "name": "retrieval_p95_ms < 200",
+      "measured": 160.95,
+      "threshold": 200.0,
+      "direction": "max"
+    },
+    {
+      "name": "alert_p95 < 2s",
+      "measured": 1.0,
+      "threshold": 1.0,
+      "direction": "min"
+    },
+    {
+      "name": "critical_alert_precision >= 0.8",
+      "measured": 1.0,
+      "threshold": 1.0,
+      "direction": "min"
+    },
+    {
+      "name": "sentiment_macro_f1 >= 0.70",
+      "measured": 1.0,
+      "threshold": 1.0,
+      "direction": "min"
+    },
+    {
+      "name": "purge_working",
+      "measured": 1.0,
+      "threshold": 1.0,
+      "direction": "min"
+    }
+  ],
+  "verdict": "PASS",
+  "caveat": "Validated on synthetic load; real 8 kHz call-center drift is NOT yet validated — re-run this harness against real pilot data before an unqualified V1 claim."
+}
