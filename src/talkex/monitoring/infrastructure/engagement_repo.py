@@ -25,11 +25,13 @@ class TimescaleEngagementRepository:
                 "SELECT count(*) FROM alerts WHERE created_at >= %s AND created_at < %s",
                 (from_time, to_time),
             )
-            alerts = int((await cur.fetchone())[0])
+            alerts_row = await cur.fetchone()
             cur = await conn.execute(
                 "SELECT count(*) FROM labels WHERE created_at >= %s AND created_at < %s",
                 (from_time, to_time),
             )
-            labels = int((await cur.fetchone())[0])
+            labels_row = await cur.fetchone()
+        alerts = int(alerts_row[0]) if alerts_row else 0
+        labels = int(labels_row[0]) if labels_row else 0
         rate = (labels / alerts) if alerts > 0 else 0.0
         return EngagementMetric(alerts=alerts, labels=labels, acted_on_rate=rate)
