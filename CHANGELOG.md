@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Real-time monitoring M4 (supervisor live-monitoring UI) — a supervisor surface on the `demo/frontend` (React+Vite+TS+Tailwind) that consumes the shipped `GET /supervisor/stream` SSE endpoint: a `useSupervisorStream` hook (native `EventSource`, no runtime dependency, built-in auto-reconnect) that parses `alert` events into a chronological inbox + a per-conversation active-call map (latest alert wins), and a `SupervisorPage` (active-call list + evidence-backed alert inbox) mounted under a new "Supervisor" tab. Adds a vitest + @testing-library/react + jsdom toolchain to the demo (previously untested) with 4 component/hook tests proving a dispatched alert renders with its rule name + evidence chips (M2 sentiment / M3 critical-rule evidence). SSE reaches dev via the existing `/api` Vite proxy (no backend change). (no-ticket)
+
 ## [0.5.0] - 2026-07-30
 
 ### Added

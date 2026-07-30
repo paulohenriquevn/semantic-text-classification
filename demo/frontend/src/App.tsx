@@ -9,10 +9,11 @@ import { ResultCard } from "@/components/ResultCard";
 import { SearchBar } from "@/components/SearchBar";
 import { SearchBuilderPanel } from "@/components/SearchBuilderPanel";
 import { SearchLoading } from "@/components/SearchLoading";
+import { SupervisorPage } from "@/components/SupervisorPage";
 import { searchConversations } from "@/lib/api";
 import type { SearchFilters, SearchResponse } from "@/types/api";
 
-type Tab = "search" | "categories" | "analytics" | "guide";
+type Tab = "search" | "categories" | "analytics" | "supervisor" | "guide";
 type SearchMode = "text" | "dsl";
 
 export default function App() {
@@ -64,6 +65,12 @@ export default function App() {
               <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>
                 Analytics
               </TabButton>
+              <TabButton
+                active={tab === "supervisor"}
+                onClick={() => setTab("supervisor")}
+              >
+                Supervisor
+              </TabButton>
               <TabButton active={tab === "guide"} onClick={() => setTab("guide")}>
                 Guia
               </TabButton>
@@ -87,6 +94,8 @@ export default function App() {
           <DSLGuidePanel />
         ) : tab === "analytics" ? (
           <AnalyticsPanel />
+        ) : tab === "supervisor" ? (
+          <SupervisorPage />
         ) : tab === "categories" ? (
           <CategoriesPanel onViewConversation={viewConversation} />
         ) : (
