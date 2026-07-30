@@ -56,7 +56,7 @@ class _FakeBroadcaster:
 def _make(log: list[str], dsl: str = 'contains_any("cancelar", "cancelamento")') -> tuple:
     rule = SimpleRuleCompiler().compile(dsl_text=dsl, rule_id="rule_m0", rule_name="cancellation_risk")
     tr, ar, br = _FakeTurnRepo(log), _FakeAlertRepo(log), _FakeBroadcaster(log)
-    orch = TurnOrchestrator(turn_repo=tr, alert_repo=ar, broadcaster=br, rule=rule)
+    orch = TurnOrchestrator(turn_repo=tr, alert_repo=ar, broadcaster=br, rules=[rule])
     return orch, tr, ar, br
 
 
@@ -117,7 +117,7 @@ class TestSentimentCascade:
         )
         tr, ar, br = _FakeTurnRepo(log), _FakeAlertRepo(log), _FakeBroadcaster(log)
         orch = TurnOrchestrator(
-            turn_repo=tr, alert_repo=ar, broadcaster=br, rule=rule,
+            turn_repo=tr, alert_repo=ar, broadcaster=br, rules=[rule],
             sentiment_detector=self._trained_detector(),  # type: ignore[arg-type]
         )
         await orch.handle(_turn(0, "péssimo horrível quero cancelar minha conta"))

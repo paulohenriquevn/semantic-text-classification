@@ -70,7 +70,7 @@ async def test_ingest_to_supervisor_alert_e2e() -> None:
             async with await psycopg.AsyncConnection.connect(CFG.dsn) as read:
                 alert = await TimescaleAlertRepository(read).get(alert_id)  # type: ignore[arg-type]
             assert alert is not None
-            assert alert.rule_name == "cancellation_risk"
+            assert alert.rule_name == "cancellation"
             assert any(e.get("matched_text") for e in alert.evidence)
 
             # DoD-1: the turn landed in the hypertable with a timestamp.

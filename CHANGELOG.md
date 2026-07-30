@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Real-time monitoring M3 (rule engine & alerting) — hardens the M0 alerting with a critical-rule catalogue (`build_critical_rules`: cancellation + escalation DSL rules), multi-rule evaluation in the orchestrator (one evidence-backed alert per matched critical rule), and **customer-scoped** rule evaluation (critical intent is the customer's — this lifts cancellation-alert precision from 0.51 on naive keywords to **0.89**). **Evidence-driven:** a bare `contains_any("cancelar")` over the full transcript alerts at precision 0.51 (the agent explaining the cancellation process fires false positives); scoping to the customer's utterances + a cancellation-intent regex reaches **precision 0.8936 ≥ 0.80** (proven by `test_alert_precision_meets_bar` on the topic-labeled test set), and turn→alert **p95 latency < 2s** (proven by `test_turn_to_alert_p95_under_2s`). `experiments/scripts/eval_alert_precision.py` + metrics JSON (no-ticket)
+
 ## [0.4.0] - 2026-07-30
 
 ### Added

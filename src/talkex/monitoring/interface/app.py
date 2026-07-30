@@ -27,18 +27,17 @@ from talkex.monitoring.application.orchestrator import TurnOrchestrator
 from talkex.monitoring.application.session import MonitoringSession
 from talkex.monitoring.config import MonitoringConfig
 from talkex.monitoring.domain.channel import TurnChannel
+from talkex.monitoring.domain.critical_rules import build_critical_rules
 from talkex.monitoring.domain.models import AlertId
 from talkex.monitoring.infrastructure.notify_broadcaster import NotifyAlertBroadcaster
 from talkex.monitoring.infrastructure.timescale_repo import (
     TimescaleAlertRepository,
     TimescaleTurnRepository,
 )
-from talkex.rules.compiler import SimpleRuleCompiler
 from talkex.segmentation.config import SegmentationConfig
 from talkex.segmentation.segmenter import TurnSegmenter
 
 # M0 critical rule: cancellation-risk (blueprint Q3 — DSL is the online decide step, not an LLM).
-_M0_RULE_DSL = 'contains_any("cancelar", "cancelamento", "cancela")'
 _SEG_CONFIG = SegmentationConfig()
 
 
@@ -53,7 +52,7 @@ def create_app(config: MonitoringConfig | None = None) -> FastAPI:
     """Build the wired FastAPI app (composition root)."""
     cfg = config or MonitoringConfig()
     segmenter = TurnSegmenter()
-    rule = SimpleRuleCompiler().compile(dsl_text=_M0_RULE_DSL, rule_id="rule_m0_cancel", rule_name="cancellation_risk")
+    rules = build_critical_rules()  # M3 critical-rule catalogue
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -64,7 +63,7 @@ def create_app(config: MonitoringConfig | None = None) -> FastAPI:
             turn_repo=TimescaleTurnRepository(write_conn),
             alert_repo=TimescaleAlertRepository(write_conn),
             broadcaster=NotifyAlertBroadcaster(notify_conn, cfg.notify_channel),
-            rule=rule,
+            rules=rules,
         )
         session = MonitoringSession(channel, orchestrator)
         await session.start()

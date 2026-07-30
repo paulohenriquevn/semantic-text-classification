@@ -15,8 +15,9 @@ from datetime import UTC, datetime
 from talkex.classification.sentiment import SentimentDetector
 from talkex.context.builder import SlidingWindowBuilder
 from talkex.context.config import ContextWindowConfig
+from talkex.models.context_window import ContextWindow
 from talkex.models.conversation import Conversation
-from talkex.models.enums import Channel
+from talkex.models.enums import Channel, SpeakerRole
 from talkex.models.rule_execution import EvidenceItem
 from talkex.models.turn import Turn
 from talkex.monitoring.domain.models import Alert, AlertId
@@ -44,19 +45,27 @@ class TurnOrchestrator:
         turn_repo: TurnRepository,
         alert_repo: AlertRepository,
         broadcaster: AlertBroadcaster,
-        rule: RuleDefinition,
+        rules: list[RuleDefinition],
         channel: Channel = Channel.VOICE,
         sentiment_detector: SentimentDetector | None = None,
     ) -> None:
+        if not rules:
+            raise ValueError("at least one rule is required")
         self._turn_repo = turn_repo
         self._alert_repo = alert_repo
         self._broadcaster = broadcaster
-        self._rule = rule
+        self._rules = rules
         self._channel = channel
         self._sentiment = sentiment_detector
         self._builder = SlidingWindowBuilder()
         self._evaluator = SimpleRuleEvaluator()
         self._buffers: dict[str, list[Turn]] = {}
+
+    @staticmethod
+    def _customer_text(window: ContextWindow, buffer: list[Turn]) -> str:
+        """Join the customer utterances within the window (critical intent is the customer's, M3 D2)."""
+        ids = set(window.turn_ids)
+        return " ".join(t.raw_text for t in buffer if t.turn_id in ids and t.speaker == SpeakerRole.CUSTOMER)
 
     def _sentiment_evidence(self, window_text: str) -> list[EvidenceItem]:
         """Compute sentiment on the window as cascade evidence (M2), when a detector is present."""
@@ -82,27 +91,31 @@ class TurnOrchestrator:
             return
 
         window = windows[-1]
-        result = self._evaluator.evaluate(
-            [self._rule],
+        # Critical intent is the CUSTOMER's — scope rule evaluation to customer utterances so the
+        # agent explaining a process ("para cancelamento você liga...") does not raise a false alert
+        # (this scoping lifts cancellation-alert precision from 0.51 to 0.89 — blueprint M3 D2).
+        customer_text = self._customer_text(window, buffer) or window.window_text
+        results = self._evaluator.evaluate(
+            self._rules,
             RuleEvaluationInput(
                 source_id=window.window_id,
                 source_type="context_window",
-                text=window.window_text,
+                text=customer_text,
             ),
             RuleEngineConfig(),
-        )[0]
-
-        if not result.matched:
-            return
-
-        evidence = [pr.to_evidence_item() for pr in result.predicate_results]
-        evidence.extend(self._sentiment_evidence(window.window_text))  # M2 cascade feature
-        alert = Alert(
-            alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
-            conversation_id=turn.conversation_id,
-            window_id=window.window_id,
-            rule_name=result.rule_name,
-            evidence=evidence,
         )
-        await self._alert_repo.save(alert)  # commit first ...
-        await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)
+        sentiment = self._sentiment_evidence(window.window_text)  # M2 cascade feature, shared
+        for result in results:  # M3: one evidence-backed alert per matched critical rule
+            if not result.matched:
+                continue
+            evidence = [pr.to_evidence_item() for pr in result.predicate_results]
+            evidence.extend(sentiment)
+            alert = Alert(
+                alert_id=AlertId(f"alert_{uuid.uuid4().hex[:12]}"),
+                conversation_id=turn.conversation_id,
+                window_id=window.window_id,
+                rule_name=result.rule_name,
+                evidence=evidence,
+            )
+            await self._alert_repo.save(alert)  # commit first ...
+            await self._broadcaster.notify(alert.alert_id)  # ... then notify (D3)

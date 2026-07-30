@@ -1,0 +1,8 @@
+{
+  "category": "cancellation",
+  "precision": 0.8936,
+  "fired": 47,
+  "true_positives": 42,
+  "target": 0.8,
+  "pass": true
+}
