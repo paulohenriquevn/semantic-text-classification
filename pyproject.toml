@@ -85,5 +85,5 @@ strict_equality = true
 # Third-party libs without type stubs (py.typed). Standard override so untyped
 # imports do not fail the gate — applies to the ML backends used by classifiers.
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "joblib.*", "psycopg_pool.*", "sentence_transformers.*"]
+module = ["sklearn.*", "joblib.*", "psycopg_pool.*", "sentence_transformers.*", "pyarrow.*", "pandas.*"]
 ignore_missing_imports = true

@@ -100,3 +100,17 @@ class SamplePort(Protocol):
     """Writes anonymized retraining samples to durable storage (Parquet/object store, M7 D3)."""
 
     def write(self, rows: list[RetrainingSample], name: str) -> str: ...
+
+
+class LifecycleReadPort(Protocol):
+    """Reads the to-be-exported window (turns + their QA labels) and purges old chunks (M7 D4).
+
+    `read_export_rows` returns `(turn_id, conversation_id, raw_text, label|None)` for the window;
+    `purge_before` drops raw chunks — the caller MUST verify a successful export first (export-before-purge).
+    """
+
+    async def read_export_rows(
+        self, from_time: datetime, to_time: datetime
+    ) -> list[tuple[str, str, str, str | None]]: ...
+
+    async def purge_before(self, older_than: datetime) -> None: ...
