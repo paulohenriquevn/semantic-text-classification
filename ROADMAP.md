@@ -235,7 +235,7 @@ metadata filters, plus an audit/label workflow.
 
 ---
 
-### M6 — [ ] Aggregated dashboards (continuous aggregates)
+### M6 — [x] Aggregated dashboards (continuous aggregates)
 
 **Objective:** Manager dashboards from Timescale continuous aggregates — sentiment trends,
 cancellation and alert rate per queue/domain, script adherence.

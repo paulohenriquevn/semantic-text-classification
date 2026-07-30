@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-30
+
+### Added
+- Real-time monitoring M6 (aggregated dashboards via continuous aggregates) — a Timescale continuous aggregate `alerts_kpi_5min` (migration 0004) that rolls up alerts into 5-minute buckets per (rule, queue, sentiment), extending the shipped `turns_per_min` pattern. It refreshes **incrementally** via a continuous-aggregate policy (closed-buckets-only `end_offset` — the Timescale realization of chatwoot's rollup) with no read-time full scan, and carries **no retention policy** so the rollup outlives the 30-day raw purge (long-term business memory, ADR-005 hot/purge split). Promotes `queue` (threaded through ingest → `turn.metadata` → the alert, so "per queue" is real end-to-end, not a hardcoded constant) and the `sentiment` label into first-class KPI dimensions on the `alerts` table. Adds a `KpiReadPort` + `TimescaleKpiRepository` that reads pre-bucketed rows straight from the CA with bounded whitelist filters (time range + optional queue/rule, all bound params), and a `GET /dashboard/kpis` manager endpoint. **Evidence-driven (real TimescaleDB):** the CA refreshes incrementally (a new alert bumps only its bucket) and — the M6 crux — the rollup **survives `drop_chunks('alerts')`** (raw purged to zero rows, KPI bucket remains), proving the hot/purge split. Full suite 2060 passed / 1 skip. (no-ticket)
+
 ## [0.7.0] - 2026-07-30
 
 ### Added
