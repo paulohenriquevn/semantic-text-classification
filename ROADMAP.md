@@ -255,7 +255,7 @@ cancellation and alert rate per queue/domain, script adherence.
 
 ---
 
-### M7 — [ ] Retraining loop & data lifecycle
+### M7 — [x] Retraining loop & data lifecycle
 
 **Objective:** Close the offline data lifecycle — export anonymized retraining samples to object
 storage before purge, and retrain the sentiment/intent models on accumulated labels.

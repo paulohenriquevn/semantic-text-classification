@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-30
+
+### Added
+- Real-time monitoring M7 (retraining loop & data lifecycle) — closes the offline lifecycle. A PT-BR PII redactor (`RegexRedactor` behind a `Redactor` port) that removes CPF, CNPJ, DDD phone, email, and heuristic names (a deliberate build-not-adopt call vs the reference project's English/US Presidio config, with a conservative name heuristic so ordinary capitalized words are not over-redacted). A `DataLifecycleExporter` that reads a window (turns LEFT JOIN their M5 QA labels), anonymizes each turn's text, and writes an anonymized **Parquet** cold sample via a `SamplePort` (pyarrow) — then purges the raw chunks **only after a verified export** (export-before-purge; a failed export never purges, so no retraining data is lost to the 30-day drop). A `RetrainingPipeline` that retrains a candidate `SentimentDetector` on the labeled samples, benchmarks macro-F1 vs the deployed model, and promotes **only on a strict gain** (an honest gate for low label volume — no gain keeps the deployed model). `model_version` is now stamped on every `SentimentPrediction` (the evidence axiom). **Evidence-driven (real TimescaleDB, `run_retraining.py` → `experiments/results/m7_retrain.json`):** 8 labeled turns exported to an anonymized Parquet (CPF/email ABSENT — verified), retrained to a versioned model and promoted. LGPD gate proven at three levels (unit, integration, real run). Adds a `lifecycle` extra (pyarrow, pandas). (no-ticket)
+
 ## [0.8.0] - 2026-07-30
 
 ### Added
