@@ -15,6 +15,12 @@ from talkex.monitoring.infrastructure.embedder import to_vector_literal
 from talkex.monitoring.infrastructure.pool import MonitoringPool
 from talkex.retrieval.models import RetrievalHit
 
+# Whitelisted criterion fields → real columns (values are always bound; the column is never from input).
+_ALLOWED_COLUMNS: dict[str, str] = {
+    "speaker": "speaker",
+    "conversation_id": "conversation_id",
+}
+
 
 def _hit_from_row(row: tuple[object, ...], rank: int, *, lexical: bool) -> RetrievalHit:
     """Build a RetrievalHit from (turn_id, conversation_id, raw_text, created_at, score).
@@ -61,12 +67,26 @@ class TimescaleReadRepository:
 
     @staticmethod
     def _criteria_clause(criteria: tuple[Criterion, ...]) -> tuple[str, list[object]]:
-        """Compile criteria to a bound SQL fragment + params (M5 Phase 2 extends the whitelist)."""
-        # Phase 1: no criteria wired yet; the empty case is a no-op. Values are ALWAYS bound, never
-        # interpolated — Phase 2 adds the field whitelist + predicate kinds here.
-        if not criteria:
-            return "", []
-        raise NotImplementedError("criterion filters land in M5 Phase 2")
+        """Compile criteria to a BOUND SQL fragment + params (blueprint D2, injection-safe).
+
+        The column comes from a fixed whitelist (never from input); the value is ALWAYS a bound
+        parameter. A metadata criterion (`metadata.<key>`) binds BOTH the key and the value. An
+        unknown field fails fast with a typed error — no silent pass-through (error-handling.md).
+        """
+        clause = ""
+        params: list[object] = []
+        for crit in criteria:
+            if crit.field in _ALLOWED_COLUMNS:
+                clause += f" AND {_ALLOWED_COLUMNS[crit.field]} = %s"
+                params.append(crit.value)
+            elif crit.field.startswith("metadata."):
+                clause += " AND metadata->>%s = %s"
+                params.extend([crit.field[len("metadata.") :], crit.value])
+            else:
+                raise ValueError(
+                    f"unknown criterion field {crit.field!r}; allowed: {sorted(_ALLOWED_COLUMNS)} or 'metadata.<key>'"
+                )
+        return clause, params
 
     async def lexical_candidates(
         self, query_text: str, top_k: int, window_days: int, criteria: tuple[Criterion, ...] = ()

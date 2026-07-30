@@ -47,3 +47,15 @@ class SearchHit(BaseModel):
     score: float
     lexical_score: float | None = None
     semantic_score: float | None = None
+
+
+class Label(BaseModel):
+    """A QA audit/label action on a window, destined for retraining (blueprint D2)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    label_id: str
+    turn_id: str
+    conversation_id: str
+    label: str
+    labeled_by: str = "qa"

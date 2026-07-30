@@ -12,7 +12,7 @@ from typing import Protocol
 
 from talkex.models.turn import Turn
 from talkex.monitoring.domain.models import Alert, AlertId, RecentTurn
-from talkex.monitoring.domain.search import Criterion
+from talkex.monitoring.domain.search import Criterion, Label
 from talkex.retrieval.models import RetrievalHit
 
 
@@ -68,3 +68,11 @@ class TurnSearchPort(Protocol):
     async def semantic_candidates(
         self, query_vector: list[float], top_k: int, window_days: int, criteria: tuple[Criterion, ...] = ()
     ) -> list[RetrievalHit]: ...
+
+
+class LabelRepository(Protocol):
+    """Persists QA labels destined for retraining (blueprint D2, survives the 30-day purge)."""
+
+    async def save(self, label: Label) -> None: ...
+
+    async def get(self, label_id: str) -> Label | None: ...

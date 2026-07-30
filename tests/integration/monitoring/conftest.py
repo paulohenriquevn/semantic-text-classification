@@ -28,7 +28,7 @@ async def conn() -> AsyncIterator[psycopg.AsyncConnection]:
     if not await _can_connect():
         pytest.skip("TimescaleDB not reachable on :5433 — start deploy/monitoring/docker-compose.yml")
     connection = await psycopg.AsyncConnection.connect(DSN)
-    await connection.execute("TRUNCATE turns, alerts")
+    await connection.execute("TRUNCATE turns, alerts, labels")
     await connection.commit()
     try:
         yield connection
