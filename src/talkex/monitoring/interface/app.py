@@ -29,6 +29,8 @@ from talkex.monitoring.config import MonitoringConfig
 from talkex.monitoring.domain.channel import TurnChannel
 from talkex.monitoring.domain.critical_rules import build_critical_rules
 from talkex.monitoring.domain.models import AlertId
+from talkex.monitoring.domain.ports import TurnEmbedder
+from talkex.monitoring.infrastructure.embedder import SentenceTransformerEmbedder
 from talkex.monitoring.infrastructure.notify_broadcaster import NotifyAlertBroadcaster
 from talkex.monitoring.infrastructure.timescale_repo import (
     TimescaleAlertRepository,
@@ -48,9 +50,14 @@ class IngestRequest(BaseModel):
     raw_text: str
 
 
-def create_app(config: MonitoringConfig | None = None) -> FastAPI:
-    """Build the wired FastAPI app (composition root)."""
+def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | None = None) -> FastAPI:
+    """Build the wired FastAPI app (composition root).
+
+    `embedder` is injectable (DIP) so tests can pass a download-free `DeterministicEmbedder`;
+    production defaults to a real multilingual MiniLM.
+    """
     cfg = config or MonitoringConfig()
+    turn_embedder = embedder or SentenceTransformerEmbedder()
     segmenter = TurnSegmenter()
     rules = build_critical_rules()  # M3 critical-rule catalogue
 
@@ -59,8 +66,10 @@ def create_app(config: MonitoringConfig | None = None) -> FastAPI:
         write_conn = await psycopg.AsyncConnection.connect(cfg.dsn)
         notify_conn = await psycopg.AsyncConnection.connect(cfg.dsn, autocommit=True)
         channel = TurnChannel(maxsize=cfg.queue_maxsize)
+        # M5 Phase 0: write the pgvector embedding at ingest so the ANN half is live. The ~tens-of-ms
+        # encode cost sits on the pre-alert write path but well within the M3 turn→alert p95 < 2s budget.
         orchestrator = TurnOrchestrator(
-            turn_repo=TimescaleTurnRepository(write_conn),
+            turn_repo=TimescaleTurnRepository(write_conn, embedder=turn_embedder),
             alert_repo=TimescaleAlertRepository(write_conn),
             broadcaster=NotifyAlertBroadcaster(notify_conn, cfg.notify_channel),
             rules=rules,

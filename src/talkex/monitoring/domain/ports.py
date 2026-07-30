@@ -38,3 +38,14 @@ class TurnReadPort(Protocol):
     """Index-aligned keyset-paginated reads for the supervisor/QA view (blueprint Corner 4)."""
 
     async def recent_turns(self, conversation_id: str, before: datetime | None, limit: int) -> list[RecentTurn]: ...
+
+
+class TurnEmbedder(Protocol):
+    """Produces a dense embedding for a turn's text (M5 Phase 0 — feeds the pgvector ANN half).
+
+    Narrow by design (ISP): the ingest/search paths need only text -> vector, not the full
+    batch generator API in `talkex.embeddings`. Infrastructure supplies a deterministic
+    (no-download) adapter for tests and a sentence-transformer adapter for production.
+    """
+
+    def embed(self, text: str) -> list[float]: ...

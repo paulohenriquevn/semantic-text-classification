@@ -16,6 +16,7 @@ from asgi_lifespan import LifespanManager
 from psycopg import sql
 
 from talkex.monitoring.config import MonitoringConfig
+from talkex.monitoring.infrastructure.embedder import DeterministicEmbedder
 from talkex.monitoring.infrastructure.timescale_repo import TimescaleAlertRepository
 from talkex.monitoring.interface.app import create_app
 
@@ -46,7 +47,7 @@ async def test_ingest_to_supervisor_alert_e2e() -> None:
     listen_conn = await psycopg.AsyncConnection.connect(CFG.dsn, autocommit=True)
     await listen_conn.execute(sql.SQL("LISTEN {}").format(sql.Identifier(CFG.notify_channel)))
 
-    app = create_app(CFG)
+    app = create_app(CFG, embedder=DeterministicEmbedder())  # download-free embedder for the e2e
     try:
         async with (
             LifespanManager(app),

@@ -13,19 +13,31 @@ from psycopg.types.json import Jsonb
 from talkex.models.turn import Turn
 from talkex.models.types import ConversationId
 from talkex.monitoring.domain.models import Alert, AlertId
+from talkex.monitoring.domain.ports import TurnEmbedder
+from talkex.monitoring.infrastructure.embedder import to_vector_literal
 
 
 class TimescaleTurnRepository:
-    """Persists a Turn as it arrives."""
+    """Persists a Turn as it arrives.
 
-    def __init__(self, conn: psycopg.AsyncConnection) -> None:
+    When a `TurnEmbedder` is injected (M5 Phase 0), each save also writes the `embedding vector(384)`
+    column so the pgvector ANN half is live. Without one, `embedding` stays NULL (the shipped-M1 state),
+    preserving backward compatibility for callers that do not need semantic search.
+    """
+
+    def __init__(self, conn: psycopg.AsyncConnection, embedder: TurnEmbedder | None = None) -> None:
         self._conn = conn
+        self._embedder = embedder
 
     async def save(self, turn: Turn) -> None:
+        embedding_literal = (
+            to_vector_literal(self._embedder.embed(turn.raw_text)) if self._embedder is not None else None
+        )
         await self._conn.execute(
             "INSERT INTO turns "
-            "(turn_id, conversation_id, speaker, raw_text, normalized_text, start_offset, end_offset, metadata) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            "(turn_id, conversation_id, speaker, raw_text, normalized_text, "
+            "start_offset, end_offset, metadata, embedding) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)",
             (
                 turn.turn_id,
                 turn.conversation_id,
@@ -35,6 +47,7 @@ class TimescaleTurnRepository:
                 turn.start_offset,
                 turn.end_offset,
                 Jsonb(turn.metadata),
+                embedding_literal,
             ),
         )
         await self._conn.commit()
