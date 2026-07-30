@@ -12,6 +12,7 @@ from typing import Protocol
 
 from talkex.models.turn import Turn
 from talkex.monitoring.domain.dashboard import KpiBucket, KpiQuery
+from talkex.monitoring.domain.lifecycle import RetrainingSample
 from talkex.monitoring.domain.models import Alert, AlertId, RecentTurn
 from talkex.monitoring.domain.search import Criterion, Label
 from talkex.retrieval.models import RetrievalHit
@@ -83,3 +84,19 @@ class KpiReadPort(Protocol):
     """Reads pre-bucketed KPI rollups from the `alerts_kpi_5min` continuous aggregate (M6, D5)."""
 
     async def kpi_rollups(self, query: KpiQuery) -> list[KpiBucket]: ...
+
+
+class Redactor(Protocol):
+    """Removes PT-BR PII (CPF/CNPJ/phone/email/name) from text before it leaves for the cold sample.
+
+    Pure text→text (M7 D1); the domain declares it, infrastructure supplies a regex impl. Join keys
+    (turn_id/conversation_id) are NOT passed through here — only the free-text field is redacted.
+    """
+
+    def redact(self, text: str) -> str: ...
+
+
+class SamplePort(Protocol):
+    """Writes anonymized retraining samples to durable storage (Parquet/object store, M7 D3)."""
+
+    def write(self, rows: list[RetrainingSample], name: str) -> str: ...
