@@ -12,6 +12,8 @@ from typing import Protocol
 
 from talkex.models.turn import Turn
 from talkex.monitoring.domain.models import Alert, AlertId, RecentTurn
+from talkex.monitoring.domain.search import Criterion
+from talkex.retrieval.models import RetrievalHit
 
 
 class TurnRepository(Protocol):
@@ -49,3 +51,20 @@ class TurnEmbedder(Protocol):
     """
 
     def embed(self, text: str) -> list[float]: ...
+
+
+class TurnSearchPort(Protocol):
+    """DB-side candidate retrieval for M5 hybrid search (blueprint D1).
+
+    Two narrow methods — one per signal — so the application `SearchService` owns the fusion
+    (RRF) and stays unit-testable with a fake port. Both return `RetrievalHit` (from
+    `talkex.retrieval`), scoped to the retention window and optionally criterion-filtered.
+    """
+
+    async def lexical_candidates(
+        self, query_text: str, top_k: int, window_days: int, criteria: tuple[Criterion, ...] = ()
+    ) -> list[RetrievalHit]: ...
+
+    async def semantic_candidates(
+        self, query_vector: list[float], top_k: int, window_days: int, criteria: tuple[Criterion, ...] = ()
+    ) -> list[RetrievalHit]: ...
