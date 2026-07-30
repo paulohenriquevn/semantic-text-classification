@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Internal lint normalization — collapse a `ModelError` raise in `lightgbm_classifier.py` to the ruff-formatted single line (the v1.0.0 state failed `ruff format --check`); no behavior change, covered by the existing LightGBM tests. (no-ticket)
+
 ## [1.0.0] - 2026-07-30
 
 ### Added

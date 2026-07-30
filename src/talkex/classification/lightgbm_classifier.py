@@ -37,9 +37,7 @@ def _import_lightgbm() -> Any:
 
         return lgb
     except ImportError:
-        raise ModelError(
-            "lightgbm is required for LightGBMClassifier. Install it with: pip install lightgbm"
-        ) from None
+        raise ModelError("lightgbm is required for LightGBMClassifier. Install it with: pip install lightgbm") from None
 
 
 class LightGBMClassifier:
