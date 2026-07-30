@@ -56,3 +56,25 @@ class TestAlertRepository:
     async def test_get_missing_alert_returns_none(self, conn: psycopg.AsyncConnection) -> None:
         repo = TimescaleAlertRepository(conn)
         assert await repo.get(AlertId("nope")) is None
+
+
+class TestFailureScenarios:
+    """Plan `## Failure scenarios`: the DB layer must fail-fast, not swallow (Rule 8)."""
+
+    async def test_save_on_broken_connection_raises_not_silent(self) -> None:
+        # Simulate a connection reset: connect, close, then save -> must raise, not no-op.
+        from talkex.monitoring.config import MonitoringConfig
+
+        broken = await psycopg.AsyncConnection.connect(MonitoringConfig().dsn)
+        await broken.close()
+        repo = TimescaleTurnRepository(broken)
+        turn = Turn(
+            turn_id=TurnId("turn_fail_1"),
+            conversation_id=ConversationId("conv_fail"),
+            speaker=SpeakerRole.CUSTOMER,
+            raw_text="x",
+            start_offset=0,
+            end_offset=1,
+        )
+        with pytest.raises(psycopg.OperationalError):
+            await repo.save(turn)
