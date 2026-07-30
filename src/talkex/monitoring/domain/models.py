@@ -7,6 +7,7 @@ a context window (blueprint D2/D4). `SessionState` is the explicit session state
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 from typing import NewType
 
@@ -16,6 +17,16 @@ from talkex.models.rule_execution import EvidenceItem
 from talkex.models.types import ConversationId
 
 AlertId = NewType("AlertId", str)
+
+
+class RecentTurn(BaseModel):
+    """A read-model row for the supervisor/QA recent-turns query (keyset paginated)."""
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    turn_id: str
+    raw_text: str
+    created_at: datetime
 
 
 class SessionState(StrEnum):

@@ -27,6 +27,7 @@ monitoring = [
     "fastapi>=0.111,<1.0",
     "uvicorn>=0.30,<1.0",
     "psycopg[binary]>=3.1,<4.0",
+    "psycopg-pool>=3.2,<4.0",
     "sse-starlette>=2.0,<3.0",
 ]
 dev = [

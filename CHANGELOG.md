@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Real-time monitoring M1 (storage foundation) — productionizes the ADR-005 storage: migration `0002` adds 30-day retention + compression policies, a per-minute continuous aggregate (`turns_per_min`), a generated PT-BR `tsvector` column + GIN (BM25-adjacent lexical ranking), a GIN trigram index on `raw_text`, and an embedding column + pgvector HNSW index path (populated in M2); a `MonitoringPool` (psycopg async pool sized to concurrency, chatwoot `pool==concurrency` precedent) for ingest×query contention; and a `TimescaleReadRepository` with index-aligned keyset-paginated supervisor/QA reads. 12 new tests against a real TimescaleDB (retention drops old chunks, indexes/CA exist, pool queues under concurrency without loss, keyset pagination without overlap, EXPLAIN proves index usage); migration is idempotent (no-ticket)
+
 ## [0.2.0] - 2026-07-29
 
 ### Changed

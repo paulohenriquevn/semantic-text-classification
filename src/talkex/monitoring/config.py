@@ -19,3 +19,6 @@ class MonitoringConfig(BaseModel):
     dsn: str = "postgresql://talkex:talkex@localhost:5433/talkex_monitoring"
     queue_maxsize: int = Field(default=256, gt=0)
     notify_channel: str = "talkex_alerts"
+    pool_min_size: int = Field(default=2, ge=0)
+    pool_max_size: int = Field(default=10, gt=0)
+    retention_days: int = Field(default=30, gt=0)

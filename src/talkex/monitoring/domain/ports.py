@@ -7,10 +7,11 @@ never imports psycopg or FastAPI.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol
 
 from talkex.models.turn import Turn
-from talkex.monitoring.domain.models import Alert, AlertId
+from talkex.monitoring.domain.models import Alert, AlertId, RecentTurn
 
 
 class TurnRepository(Protocol):
@@ -31,3 +32,9 @@ class AlertBroadcaster(Protocol):
     """Pushes an alert id to subscribers after the transaction commits (blueprint D3)."""
 
     async def notify(self, alert_id: AlertId) -> None: ...
+
+
+class TurnReadPort(Protocol):
+    """Index-aligned keyset-paginated reads for the supervisor/QA view (blueprint Corner 4)."""
+
+    async def recent_turns(self, conversation_id: str, before: datetime | None, limit: int) -> list[RecentTurn]: ...
