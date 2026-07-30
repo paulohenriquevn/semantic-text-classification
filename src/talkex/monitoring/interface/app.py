@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
+from uuid import uuid4
 
 import psycopg
 from fastapi import FastAPI
@@ -24,14 +25,19 @@ from talkex.ingestion.inputs import TranscriptInput
 from talkex.models.enums import Channel
 from talkex.models.types import ConversationId
 from talkex.monitoring.application.orchestrator import TurnOrchestrator
+from talkex.monitoring.application.search_service import SearchService
 from talkex.monitoring.application.session import MonitoringSession
 from talkex.monitoring.config import MonitoringConfig
 from talkex.monitoring.domain.channel import TurnChannel
 from talkex.monitoring.domain.critical_rules import build_critical_rules
 from talkex.monitoring.domain.models import AlertId
 from talkex.monitoring.domain.ports import TurnEmbedder
+from talkex.monitoring.domain.search import Criterion, Label, SearchQuery
 from talkex.monitoring.infrastructure.embedder import SentenceTransformerEmbedder
+from talkex.monitoring.infrastructure.label_repo import TimescaleLabelRepository
 from talkex.monitoring.infrastructure.notify_broadcaster import NotifyAlertBroadcaster
+from talkex.monitoring.infrastructure.pool import MonitoringPool
+from talkex.monitoring.infrastructure.read_repo import TimescaleReadRepository
 from talkex.monitoring.infrastructure.timescale_repo import (
     TimescaleAlertRepository,
     TimescaleTurnRepository,
@@ -48,6 +54,31 @@ class IngestRequest(BaseModel):
 
     conversation_id: str
     raw_text: str
+
+
+class CriterionRequest(BaseModel):
+    """A single QA filter predicate in a search request."""
+
+    field: str
+    value: str
+
+
+class SearchRequest(BaseModel):
+    """A QA hybrid-search request (criterion + query over the retention window)."""
+
+    query_text: str
+    top_k: int = 10
+    window_days: int = 30
+    criteria: list[CriterionRequest] = []
+
+
+class LabelRequest(BaseModel):
+    """A QA audit/label action destined for retraining."""
+
+    turn_id: str
+    conversation_id: str
+    label: str
+    labeled_by: str = "qa"
 
 
 def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | None = None) -> FastAPI:
@@ -76,12 +107,18 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         )
         session = MonitoringSession(channel, orchestrator)
         await session.start()
+        # M5 Phase 3: a pooled read path for QA hybrid search + label persistence (ingest/query split).
+        read_pool = MonitoringPool(cfg.dsn)
+        await read_pool.open()
         app.state.channel = channel
         app.state.session = session
+        app.state.search_service = SearchService(TimescaleReadRepository(read_pool), turn_embedder)
+        app.state.label_repo = TimescaleLabelRepository(read_pool)
         try:
             yield
         finally:
             await session.aclose()
+            await read_pool.close()
             await write_conn.close()
             await notify_conn.close()
 
@@ -100,6 +137,31 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         for turn in turns:
             await app.state.channel.put(turn)
         return {"enqueued": len(turns)}
+
+    @app.post("/search")
+    async def search(req: SearchRequest) -> list[dict[str, Any]]:
+        # M5 QA hybrid search — fused evidence-carrying windows over the retention window.
+        query = SearchQuery(
+            query_text=req.query_text,
+            top_k=req.top_k,
+            window_days=req.window_days,
+            criteria=tuple(Criterion(field=c.field, value=c.value) for c in req.criteria),
+        )
+        hits = await app.state.search_service.search(query)
+        return [h.model_dump(mode="json") for h in hits]
+
+    @app.post("/label", status_code=201)
+    async def label(req: LabelRequest) -> dict[str, str]:
+        # M5 QA audit action — persist a label destined for retraining.
+        label = Label(
+            label_id=f"lbl_{uuid4().hex}",
+            turn_id=req.turn_id,
+            conversation_id=req.conversation_id,
+            label=req.label,
+            labeled_by=req.labeled_by,
+        )
+        await app.state.label_repo.save(label)
+        return {"label_id": label.label_id}
 
     @app.get("/supervisor/stream")
     async def supervisor_stream() -> EventSourceResponse:
