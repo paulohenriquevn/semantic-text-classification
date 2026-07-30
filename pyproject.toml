@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "talkex-engine"
-version = "0.2.0"
+version = "0.3.0"
 description = "NLP platform for large-scale conversation analysis in call centers and digital service channels"
 readme = "README.md"
 license = "MIT"
