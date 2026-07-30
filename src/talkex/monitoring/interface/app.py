@@ -138,12 +138,13 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         return {"status": "alive"}
 
     @app.get("/ready")
-    async def ready(response: Response) -> dict[str, object]:
+    async def ready(response: Response) -> dict[str, Any]:
         # M8 readiness — session LISTENING + queue not saturated + DB reachable, else 503.
         report = await app.state.health.readiness()
         if not report.ready:
             response.status_code = 503
-        return report.model_dump()
+        result: dict[str, Any] = report.model_dump()
+        return result
 
     @app.post("/ingest", status_code=202)
     async def ingest(req: IngestRequest) -> dict[str, int]:
