@@ -109,7 +109,7 @@ Initial proxy while outcome is not end-to-end instrumentable: supervisor alert-e
 > Each milestone has a checkbox in its header. Flip `[ ]` → `[x]` as you complete it. Status lives
 > in this document; no external tracker required.
 
-### M0 — [ ] Walking skeleton
+### M0 — [x] Walking skeleton
 
 **Objective:** End-to-end thinnest slice — ingest one live transcript stream, segment into
 turns/windows, run one cascade check (a rule + sentiment stub), persist to Postgres/Timescale, and
@@ -131,7 +131,7 @@ surface one live alert on a minimal supervisor screen.
 
 ---
 
-### M1 — [ ] Ingestion & storage foundation (ADR-005)
+### M1 — [x] Ingestion & storage foundation (ADR-005)
 
 **Objective:** Productionize the ADR-005 storage spine — Timescale hypertables + pgvector + BM25
 with 30-day retention/compression and multi-stream fan-in ingestion.
@@ -152,7 +152,7 @@ with 30-day retention/compression and multi-stream fan-in ingestion.
 
 ---
 
-### M2 — [ ] Online sentiment & feature extraction (ML)
+### M2 — [x] Online sentiment & feature extraction (ML)
 
 **Objective:** Add online sentiment + core features per turn/window via a lightweight PT-BR model in
 the cascade, CPU-first, benchmarked against the BM25/lexical baseline.
@@ -173,7 +173,7 @@ the cascade, CPU-first, benchmarked against the BM25/lexical baseline.
 
 ---
 
-### M3 — [ ] Real-time rule engine & alerting
+### M3 — [x] Real-time rule engine & alerting
 
 **Objective:** Real-time critical-event alerting — the DSL rule engine evaluates each incoming window
 and emits prioritized, evidence-backed alerts pushed live to the supervisor.
@@ -194,7 +194,7 @@ and emits prioritized, evidence-backed alerts pushed live to the supervisor.
 
 ---
 
-### M4 — [ ] Supervisor live-monitoring UI
+### M4 — [x] Supervisor live-monitoring UI
 
 **Objective:** Ship the anchor product surface — active-call list with real-time state, drill-down
 into the conversation with highlighted evidence, and a prioritized alert inbox.
