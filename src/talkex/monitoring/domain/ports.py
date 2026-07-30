@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Protocol
 
 from talkex.models.turn import Turn
+from talkex.monitoring.domain.dashboard import KpiBucket, KpiQuery
 from talkex.monitoring.domain.models import Alert, AlertId, RecentTurn
 from talkex.monitoring.domain.search import Criterion, Label
 from talkex.retrieval.models import RetrievalHit
@@ -76,3 +77,9 @@ class LabelRepository(Protocol):
     async def save(self, label: Label) -> None: ...
 
     async def get(self, label_id: str) -> Label | None: ...
+
+
+class KpiReadPort(Protocol):
+    """Reads pre-bucketed KPI rollups from the `alerts_kpi_5min` continuous aggregate (M6, D5)."""
+
+    async def kpi_rollups(self, query: KpiQuery) -> list[KpiBucket]: ...

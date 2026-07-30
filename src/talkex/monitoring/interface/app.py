@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
@@ -30,10 +31,12 @@ from talkex.monitoring.application.session import MonitoringSession
 from talkex.monitoring.config import MonitoringConfig
 from talkex.monitoring.domain.channel import TurnChannel
 from talkex.monitoring.domain.critical_rules import build_critical_rules
+from talkex.monitoring.domain.dashboard import KpiQuery
 from talkex.monitoring.domain.models import AlertId
 from talkex.monitoring.domain.ports import TurnEmbedder
 from talkex.monitoring.domain.search import Criterion, Label, SearchQuery
 from talkex.monitoring.infrastructure.embedder import SentenceTransformerEmbedder
+from talkex.monitoring.infrastructure.kpi_repo import TimescaleKpiRepository
 from talkex.monitoring.infrastructure.label_repo import TimescaleLabelRepository
 from talkex.monitoring.infrastructure.notify_broadcaster import NotifyAlertBroadcaster
 from talkex.monitoring.infrastructure.pool import MonitoringPool
@@ -115,6 +118,7 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         app.state.session = session
         app.state.search_service = SearchService(TimescaleReadRepository(read_pool), turn_embedder)
         app.state.label_repo = TimescaleLabelRepository(read_pool)
+        app.state.kpi_repo = TimescaleKpiRepository(read_pool)  # M6 manager-dashboard read
         try:
             yield
         finally:
@@ -152,6 +156,15 @@ def create_app(config: MonitoringConfig | None = None, embedder: TurnEmbedder | 
         )
         hits = await app.state.search_service.search(query)
         return [h.model_dump(mode="json") for h in hits]
+
+    @app.get("/dashboard/kpis")
+    async def dashboard_kpis(
+        from_time: datetime, to_time: datetime, queue: str | None = None, rule_name: str | None = None
+    ) -> list[dict[str, Any]]:
+        # M6 manager dashboard — pre-bucketed KPI rollups straight from the continuous aggregate.
+        query = KpiQuery(from_time=from_time, to_time=to_time, queue=queue, rule_name=rule_name)
+        buckets = await app.state.kpi_repo.kpi_rollups(query)
+        return [b.model_dump(mode="json") for b in buckets]
 
     @app.post("/label", status_code=201)
     async def label(req: LabelRequest) -> dict[str, str]:
